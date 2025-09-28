@@ -22,7 +22,7 @@ $rol = $_SESSION['rol'] ?? 'Administrador';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <!-- css generalaes -->
     <link rel="stylesheet" href="/motoshoppy/dashboard/estilos_dashboard.css">
-    <link rel="stylesheet" href="/motoshoppy/categorias/estilos_categorias.css">
+    <!-- <link rel="stylesheet" href="/motoshoppy/categorias/estilos_categorias.css"> -->
     <!-- DataTables CSS -->
 <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">

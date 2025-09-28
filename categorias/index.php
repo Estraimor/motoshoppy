@@ -7,6 +7,10 @@ $stmt = $conexion->query("SELECT * FROM categoria ORDER BY idCategoria DESC");
 $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
+<head>
+    <link rel="stylesheet" href="estilos_categorias.css">
+</head>
+
 <div class="content-header d-flex justify-content-between align-items-center">
     <h2><i class="fa-solid fa-tags"></i> Categorías</h2>
     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
