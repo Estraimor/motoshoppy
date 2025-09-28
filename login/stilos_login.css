@@ -1,0 +1,77 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                url('../imagenes/fondo_motos.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 15px;
+}
+
+.login-card {
+    background: rgba(20, 20, 20, 0.85);
+    border-radius: 15px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 400px;
+    color: #fff;
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.8s ease-in-out;
+    box-shadow: 0 0 20px 5px #8a8786;
+    animation: neonGlow 3s infinite alternate;
+}
+
+
+
+.logo {
+    display: block;
+    margin: 0 auto 20px;
+    width: 90px;
+    filter: drop-shadow(0 0 10px rgba(255, 51, 0, 0.7));
+}
+
+.form-label {
+    color: #ffddcc;
+    font-weight: bold;
+}
+
+.form-control {
+    border-radius: 8px;
+    background-color: #f1f1f1;
+}
+
+.form-control:focus {
+    border-color: #ff3c00;
+    box-shadow: 0 0 5px rgba(255, 51, 0, 0.5);
+}
+
+.btn-login {
+    background-color: #ff3c00;
+    border: none;
+    transition: all 0.3s ease-in-out;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: #cc2f00;
+    transform: scale(1.05);
+}
+
+.toggle-password {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
