@@ -80,6 +80,9 @@ $is_productos_active = in_array($current_page, $productos_pages);
             <a href="/motoshoppy/marcas/index.php" class="<?= $current_page === 'marcas.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-bookmark"></i> Marcas
             </a>
+            <a href="/motoshoppy/productos/alta_productos.php" class="<?= $current_page === 'alta_productos.php' ? 'active' : '' ?>">
+                <i class="fa-solid fa-plus"></i> Crear Productos
+            </a>
             <a href="/motoshoppy/productos/lista_productos.php" class="<?= $current_page === 'lista_productos.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-list"></i> Lista de Productos
             </a>

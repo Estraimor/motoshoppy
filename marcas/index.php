@@ -2,9 +2,10 @@
 include '../dashboard/nav.php';
 require_once '../conexion/conexion.php';
 
-// Traer marcas con join para mostrar el nombre de la categoría
+// Traer marcas con join para mostrar el nombre de la categoría y el estado
 $stmt = $conexion->query("
-    SELECT m.idmarcas, m.nombre_marca, m.categoria_idCategoria, c.nombre_categoria
+    SELECT m.idmarcas, m.nombre_marca, m.categoria_idCategoria, m.estado, 
+           c.nombre_categoria
     FROM marcas m
     LEFT JOIN categoria c ON m.categoria_idCategoria = c.idCategoria
     ORDER BY m.idmarcas DESC
@@ -29,6 +30,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>ID</th>
                     <th>Categoría</th>
                     <th>Marca</th>
+                    <th>Estado</th>
                     <th class="text-center">Acciones</th>
                 </tr>
             </thead>
@@ -38,6 +40,17 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?= $marca['idmarcas'] ?></td>
                         <td><?= htmlspecialchars($marca['nombre_categoria'] ?? 'Sin categoría') ?></td>
                         <td><?= htmlspecialchars($marca['nombre_marca']) ?></td>
+                        
+                        <!-- Estado con badge -->
+                        <td>
+                            <?php if ($marca['estado'] == 1): ?>
+                                <span class="badge bg-success">Activo</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Inactivo</span>
+                            <?php endif; ?>
+                        </td>
+
+                        <!-- Botones de acción -->
                         <td class="text-center">
                             <button class="btn btn-sm btn-warning" 
                                     data-bs-toggle="modal" 
@@ -45,7 +58,8 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     data-id="<?= $marca['idmarcas'] ?>"
                                     data-nombre="<?= htmlspecialchars($marca['nombre_marca']) ?>"
                                     data-categoria-id="<?= $marca['categoria_idCategoria'] ?>"
-                                    data-categoria-nombre="<?= htmlspecialchars($marca['nombre_categoria']) ?>">
+                                    data-categoria-nombre="<?= htmlspecialchars($marca['nombre_categoria']) ?>"
+                                    data-estado="<?= $marca['estado'] ?>">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <a href="eliminar.php?id=<?= $marca['idmarcas'] ?>" 
@@ -61,7 +75,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<!-- MODAL AGREGAR -->
+<!-- ====== MODAL AGREGAR ====== -->
 <div class="modal fade" id="modalAgregar" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content bg-dark text-white">
@@ -71,17 +85,28 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <!-- Primero Categoría -->
+          <!-- Categoría con buscador -->
           <div class="mb-3 position-relative">
             <label class="form-label">Categoría</label>
             <input type="text" id="buscarCategoria" class="form-control" placeholder="Escriba para buscar..." autocomplete="off">
             <input type="hidden" name="categoria_idCategoria" id="categoriaSeleccionada">
             <div id="listaCategorias" class="list-group position-absolute w-100 mt-1 shadow"></div>
           </div>
-          <!-- Luego Marca -->
+
+          <!-- Nombre de la Marca -->
           <div class="mb-3">
             <label class="form-label">Nombre de la Marca</label>
             <input type="text" name="nombre_marca" class="form-control" required>
+          </div>
+
+          <!-- Estado -->
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select name="estado" class="form-select" required>
+                <option value="" selected>Elija estado</option>
+              <option value="1">Activo</option>
+              <option value="0">Inactivo</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -93,7 +118,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
   </div>
 </div>
 
-<!-- MODAL EDITAR -->
+<!-- ====== MODAL EDITAR ====== -->
 <div class="modal fade" id="modalEditar" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content bg-dark text-white">
@@ -104,17 +129,27 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <!-- Primero Categoría con búsqueda -->
+          <!-- Categoría con buscador -->
           <div class="mb-3 position-relative">
             <label class="form-label">Categoría</label>
             <input type="text" id="buscarCategoriaEdit" class="form-control" placeholder="Escriba para buscar..." autocomplete="off">
             <input type="hidden" name="categoria_idCategoria" id="categoriaSeleccionadaEdit">
             <div id="listaCategoriasEdit" class="list-group position-absolute w-100 mt-1 shadow"></div>
           </div>
-          <!-- Luego Marca -->
+
+          <!-- Nombre de la Marca -->
           <div class="mb-3">
             <label class="form-label">Nombre de la Marca</label>
             <input type="text" name="nombre_marca" id="edit-nombre" class="form-control" required>
+          </div>
+
+          <!-- Estado -->
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <select name="estado" id="edit-estado" class="form-select" required>
+              <option value="1">Activo</option>
+              <option value="0">Inactivo</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -127,7 +162,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <script>
-// Autocompletar búsqueda de categorías (Crear y Editar)
+// Configurador para búsqueda en tiempo real de categorías
 function configurarBuscador(inputId, listaId, hiddenId) {
     const input = document.getElementById(inputId);
     const lista = document.getElementById(listaId);
@@ -139,7 +174,6 @@ function configurarBuscador(inputId, listaId, hiddenId) {
             lista.innerHTML = "";
             return;
         }
-
         fetch("buscar_categoria.php?term=" + encodeURIComponent(query))
             .then(res => res.json())
             .then(data => {
@@ -179,11 +213,12 @@ document.getElementById('modalEditar').addEventListener('show.bs.modal', functio
     const button = event.relatedTarget;
     document.getElementById('edit-id').value = button.getAttribute('data-id');
     document.getElementById('edit-nombre').value = button.getAttribute('data-nombre');
-    document.getElementById('buscarCategoriaEdit').value = button.getAttribute('data-categoria-nombre') || '';
-    document.getElementById('categoriaSeleccionadaEdit').value = button.getAttribute('data-categoria-id') || '';
+    document.getElementById('buscarCategoriaEdit').value = button.getAttribute('data-categoria-nombre');
+    document.getElementById('categoriaSeleccionadaEdit').value = button.getAttribute('data-categoria-id');
+    document.getElementById('edit-estado').value = button.getAttribute('data-estado');
 });
 
-// DataTables
+// Inicializar DataTable
 $(document).ready(function () {
     $('#tablaMarcas').DataTable({
         responsive: true,
@@ -192,7 +227,7 @@ $(document).ready(function () {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
         columnDefs: [
-            { orderable: false, targets: 3 }
+            { orderable: false, targets: [3, 4] }
         ]
     });
 });
