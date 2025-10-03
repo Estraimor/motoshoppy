@@ -50,13 +50,13 @@ $rol = $_SESSION['rol'] ?? 'Administrador';
 
         <?php
 $current_page = basename($_SERVER['PHP_SELF']);
-$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'lista_productos.php'];
+$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'listar_productos.php'];
 $is_productos_active = in_array($current_page, $productos_pages);
 ?>
 
 <?php
 $current_page = basename($_SERVER['PHP_SELF']);
-$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'lista_productos.php'];
+$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'listar_productos.php'];
 $is_productos_active = in_array($current_page, $productos_pages);
 ?>
 
@@ -83,7 +83,7 @@ $is_productos_active = in_array($current_page, $productos_pages);
             <a href="/motoshoppy/productos/alta_productos.php" class="<?= $current_page === 'alta_productos.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-plus"></i> Crear Productos
             </a>
-            <a href="/motoshoppy/productos/lista_productos.php" class="<?= $current_page === 'lista_productos.php' ? 'active' : '' ?>">
+            <a href="/motoshoppy/productos/listar_productos.php" class="<?= $current_page === 'listar_productos.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-list"></i> Lista de Productos
             </a>
         </div>
