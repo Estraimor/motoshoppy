@@ -93,6 +93,9 @@ h5, h6 {
     color: #f39c12;
 }
 
+
+
+
 /* ==== Bloques JSON (clave/valor) ==== */
 .campo-json-wrapper {
     background: rgba(40,40,40,0.9);
@@ -101,6 +104,8 @@ h5, h6 {
     border: 1px dashed #555;
     margin-bottom: 15px;
     transition: all 0.2s ease;
+    animation: fadeInSlide 0.5s ease forwards;
+    
 }
 .campo-json-wrapper:hover {
     border-color: #ff6600;
@@ -134,9 +139,33 @@ h5, h6 {
 
 
 
-/* Tabla listar Productos */
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); height: 0; margin: 0; padding: 0; }
+}
 
-/* ====== TABLA DE PRODUCTOS (Dark UI mejorado) ====== */
+.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   🧩 TABLA DE PRODUCTOS (Dark UI mejorado)
+   ========================================================= */
 .table {
     border-radius: 12px;
     overflow: hidden;
@@ -171,7 +200,7 @@ h5, h6 {
     vertical-align: middle;
 }
 
-/* Botones */
+/* Botones Info */
 .table .btn-info {
     background: linear-gradient(135deg, #0984e3, #74b9ff);
     border: none;
@@ -185,6 +214,7 @@ h5, h6 {
     transform: translateY(-2px);
 }
 
+/* Botones Warning */
 .table .btn-warning {
     background: linear-gradient(135deg, #f39c12, #f1c40f);
     border: none;
@@ -198,11 +228,12 @@ h5, h6 {
     transform: translateY(-2px);
 }
 
-/* === DataTables === */
+/* =========================================================
+   ⚙️ DataTables
+   ========================================================= */
 .dataTables_wrapper {
     color: #f1f1f1;
 }
-
 .dataTables_wrapper .dataTables_filter input {
     background: #1f1f1f;
     border: 1px solid #444;
@@ -211,11 +242,9 @@ h5, h6 {
     padding: 6px 10px;
     margin-left: 6px;
 }
-
 .dataTables_wrapper .dataTables_info {
     color: #bbb;
 }
-
 .dataTables_wrapper .dataTables_paginate .paginate_button {
     background: #2c2c2c;
     border-radius: 6px;
@@ -233,3 +262,225 @@ h5, h6 {
     background: #ff6600 !important;
     color: #fff !important;
 }
+
+/* =========================================================
+   🧱 DETALLE DEL PRODUCTO (Diseño refinado y equilibrado)
+   ========================================================= */
+#detalleContenido {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  padding: 15px 10px;
+}
+
+/* ----------- Columna izquierda (info general) ----------- */
+#detalleContenido .col-info {
+  flex: 1 1 50%;
+  min-width: 360px;
+  background: rgba(40, 40, 40, 0.6);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
+}
+
+#detalleContenido .col-info p {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed rgba(255,255,255,0.08);
+  padding-bottom: 4px;
+}
+
+#detalleContenido .col-info strong {
+  color: #ffb347;
+  min-width: 145px;
+  font-weight: 600;
+}
+
+/* Inputs modo edición */
+#detalleContenido .col-info input {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #666;
+  color: #eee;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  transition: 0.2s ease;
+}
+
+#detalleContenido .col-info input:focus {
+  border-color: #ff9900;
+  box-shadow: 0 0 6px #ff9900;
+  outline: none;
+}
+
+/* ----------- Columna derecha (imagen + input) ----------- */
+#detalleContenido .col-img {
+  flex: 1 1 40%;
+  min-width: 320px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#detalleContenido img,
+#previewImg {
+  width: 100%;
+  max-width: 280px;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #111;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: zoom-in;
+}
+
+#detalleContenido img:hover,
+#previewImg:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 153, 0, 0.6);
+}
+
+/* Input para nueva imagen */
+#detalleContenido .col-img input[type="file"] {
+  margin-top: 10px;
+  width: 80%;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid #666;
+  color: #ccc;
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* =========================================================
+   🧩 ATRIBUTOS JSON (Diseño más limpio y legible)
+   ========================================================= */
+#bloqueAtributos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 10px;
+}
+
+#bloqueAtributos .atributo-box {
+  background: rgba(45, 45, 45, 0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+}
+
+#bloqueAtributos .atributo-box:hover {
+  border-color: #ff9900;
+  background: rgba(55, 55, 55, 0.9);
+}
+
+#bloqueAtributos label {
+  color: #ffb347;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+#bloqueAtributos input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid #666;
+  color: #eee;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: 0.25s ease;
+}
+
+/* Inputs editables */
+#bloqueAtributos input:not([readonly]) {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: #ff9900;
+}
+#bloqueAtributos input:not([readonly]):focus {
+  outline: none;
+  box-shadow: 0 0 8px #ff9900;
+}
+
+/* =========================================================
+   🎨 MODAL DETALLE (más elegante y equilibrado)
+   ========================================================= */
+.modal-body {
+  padding: 25px 30px;
+  background: rgba(25,25,25,0.95);
+  border-radius: 0 0 10px 10px;
+}
+
+.modal-title {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #ffb347;
+}
+
+.modal-content {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  background: rgba(20,20,20,0.95);
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* =========================================================
+   🔍 MODAL ZOOM IMAGEN
+   ========================================================= */
+#modalZoom .modal-dialog {
+  max-width: 650px;
+}
+#modalZoom img {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.7);
+}
+
+
+
+
+
+
+/* Nav de settings  */
+.offcanvas.bg-dark {
+  width: 350px;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.6);
+}
+.offcanvas-title i {
+  color: #ffb347;
+}
+.form-label i {
+  color: #ffb347;
+  margin-right: 5px;
+}
+.form-check-label {
+  color: #ccc;
+}
+.form-check-input:checked {
+  background-color: #ffb347;
+  border-color: #ffb347;
+}
+#btnAplicarFiltros, #btnLimpiarFiltros {
+  width: 48%;
+}
+

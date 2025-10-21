@@ -76,7 +76,7 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
                 <div class="col-md-4 d-flex align-items-center">
                     <div class="form-check mt-4">
                         <input class="form-check-input" type="checkbox" id="sinPeso">
-                        <label class="form-check-label" for="sinPeso">Sin peso (no aplica)</label>
+                        <label class="form-check-label" for="sinPeso">Sin peso ni ML</label>
                     </div>
                 </div>
             </div>
@@ -101,13 +101,7 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <!-- JSON -->
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="autoRellenarJSON" checked>
-                <label class="form-check-label" for="autoRellenarJSON">
-                    Rellenar atributos de la categoría automáticamente
-                </label>
-            </div>
+           
 
             <h6><i class="fa-solid fa-list"></i> Atributos adicionales</h6>
             <div id="jsonCampos" class="row"></div>
@@ -150,6 +144,52 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 
+
+<!-- === APARTADO PARA CATEGORÍAS ESPECIALES === -->
+<div id="bloqueCubiertas" class="card shadow-sm p-3 mb-3 d-none">
+    <h5><i class="fa-solid fa-circle-info"></i> Datos específicos de Cubiertas / Ruedas</h5>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Aro</label>
+            <input type="number" class="form-control" name="aro" min="8" max="30" placeholder="Ej: 17">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Ancho (mm)</label>
+            <input type="number" step="0.1" class="form-control" name="ancho" placeholder="Ej: 120">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Perfil (%)</label>
+            <input type="number" step="0.1" class="form-control" name="perfil_cubierta" placeholder="Ej: 70">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" name="tipo">
+                <option value="">-- Seleccione --</option>
+                <option value="TL">TL (sin cámara)</option>
+                <option value="TT">TT (con cámara)</option>
+            </select>
+        </div>
+    </div>
+
+    <hr>
+
+    <div id="listaAplicaciones" class="row g-2"></div>
+
+    <!-- === VARIAS APLICACIONES (tipo JSON) === -->
+<div class="mb-3">
+  <h6><i class="fa-solid fa-list"></i> Varias aplicaciones</h6>
+  <div id="aplicacionesCampos" class="row"></div>
+  <button type="button" id="addAplicacion" class="btn btn-outline-info btn-sm mt-2">
+    <i class="fa-solid fa-plus"></i> Agregar aplicación
+  </button>
+</div>
+</div>
+<!-- === FIN APARTADO ESPECIAL === -->
+
+<!-- === FIN APARTADO ESPECIAL === -->
+
+
             <button type="submit" class="btn btn-success">
                 <i class="fa-solid fa-save"></i> Guardar Producto
             </button>
@@ -177,8 +217,9 @@ document.getElementById('imagen').addEventListener('change', function(event) {
 });
 </script>
 
-
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+
 // === Selección de categoría ===
 document.getElementById('selectCategoria').addEventListener('change', function() {
     const categoriaId = this.value;
@@ -187,28 +228,36 @@ document.getElementById('selectCategoria').addEventListener('change', function()
     document.getElementById('categoria_id').value = categoriaId;
     document.getElementById('formProducto').classList.remove('d-none');
 
+    // === Cargar datos dinámicos de la categoría ===
     fetch(`cargar_datos_categoria.php?id=${categoriaId}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
         .then(data => {
+            console.log("📦 Datos recibidos del backend:", data);
+
             // === Marcas ===
             const marcasSelect = document.getElementById('marcasSelect');
             marcasSelect.innerHTML = `<option value="0" selected disabled>-- Seleccione Marca --</option>`;
-            data.marcas.forEach(m => {
-                const opt = document.createElement("option");
-                opt.value = m.idmarcas;
-                opt.textContent = m.nombre_marca;
-                marcasSelect.appendChild(opt);
-            });
+            if (Array.isArray(data.marcas)) {
+                data.marcas.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.idmarcas;
+                    opt.textContent = m.nombre_marca;
+                    marcasSelect.appendChild(opt);
+                });
+            }
 
             // === JSON dinámico con check habilitar ===
             const jsonCampos = document.getElementById('jsonCampos');
             jsonCampos.innerHTML = "";
-            if (data.json_keys) {
-                data.json_keys.forEach(k => {
-                    // valor si existe en json_values
-                    const valor = (data.json_values && data.json_values[k]) ? data.json_values[k] : "";
 
-                    jsonCampos.innerHTML += `
+            if (Array.isArray(data.json_keys) && typeof data.json_values === 'object') {
+                data.json_keys.forEach(k => {
+                    const valor = data.json_values && data.json_values[k] ? data.json_values[k] : "";
+
+                    jsonCampos.insertAdjacentHTML("beforeend", `
                         <div class="col-md-4 mb-3 campo-json-wrapper fade-in">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label mb-0">${k}</label>
@@ -219,11 +268,11 @@ document.getElementById('selectCategoria').addEventListener('change', function()
                                            value="1" checked>
                                 </div>
                             </div>
-                            <label class="form-label">Clave</label>
                             <input type="text" class="form-control mb-2" value="${k}" readonly>
                             <label class="form-label">Valor</label>
                             <input type="text" class="form-control campo-json" name="json[${k}]" value="${valor}">
-                        </div>`;
+                        </div>
+                    `);
                 });
 
                 // Vincular checkboxes con inputs
@@ -231,50 +280,177 @@ document.getElementById('selectCategoria').addEventListener('change', function()
                     chk.addEventListener('change', function () {
                         const valorInput = this.closest('.campo-json-wrapper').querySelector('.campo-json');
                         valorInput.disabled = !this.checked;
-                        if (!this.checked) valorInput.value = ""; // si lo deshabilita, limpia
+                        if (!this.checked) valorInput.value = "";
                     });
                 });
             }
-        });
+
+            // === Mostrar bloque especial si la categoría es "especial" ===
+            const categoriasEspeciales = [12, 13]; // IDs de categorías especiales (cubiertas, ruedas, etc.)
+            const bloqueCubiertas = document.getElementById('bloqueCubiertas');
+            const catId = parseInt(categoriaId);
+
+            if (categoriasEspeciales.includes(catId)) {
+                bloqueCubiertas.classList.remove('d-none');
+
+                // Si el backend trae aplicaciones, precargarlas
+                if (data.aplicaciones && Object.keys(data.aplicaciones).length > 0) {
+                    cargarAplicacionesDesdePlantilla(data.aplicaciones);
+                    document.getElementById('addAplicacion').style.display = 'none';
+                } else {
+                    aplicacionesCampos.innerHTML = '';
+                    document.getElementById('addAplicacion').style.display = 'inline-block';
+                }
+            } else {
+                bloqueCubiertas.classList.add('d-none');
+            }
+        })
+        .catch(err => console.error("❌ Error al cargar datos de la categoría:", err));
 });
 
-// === Agregar atributo manual ===
+
+// === Agregar atributo manual sin borrar los anteriores (con botón eliminar) ===
 document.getElementById('addJsonCampo').addEventListener('click', function () {
     const jsonCampos = document.getElementById('jsonCampos');
     const index = document.querySelectorAll(".campo-json-wrapper").length + 1;
 
-    jsonCampos.innerHTML += `
-        <div class="col-md-4 mb-3 campo-json-wrapper fade-in">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label mb-0">Clave ${index}</label>
+    const wrapper = document.createElement("div");
+    wrapper.className = "col-md-4 mb-3 campo-json-wrapper fade-in";
+
+    wrapper.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Clave ${index}</label>
+            <div class="d-flex align-items-center gap-2">
                 <div class="form-check form-switch">
                     <input class="form-check-input toggle-json" 
                            type="checkbox" 
                            name="json_new_enabled[]" 
                            value="1" checked>
                 </div>
+                <button type="button" class="btn btn-sm btn-outline-danger btnEliminarCampo" title="Eliminar atributo">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
             </div>
-            <input type="text" class="form-control mb-2" name="json_new_keys[]" placeholder="Clave">
-            <label class="form-label">Valor</label>
-            <input type="text" class="form-control campo-json" name="json_new_values[]" placeholder="Valor">
-        </div>`;
+        </div>
+        <input type="text" class="form-control mb-2" name="json_new_keys[]" placeholder="Clave">
+        <label class="form-label">Valor</label>
+        <input type="text" class="form-control campo-json" name="json_new_values[]" placeholder="Valor">
+    `;
 
-    // Reasignar checkboxes
-    document.querySelectorAll('.toggle-json').forEach((chk) => {
-        chk.addEventListener('change', function () {
-            const valorInput = this.closest('.campo-json-wrapper').querySelector('.campo-json');
-            valorInput.disabled = !this.checked;
-            if (!this.checked) valorInput.value = "";
-        });
+    jsonCampos.appendChild(wrapper);
+
+    const chk = wrapper.querySelector('.toggle-json');
+    const valorInput = wrapper.querySelector('.campo-json');
+    chk.addEventListener('change', function () {
+        valorInput.disabled = !this.checked;
+        if (!this.checked) valorInput.value = "";
     });
+
+    wrapper.querySelector('.btnEliminarCampo').addEventListener('click', function () {
+        wrapper.classList.add('fade-out');
+        setTimeout(() => wrapper.remove(), 300);
+    });
+
+    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
+
 
 // === Checkbox sin peso ===
 document.getElementById('sinPeso').addEventListener('change', function() {
     document.getElementById('peso_ml').disabled = this.checked;
     document.getElementById('peso_g').disabled = this.checked;
+    if (this.checked) {
+        document.getElementById('peso_ml').value = '';
+        document.getElementById('peso_g').value = '';
+    }
+});
+
+
+// ==========================================================
+// === Lógica de "Varias aplicaciones" (como JSON dinámico) ===
+// ==========================================================
+
+const btnAddAplicacion = document.getElementById('addAplicacion');
+const aplicacionesCampos = document.getElementById('aplicacionesCampos');
+
+// === Agregar nueva aplicación manual ===
+if (btnAddAplicacion) {
+    btnAddAplicacion.addEventListener('click', () => {
+        const index = document.querySelectorAll('.campo-aplicacion-wrapper').length + 1;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = "col-md-4 mb-3 campo-aplicacion-wrapper fade-in";
+
+        wrapper.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0">Aplicación ${index}</label>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input toggle-aplicacion" 
+                               type="checkbox" 
+                               name="aplicacion_enabled[]" 
+                               value="1" checked>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger btnEliminarAplicacion" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <label class="form-label">Clave</label>
+            <input type="text" class="form-control mb-2" name="aplicacion_keys[]" placeholder="Clave (ej: tipo)">
+            <label class="form-label">Valor</label>
+            <input type="text" class="form-control campo-aplicacion" name="aplicacion_values[]" placeholder="Valor (ej: Enduro)">
+        `;
+
+        aplicacionesCampos.appendChild(wrapper);
+
+        const chk = wrapper.querySelector('.toggle-aplicacion');
+        const valorInput = wrapper.querySelector('.campo-aplicacion');
+        chk.addEventListener('change', function () {
+            valorInput.disabled = !this.checked;
+            if (!this.checked) valorInput.value = "";
+        });
+
+        wrapper.querySelector('.btnEliminarAplicacion').addEventListener('click', function () {
+            wrapper.classList.add('fade-out');
+            setTimeout(() => wrapper.remove(), 300);
+        });
+
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+}
+
+// === Precargar aplicaciones desde plantilla (bloqueadas) ===
+function cargarAplicacionesDesdePlantilla(aplicaciones = {}) {
+    aplicacionesCampos.innerHTML = '';
+    if (Object.keys(aplicaciones).length === 0) return;
+
+    Object.entries(aplicaciones).forEach(([clave, valor]) => {
+        const div = document.createElement('div');
+        div.className = 'col-md-4 mb-3 campo-aplicacion-wrapper';
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0">${clave}</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" checked disabled>
+                </div>
+            </div>
+            <label class="form-label">Clave</label>
+            <input type="text" class="form-control mb-2" value="${clave}" readonly>
+            <label class="form-label">Valor</label>
+            <input type="text" class="form-control" value="${valor}" readonly>
+        `;
+        aplicacionesCampos.appendChild(div);
+    });
+
+    btnAddAplicacion.style.display = 'none';
+}
+
 });
 </script>
+
+
 
 
 

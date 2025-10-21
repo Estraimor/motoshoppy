@@ -396,3 +396,21 @@ body {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+.sidebar-cart {
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-cart .cart-icon {
+    position: relative;
+    display: inline-block;
+}
+
+.sidebar-cart .cart-icon i {
+    transition: transform 0.2s ease;
+}
+
+.sidebar-cart .cart-icon:hover i {
+    transform: scale(1.1);
+}
