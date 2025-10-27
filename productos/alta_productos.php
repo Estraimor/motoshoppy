@@ -81,6 +81,19 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
+
+            <h6><i class="fa-solid fa-cubes"></i> Stock</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Stock mínimo</label>
+                    <input type="number" class="form-control" name="stock_minimo" min="0" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Cantidad actual</label>
+                    <input type="number" class="form-control" name="cantidad_actual" min="0" required>
+                </div>
+            </div>
+
             <!-- Ubicación -->
             <h6><i class="fa-solid fa-map-marker-alt"></i> Ubicación</h6>
             <div class="row">

@@ -17,7 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $peso_g  = null;
     }
 
-    // Ubicación (igual que antes)
+    // Campos de stock
+    $stock_minimo    = isset($_POST['stock_minimo']) ? intval($_POST['stock_minimo']) : 0;
+    $cantidad_actual = isset($_POST['cantidad_actual']) ? intval($_POST['cantidad_actual']) : 0;
+
+    // Ubicación
     $ubicacion_id = null;
     if (!empty($_POST['ubicacion_id'])) {
         $ubicacion_id = intval($_POST['ubicacion_id']);
@@ -75,12 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ruta_destino = $directorio . $nombre_archivo;
 
         if (move_uploaded_file($_FILES['imagen']['tmp_name'], $ruta_destino)) {
-            // Guardamos la ruta relativa (para mostrar luego en web)
             $ruta_imagen = "uploads/productos/" . $nombre_archivo;
         }
     }
 
     try {
+        $conexion->beginTransaction();
+
+        // === Insertar producto ===
         $stmt = $conexion->prepare("
             INSERT INTO producto 
                 (Categoria_idCategoria, marcas_idmarcas, codigo, nombre, modelo, 
@@ -106,10 +112,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':imagen'          => $ruta_imagen
         ]);
 
+        $idProducto = $conexion->lastInsertId();
+
+        // === Insertar stock ===
+        $stmtStock = $conexion->prepare("
+            INSERT INTO stock_producto (producto_idProducto, stock_minimo, cantidad_actual)
+            VALUES (:idProducto, :stock_minimo, :cantidad_actual)
+        ");
+        $stmtStock->execute([
+            ':idProducto' => $idProducto,
+            ':stock_minimo' => $stock_minimo,
+            ':cantidad_actual' => $cantidad_actual
+        ]);
+
+        $conexion->commit();
+
         header("Location: alta_productos.php?msg=ProductoCreado");
         exit;
 
     } catch (PDOException $e) {
+        $conexion->rollBack();
         die("❌ Error al guardar producto: " . $e->getMessage());
     }
 } else {

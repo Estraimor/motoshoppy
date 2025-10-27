@@ -1,0 +1,116 @@
+/* Ajustes finos para la tabla y el panel */
+#tablaVentas td, #tablaVentas th { vertical-align: middle; }
+#tablaVentas tbody tr { cursor: pointer; }
+#tablaVentas tbody tr:hover { background: rgba(255,60,0,.08); }
+
+#panelDetalle .h5 { color: #ffddcc; }
+/* === TOOLTIP PRECIOS === */
+.tooltip-inner {
+  background-color: rgba(0, 0, 0, 0.95);
+  color: #ffddcc;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 60, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.tooltip.bs-tooltip-auto[x-placement^=top] .arrow::before,
+.tooltip.bs-tooltip-top .arrow::before {
+  border-top-color: #ff3c00;
+}
+
+.precio-tooltip {
+  cursor: help;
+  transition: transform 0.2s ease;
+}
+.precio-tooltip:hover {
+  transform: scale(1.05);
+  text-shadow: 0 0 10px rgba(255, 60, 0, 0.7);
+}
+
+
+
+/* Carrito css */
+.modulo {
+  background: rgba(25, 25, 25, 0.9);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+table.table-dark {
+  --bs-table-bg: rgba(33, 33, 33, 0.6);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  color: #ffc107 !important;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transition: 0.3s;
+}
+
+.btn-outline-warning:hover {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-success {
+  background: linear-gradient(90deg, #00c851, #007e33);
+  border: none;
+}
+
+.btn-success:hover {
+  filter: brightness(1.15);
+}
+
+.text-glow {
+  color: #00ff91;
+  text-shadow: 0 0 8px #00ff91;
+}
+
+.empty-cart {
+  text-align: center;
+  color: #aaa;
+  padding: 40px 0;
+  font-style: italic;
+}
+
+.empty-cart i {
+  font-size: 3rem;
+  color: #ffc107;
+  margin-bottom: 10px;
+}
+
+.qtyInput {
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.mini-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.btn-outline-danger {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ff4444;
+  color: #fff;
+}
+
+.content-header {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 15px;
+}

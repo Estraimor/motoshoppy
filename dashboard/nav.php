@@ -1,17 +1,10 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-    $current_page = basename($_SERVER['PHP_SELF']); 
-}
+require_once __DIR__ . '/../login/session_bootstrap.php';
 
-if (!isset($_SESSION['idusuario'])) {
-    header("Location: /motoshoppy/login/login.php");
-    exit;
-}
-
-// Simulamos el rol del usuario (lo ideal es traerlo de la BD al momento del login)
-$rol = $_SESSION['rol'] ?? 'Administrador'; 
+// Si querés leer el rol para mostrar distinto menú:
+$rol = $_SESSION['rol'] ?? 'Administrador';
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -93,12 +86,21 @@ $is_productos_active = in_array($current_page, $productos_pages);
     <a href="#" class="<?= $current_page === 'clientes.php' ? 'active' : '' ?>">
         <i class="fa-solid fa-users"></i> Clientes
     </a>
-    <a href="#" class="<?= $current_page === 'ventas.php' ? 'active' : '' ?>">
-        <i class="fa-solid fa-receipt"></i> Ventas
-    </a>
     <a href="#" class="<?= $current_page === 'configuracion.php' ? 'active' : '' ?>">
         <i class="fa-solid fa-gear"></i> Configuración
     </a>
+    <a href="/motoshoppy/ventas/index.php" class="<?= $current_page === 'ventas.php' ? 'active' : '' ?>">
+        <i class="fa-solid fa-receipt"></i> Ventas
+    </a>
+    <a href="/motoshoppy/ventas/carrito.php" 
+   class="nav-cart <?= $current_page === 'carrito.php' ? 'active' : '' ?>">
+   <i class="fa-solid fa-cart-shopping"></i> 
+   <span>Carrito</span>
+   <span id="cartCountSide" class="cart-badge">0</span>
+</a>
+
+    
+
 </nav>
 
 
@@ -119,7 +121,7 @@ $is_productos_active = in_array($current_page, $productos_pages);
         <p><strong>Rol:</strong> <?= htmlspecialchars($_SESSION['rol']); ?></p>
         <hr>
         <a href="#" class="btn-perfil"><i class="fa-solid fa-user-gear"></i> Editar Perfil</a>
-        <a href="/motoshoppy/login/login.php?logout=1" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+        <a href="/motoshoppy/login/cerrar_session.php?logout=1" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
     </div>
 </div>
 
@@ -129,7 +131,6 @@ $is_productos_active = in_array($current_page, $productos_pages);
 
     <!-- ===== ÁREA DE TRABAJO ===== -->
     <main class="main-content">
-
 
     <script>
 document.querySelector('.toggle-profile').addEventListener('click', function() {
@@ -160,3 +161,23 @@ document.querySelectorAll('.submenu-toggle').forEach(toggle => {
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const cartCountTop = document.getElementById("cartCountTop");
+    const cartCountSide = document.getElementById("cartCountSide");
+
+    function actualizarContadores() {
+        const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+        const total = carrito.reduce((acc, p) => acc + (p.cantidad || 1), 0);
+        [cartCountTop, cartCountSide].forEach(el => {
+            if (el) el.textContent = total > 0 ? total : "0";
+        });
+    }
+
+    window.addEventListener("storage", (e) => {
+        if (e.key === "carrito") actualizarContadores();
+    });
+
+    actualizarContadores();
+});
+</script>
