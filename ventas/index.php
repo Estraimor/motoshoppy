@@ -178,12 +178,12 @@ function paramsActuales() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // hotkey Ctrl+K para foco de búsqueda rápida
+  // hotkey Ctrl+K para búsqueda rápida
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
-      document.getElementById('buscarRapido').focus();
-      document.getElementById('buscarRapido').select();
+      const b = document.getElementById('buscarRapido');
+      b.focus(); b.select();
     }
   });
 
@@ -193,27 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = paramsActuales();
       const qs = new URLSearchParams(p).toString();
       const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
-
-      console.log('📡 Llamando API:', url);
-
       fetch(url)
-        .then(r => {
-          if (!r.ok) throw new Error(`Error HTTP ${r.status}`);
-          return r.json();
-        })
-        .then(rows => {
-          console.log('✅ Productos recibidos:', rows);
-          cb({ data: rows });
-        })
-        .catch(err => {
-          console.error('❌ Error al cargar productos:', err);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error al cargar productos',
-            text: err.message || 'No se pudo obtener la lista de productos.'
-          });
-          cb({ data: [] });
-        });
+        .then(r => r.json())
+        .then(rows => cb({ data: rows }))
+        .catch(() => cb({ data: [] }));
     },
     deferRender: true,
     pageLength: 10,
@@ -224,12 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
       { data: 'nombre' },
       { data: 'modelo' },
       { data: 'nombre_marca' },
-      { 
+      {
         data: 'precio_expuesto',
-        render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`,
-        className: 'text-success fw-semibold'
+        render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
       },
-      { 
+      {
         data: 'stock_actual',
         render: (v, _, row) => {
           let color = 'text-success', txt = v;
@@ -238,8 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return `<span class="${color} fw-bold">${txt}</span>`;
         }
       },
-      { 
-        data: null, 
+      {
+        data: null,
         render: (_, __, row) => `
           <div class="input-group input-group-sm">
             <button class="btn btn-outline-warning btnMenos" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>-</button>
@@ -252,40 +234,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     ],
     rowCallback: (row, data) => {
-      // Si no hay stock → desactivar fila visualmente
       if (data.stock_estado === 'sin_stock') {
         row.style.opacity = '0.6';
         row.style.pointerEvents = 'none';
       } else {
-        // click fila -> vista previa
         row.addEventListener('click', (e) => {
-          // evitar conflicto si clic en controles
           if (e.target.closest('.input-group')) return;
           mostrarDetalle(data);
         });
       }
 
-      // controles de cantidad/añadir
       const menos = row.querySelector('.btnMenos');
       const mas = row.querySelector('.btnMas');
       const agregar = row.querySelector('.btnAgregar');
-
       if (menos && mas && agregar && data.stock_estado !== 'sin_stock') {
-        menos.addEventListener('click', (e) => {
+        menos.onclick = e => {
           e.stopPropagation();
           const input = row.querySelector('.qtyInput');
-          input.value = Math.max(1, (parseInt(input.value || 1) - 1));
-        });
-        mas.addEventListener('click', (e) => {
+          input.value = Math.max(1, parseInt(input.value || 1) - 1);
+        };
+        mas.onclick = e => {
           e.stopPropagation();
           const input = row.querySelector('.qtyInput');
-          input.value = (parseInt(input.value || 1) + 1);
-        });
-        agregar.addEventListener('click', (e) => {
+          input.value = parseInt(input.value || 1) + 1;
+        };
+        agregar.onclick = e => {
           e.stopPropagation();
           const qty = parseInt(row.querySelector('.qtyInput').value || 1);
           agregarAlCarrito(data, qty);
-        });
+        };
       }
     },
     language: {
@@ -297,53 +274,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Búsqueda rápida debounced
   document.getElementById('buscarRapido').addEventListener('input', debounce(() => tabla.ajax.reload(), 250));
-
-  // Filtros
-  document.getElementById('btnAplicarFiltros').addEventListener('click', () => { tabla.ajax.reload(); });
-  document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
-    ['filtroBusqueda', 'filtroMarca', 'filtroCategoria', 'precioMin', 'precioMax', 'ordenarPor'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
-    });
-    tabla.ajax.reload();
-  });
 });
 
-/* ==== Vista previa y agregado rápido ==== */
+/* ==== Vista previa de producto ==== */
 function mostrarDetalle(p) {
   productoSeleccionado = p;
   document.getElementById('detalleVacio').classList.add('d-none');
   document.getElementById('detalleContenido').classList.remove('d-none');
 
-  // === Imagen del producto ===
+  // === Imagen ===
   const img = document.getElementById('detImagen');
-  img.src = p.imagen
-    ? `/motoshoppy/${p.imagen.replace(/\\/g, '/')}`
-    : '/motoshoppy/imagenes/noimg.png';
+  img.src = p.imagen ? `/motoshoppy/${p.imagen.replace(/\\/g, '/')}` : '/motoshoppy/imagenes/noimg.png';
   img.onclick = () => abrirZoom(img.src);
 
-  // === Datos básicos ===
   document.getElementById('detNombre').textContent = p.nombre;
   document.getElementById('detCodigo').textContent = p.codigo ? `Código: ${p.codigo}` : '';
   document.getElementById('detMarca').textContent = p.nombre_marca ? `Marca: ${p.nombre_marca}` : '';
 
   // === Cálculo de precios de lista ===
   const base = Number(p.precio_expuesto || 0);
-  const lista1 = base * 1.05;
-  const lista2 = base * 1.07;
-  const lista3 = base * 1.10;
+  const lista1 = base * 1.05, lista2 = base * 1.07, lista3 = base * 1.10;
 
-  // === Select de precio de lista ===
   const precioHtml = `
     <div class="mb-2">
       <div class="d-flex justify-content-between align-items-center">
         <span class="fw-semibold text-success fs-5">Precio base:</span>
-        <span class="text-success fw-bold fs-5">$ ${money(base)}</span>
+        <span id="precioBase" class="text-success fw-bold fs-5">$ ${money(base)}</span>
       </div>
-      <div class="mt-2">
-        <label for="selectPrecioLista" class="form-label text-warning fw-semibold mb-1">Precio de lista:</label>
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <label for="selectPrecioLista" class="form-label text-warning fw-semibold mb-0 me-2">Precio de lista:</label>
         <select id="selectPrecioLista" class="form-select form-select-sm w-auto d-inline-block">
           <option value="${base}">Base</option>
           <option value="${lista1}">Lista 1 (+5%) - $ ${money(lista1)}</option>
@@ -351,65 +311,52 @@ function mostrarDetalle(p) {
           <option value="${lista3}">Lista 3 (+10%) - $ ${money(lista3)}</option>
         </select>
       </div>
-    </div>
-  `;
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <span class="fw-semibold text-info">Total final:</span>
+        <span id="precioTotal" class="fw-bold fs-5 text-info">$ ${money(base)}</span>
+      </div>
+    </div>`;
   document.getElementById('detPrecio').innerHTML = precioHtml;
 
-  // === Descripción (puede venir como JSON o texto plano) ===
+  // === Descripción ===
   let descHtml = '';
   if (p.descripcion) {
     try {
       const json = JSON.parse(p.descripcion);
       descHtml = Object.entries(json).map(([k, v]) =>
-        `<div><span class='text-warning'>${k}:</span> ${Array.isArray(v) ? v.join('/') : v}</div>`
+        `<div><span class='text-warning fw-semibold'>${k}:</span> ${Array.isArray(v) ? v.join('/') : v}</div>`
       ).join('');
     } catch {
-      descHtml = p.descripcion;
+      descHtml = `<div class="text-light">${p.descripcion}</div>`;
     }
   }
 
-  // === Atributos de cubierta (si aplica) ===
-  let attrHtml = '';
-  if (p.nombre_categoria && p.nombre_categoria.toLowerCase().includes('cubierta')) {
-    attrHtml = `
-      <hr class="border-secondary">
-      <h6 class="text-warning mb-2">Atributos de cubierta</h6>
-      <div><b>Aro:</b> ${p.aro ?? '-'}</div>
-      <div><b>Ancho:</b> ${p.ancho ?? '-'}</div>
-      <div><b>Perfil:</b> ${p.perfil_cubierta ?? '-'}</div>
-      <div><b>Tipo:</b> ${p.tipo ?? '-'}</div>
-      <div><b>Varias aplicaciones:</b> ${p.varias_aplicaciones ?? '-'}</div>
-    `;
-  }
-
-  // === Descripción + atributos + stock ===
   document.getElementById('detDesc').innerHTML = `
-    ${descHtml || '<em class="text-muted">Sin descripción</em>'}
-    ${attrHtml}
+    <div class="bg-dark bg-opacity-25 rounded p-2 mb-2">
+      ${descHtml || '<em class="text-muted">Sin descripción</em>'}
+    </div>
     <hr class="border-secondary">
-    <div>Stock actual: 
+    <div>Stock actual:
       <span class="fw-bold text-${
-        p.stock_estado === 'ok'
-          ? 'success'
-          : p.stock_estado === 'bajo_stock'
-          ? 'warning'
-          : 'danger'
-      }">${p.stock_actual}</span>
-      / Mínimo ${p.stock_minimo || 0}
+        p.stock_estado === 'ok' ? 'success' : p.stock_estado === 'bajo_stock' ? 'warning' : 'danger'
+      }">${p.stock_actual}</span> / Mínimo ${p.stock_minimo || 0}
     </div>`;
 
-  // === Control de cantidad ===
+  // === Cantidad + total ===
   const inputCantidad = document.getElementById('detCantidad');
   inputCantidad.value = 1;
 
-  document.getElementById('menosCant').onclick = () => {
-    inputCantidad.value = Math.max(1, parseInt(inputCantidad.value || 1) - 1);
+  const actualizarTotal = () => {
+    const precioSel = parseFloat(document.getElementById('selectPrecioLista').value);
+    const cantidad = parseInt(inputCantidad.value || 1);
+    document.getElementById('precioTotal').textContent = `$ ${money(precioSel * cantidad)}`;
   };
-  document.getElementById('masCant').onclick = () => {
-    inputCantidad.value = parseInt(inputCantidad.value || 1) + 1;
-  };
+  ['input', 'change'].forEach(ev => inputCantidad.addEventListener(ev, actualizarTotal));
+  document.getElementById('selectPrecioLista').addEventListener('change', actualizarTotal);
+  document.getElementById('menosCant').onclick = () => { inputCantidad.value = Math.max(1, parseInt(inputCantidad.value || 1) - 1); actualizarTotal(); };
+  document.getElementById('masCant').onclick = () => { inputCantidad.value = parseInt(inputCantidad.value || 1) + 1; actualizarTotal(); };
 
-  // === Botón de agregar ===
+  // === Botones ===
   const btnAgregar = document.getElementById('btnAgregar');
   btnAgregar.disabled = p.stock_estado === 'sin_stock';
   btnAgregar.onclick = () => {
@@ -419,67 +366,46 @@ function mostrarDetalle(p) {
     agregarAlCarrito(productoConPrecio, qty);
   };
 
-  // === Enter para agregar ===
-  inputCantidad.onkeydown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!btnAgregar.disabled) btnAgregar.click();
-    }
-  };
+  let btnComprar = document.getElementById('btnFinalizarCompra');
+  if (!btnComprar) {
+    btnComprar = document.createElement('button');
+    btnComprar.id = 'btnFinalizarCompra';
+    btnComprar.className = 'btn btn-primary mt-3 w-100 fw-bold';
+    btnComprar.innerHTML = '<i class="fa-solid fa-credit-card me-2"></i>Finalizar compra';
+    document.getElementById('detalleContenido').appendChild(btnComprar);
+  }
+  btnComprar.onclick = () => window.location.href = '/motoshoppy/ventas/checkout.php';
+
+  actualizarTotal();
 }
-
-
 
 /* ==== Zoom imagen ==== */
 function abrirZoom(src) {
-  const zoom = document.createElement('div');
-  zoom.className = 'zoomOverlay';
-  zoom.innerHTML = `<div class="zoomInner"><img src="${src}" class="zoomImg"></div>`;
-  document.body.appendChild(zoom);
-  zoom.addEventListener('click', () => zoom.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'zoomOverlayCustom';
+  overlay.innerHTML = `<div class="zoomInnerCustom"><img src="${src}" class="zoomImgCustom"></div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', () => overlay.remove());
 }
 
-/* ==== Carrito (localStorage) ==== */
+/* ==== Carrito ==== */
 function agregarAlCarrito(prod, cantidad = 1) {
   const key = 'carrito';
   const carrito = JSON.parse(localStorage.getItem(key) || '[]');
   const idx = carrito.findIndex(it => it.idProducto == prod.idProducto);
   if (idx >= 0) carrito[idx].cantidad += cantidad;
-  else carrito.push({
-    idProducto: prod.idProducto,
-    nombre: prod.nombre,
-    precio_expuesto: prod.precio_expuesto,
-    imagen: prod.imagen,
-    cantidad: cantidad
-  });
+  else carrito.push({ idProducto: prod.idProducto, nombre: prod.nombre, precio_expuesto: prod.precio_expuesto, imagen: prod.imagen, cantidad });
   localStorage.setItem(key, JSON.stringify(carrito));
 
-  // feedback rápido
-  if (window.Swal) {
-    Swal.fire({
-      toast: true, position: 'top-end', timer: 1200, showConfirmButton: false,
-      icon: 'success', title: `Agregado: ${prod.nombre}`
-    });
-  }
+  if (window.Swal) Swal.fire({ toast: true, position: 'top-end', timer: 1200, showConfirmButton: false, icon: 'success', title: `Agregado: ${prod.nombre}` });
 
-  // actualizar contadores (si existen)
   ['cartCountTop', 'cartCountSide', 'cartCount'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      const total = carrito.reduce((a, b) => a + (b.cantidad || 1), 0);
-      el.textContent = total;
-    }
+    if (el) el.textContent = carrito.reduce((a, b) => a + (b.cantidad || 1), 0);
   });
 }
-
-// Enter en buscar rápido -> si hay fila seleccionada en detalle, agregar
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && document.activeElement === document.getElementById('buscarRapido') && productoSeleccionado) {
-    e.preventDefault();
-    document.getElementById('btnAgregar').click();
-  }
-});
 </script>
+
 
 
 
