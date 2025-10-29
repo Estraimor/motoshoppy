@@ -42,16 +42,10 @@ $rol = $_SESSION['rol'] ?? 'Administrador';
         </div>
 
         <?php
-$current_page = basename($_SERVER['PHP_SELF']);
-$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'listar_productos.php'];
-$is_productos_active = in_array($current_page, $productos_pages);
-?>
-
-<?php
-$current_page = basename($_SERVER['PHP_SELF']);
-$productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'listar_productos.php'];
-$is_productos_active = in_array($current_page, $productos_pages);
-?>
+        $current_page = basename($_SERVER['PHP_SELF']);
+        $productos_pages = ['index.php', 'categorias.php', 'marcas.php', 'alta_productos.php', 'listar_productos.php'];
+        $is_productos_active = in_array($current_page, $productos_pages);
+        ?>
 
 <nav class="nav-links">
     <!-- DASHBOARD -->
@@ -66,7 +60,7 @@ $is_productos_active = in_array($current_page, $productos_pages);
             <i class="fa-solid fa-chevron-down chevron"></i>
         </button>
 
-        <div class="submenu" <?= $is_productos_active ? 'style="display:flex;"' : '' ?>>
+        <div class="submenu" style="<?= $is_productos_active ? 'display:flex;' : 'display:none;' ?>">
             <a href="/motoshoppy/categorias/index.php" class="<?= $current_page === 'categorias.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-tags"></i> Categorías
             </a>
@@ -83,27 +77,27 @@ $is_productos_active = in_array($current_page, $productos_pages);
     </div>
 
     <!-- OTRAS OPCIONES -->
-    <a href="#" class="<?= $current_page === 'clientes.php' ? 'active' : '' ?>">
+    <a href="/motoshoppy/clientes/index.php" class="<?= $current_page === 'clientes.php' ? 'active' : '' ?>">
         <i class="fa-solid fa-users"></i> Clientes
     </a>
-    <a href="#" class="<?= $current_page === 'configuracion.php' ? 'active' : '' ?>">
+    <a href="/motoshoppy/configuracion/index.php" class="<?= $current_page === 'configuracion.php' ? 'active' : '' ?>">
         <i class="fa-solid fa-gear"></i> Configuración
     </a>
-    <a href="/motoshoppy/ventas/index.php" class="<?= $current_page === 'ventas.php' ? 'active' : '' ?>">
+    <a href="/motoshoppy/ventas/index.php" class="<?= $current_page === 'index.php' && strpos($_SERVER['REQUEST_URI'], '/ventas/') !== false ? 'active' : '' ?>">
         <i class="fa-solid fa-receipt"></i> Ventas
     </a>
-    <a href="/motoshoppy/ventas/carrito.php" 
-   class="nav-cart <?= $current_page === 'carrito.php' ? 'active' : '' ?>">
+    <?php
+$uri = $_SERVER['REQUEST_URI'] ?? '';
+$is_carrito_active = strpos($uri, '/motoshoppy/ventas/carrito.php') !== false;
+?>
+<a href="/motoshoppy/ventas/carrito.php"
+   class="nav-cart <?= $is_carrito_active ? 'active' : '' ?>">
    <i class="fa-solid fa-cart-shopping"></i> 
    <span>Carrito</span>
    <span id="cartCountSide" class="cart-badge">0</span>
 </a>
 
-    
-
 </nav>
-
-
 
        <!-- ===== USUARIO ACTIVO ===== -->
 <div class="sidebar-user">
@@ -125,14 +119,12 @@ $is_productos_active = in_array($current_page, $productos_pages);
     </div>
 </div>
 
-
-
     </aside>
 
     <!-- ===== ÁREA DE TRABAJO ===== -->
     <main class="main-content">
 
-    <script>
+<script>
 document.querySelector('.toggle-profile').addEventListener('click', function() {
     const panel = document.querySelector('.user-panel');
     const chevron = this.querySelector('.chevron');
@@ -141,18 +133,19 @@ document.querySelector('.toggle-profile').addEventListener('click', function() {
 });
 </script>
 
-
 <!-- submenu script -->
- <script>
+<script>
 document.querySelectorAll('.submenu-toggle').forEach(toggle => {
     toggle.addEventListener('click', function() {
         const parent = this.closest('.nav-item');
+        const submenu = parent.querySelector('.submenu');
         parent.classList.toggle('active');
+        submenu.style.display = submenu.style.display === 'flex' ? 'none' : 'flex';
     });
 });
 </script>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>

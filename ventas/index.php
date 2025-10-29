@@ -166,24 +166,26 @@ const debounce = (fn, ms = 250) => {
 let tabla;
 let productoSeleccionado = null;
 
+/* === función que arma los parámetros === */
 function paramsActuales() {
   return {
-    q: document.getElementById('buscarRapido').value.trim() || document.getElementById('filtroBusqueda').value.trim(),
-    marca: document.getElementById('filtroMarca').value,
-    categoria: document.getElementById('filtroCategoria').value,
-    pmin: document.getElementById('precioMin').value,
-    pmax: document.getElementById('precioMax').value,
-    ordenar: document.getElementById('ordenarPor').value
+    q: document.getElementById('buscarRapido')?.value.trim() || '',
+    marca: document.getElementById('filtroMarca')?.value || '',
+    categoria: document.getElementById('filtroCategoria')?.value || '',
+    pmin: document.getElementById('precioMin')?.value || '',
+    pmax: document.getElementById('precioMax')?.value || '',
+    ordenar: document.getElementById('ordenarPor')?.value || ''
   };
 }
 
+/* === iniciar al cargar === */
 document.addEventListener('DOMContentLoaded', () => {
   // hotkey Ctrl+K para búsqueda rápida
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       const b = document.getElementById('buscarRapido');
-      b.focus(); b.select();
+      if (b) { b.focus(); b.select(); }
     }
   });
 
@@ -274,16 +276,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('buscarRapido').addEventListener('input', debounce(() => tabla.ajax.reload(), 250));
+  // 🔹 Búsqueda rápida
+  const buscarInput = document.getElementById('buscarRapido');
+  if (buscarInput) buscarInput.addEventListener('input', debounce(() => tabla.ajax.reload(), 300));
+
+  // 🔹 Aplicar filtros
+  const aplicarBtn = document.getElementById('btnAplicarFiltros');
+  if (aplicarBtn) {
+    aplicarBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      tabla.ajax.reload();
+    });
+  }
+
+  // 🔹 Limpiar filtros
+  const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+  if (limpiarBtn) {
+    limpiarBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      ['filtroMarca', 'filtroCategoria', 'precioMin', 'precioMax', 'ordenarPor'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+      });
+      tabla.ajax.reload();
+    });
+  }
 });
 
-/* ==== Vista previa de producto ==== */
+/* ==== Detalle ==== */
 function mostrarDetalle(p) {
   productoSeleccionado = p;
   document.getElementById('detalleVacio').classList.add('d-none');
   document.getElementById('detalleContenido').classList.remove('d-none');
 
-  // === Imagen ===
   const img = document.getElementById('detImagen');
   img.src = p.imagen ? `/motoshoppy/${p.imagen.replace(/\\/g, '/')}` : '/motoshoppy/imagenes/noimg.png';
   img.onclick = () => abrirZoom(img.src);
@@ -292,10 +319,8 @@ function mostrarDetalle(p) {
   document.getElementById('detCodigo').textContent = p.codigo ? `Código: ${p.codigo}` : '';
   document.getElementById('detMarca').textContent = p.nombre_marca ? `Marca: ${p.nombre_marca}` : '';
 
-  // === Cálculo de precios de lista ===
   const base = Number(p.precio_expuesto || 0);
   const lista1 = base * 1.05, lista2 = base * 1.07, lista3 = base * 1.10;
-
   const precioHtml = `
     <div class="mb-2">
       <div class="d-flex justify-content-between align-items-center">
@@ -318,14 +343,12 @@ function mostrarDetalle(p) {
     </div>`;
   document.getElementById('detPrecio').innerHTML = precioHtml;
 
-  // === Descripción ===
   let descHtml = '';
   if (p.descripcion) {
     try {
       const json = JSON.parse(p.descripcion);
       descHtml = Object.entries(json).map(([k, v]) =>
-        `<div><span class='text-warning fw-semibold'>${k}:</span> ${Array.isArray(v) ? v.join('/') : v}</div>`
-      ).join('');
+        `<div><span class='text-warning fw-semibold'>${k}:</span> ${Array.isArray(v) ? v.join('/') : v}</div>`).join('');
     } catch {
       descHtml = `<div class="text-light">${p.descripcion}</div>`;
     }
@@ -342,10 +365,8 @@ function mostrarDetalle(p) {
       }">${p.stock_actual}</span> / Mínimo ${p.stock_minimo || 0}
     </div>`;
 
-  // === Cantidad + total ===
   const inputCantidad = document.getElementById('detCantidad');
   inputCantidad.value = 1;
-
   const actualizarTotal = () => {
     const precioSel = parseFloat(document.getElementById('selectPrecioLista').value);
     const cantidad = parseInt(inputCantidad.value || 1);
@@ -356,7 +377,6 @@ function mostrarDetalle(p) {
   document.getElementById('menosCant').onclick = () => { inputCantidad.value = Math.max(1, parseInt(inputCantidad.value || 1) - 1); actualizarTotal(); };
   document.getElementById('masCant').onclick = () => { inputCantidad.value = parseInt(inputCantidad.value || 1) + 1; actualizarTotal(); };
 
-  // === Botones ===
   const btnAgregar = document.getElementById('btnAgregar');
   btnAgregar.disabled = p.stock_estado === 'sin_stock';
   btnAgregar.onclick = () => {
@@ -365,21 +385,9 @@ function mostrarDetalle(p) {
     const productoConPrecio = { ...p, precio_expuesto: precioSeleccionado };
     agregarAlCarrito(productoConPrecio, qty);
   };
-
-  let btnComprar = document.getElementById('btnFinalizarCompra');
-  if (!btnComprar) {
-    btnComprar = document.createElement('button');
-    btnComprar.id = 'btnFinalizarCompra';
-    btnComprar.className = 'btn btn-primary mt-3 w-100 fw-bold';
-    btnComprar.innerHTML = '<i class="fa-solid fa-credit-card me-2"></i>Finalizar compra';
-    document.getElementById('detalleContenido').appendChild(btnComprar);
-  }
-  btnComprar.onclick = () => window.location.href = '/motoshoppy/ventas/checkout.php';
-
-  actualizarTotal();
 }
 
-/* ==== Zoom imagen ==== */
+/* ==== Zoom ==== */
 function abrirZoom(src) {
   const overlay = document.createElement('div');
   overlay.className = 'zoomOverlayCustom';
@@ -405,6 +413,7 @@ function agregarAlCarrito(prod, cantidad = 1) {
   });
 }
 </script>
+
 
 
 
