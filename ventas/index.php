@@ -40,42 +40,47 @@ require_once '../conexion/conexion.php';
     </div>
 
     <!-- Panel de detalle / agregado rápido -->
-    <div class="col-lg-4">
-      <div id="panelDetalle" class="card shadow-sm p-2 modulo" style="min-height: 360px;">
-        <div class="text-center text-secondary" id="detalleVacio">
-          <i class="fa-solid fa-image fa-2x mb-2"></i>
-          <p>Seleccioná un producto para ver detalles y agregar al carrito.</p>
-        </div>
+<div class="col-lg-4">
+  <div id="panelDetalle" class="card shadow-sm p-2 modulo" style="min-height: 360px;">
+    <div class="text-center text-secondary" id="detalleVacio">
+      <i class="fa-solid fa-image fa-2x mb-2"></i>
+      <p>Seleccioná un producto para ver detalles y agregar al carrito.</p>
+    </div>
 
-        <div id="detalleContenido" class="d-none">
-          <div class="text-center mb-2">
-            <img id="detImagen" src="" alt="imagen" class="img-fluid rounded"
-                 style="max-height: 220px; object-fit: contain;">
-          </div>
-          <h5 id="detNombre" class="mb-1"></h5>
-          <div class="d-flex justify-content-between small text-secondary mb-2">
-            <span id="detCodigo"></span>
-            <span id="detMarca"></span>
-          </div>
-          <div class="small" id="detDesc"></div>
-          <hr class="border-secondary my-2">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="h5 m-0 text-success" id="detPrecio"></div>
-            <div class="input-group" style="width: 140px;">
-              <button class="btn btn-outline-warning btn-sm" id="menosCant">-</button>
-              <input type="number" min="1" value="1" id="detCantidad"
-                     class="form-control form-control-sm bg-dark text-light border-secondary text-center">
-              <button class="btn btn-outline-warning btn-sm" id="masCant">+</button>
-            </div>
-          </div>
-          <button id="btnAgregar" class="btn btn-success w-100 mt-2">
-            <i class="fa-solid fa-cart-plus"></i> Agregar al carrito (Enter)
-          </button>
+    <div id="detalleContenido" class="d-none">
+      <div class="text-center mb-2">
+        <img id="detImagen" src="" alt="imagen" class="img-fluid rounded"
+             style="max-height: 220px; object-fit: contain;">
+      </div>
+      <h5 id="detNombre" class="mb-1"></h5>
+      <div class="d-flex justify-content-between small text-secondary mb-2">
+        <span id="detCodigo"></span>
+        <span id="detMarca"></span>
+      </div>
+      <div class="small" id="detDesc"></div>
+      <hr class="border-secondary my-2">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="h5 m-0 text-success" id="detPrecio"></div>
+        <div class="input-group" style="width: 140px;">
+          <button class="btn btn-outline-warning btn-sm" id="menosCant">-</button>
+          <input type="number" min="1" value="1" id="detCantidad"
+                 class="form-control form-control-sm bg-dark text-light border-secondary text-center">
+          <button class="btn btn-outline-warning btn-sm" id="masCant">+</button>
         </div>
       </div>
+      <button id="btnAgregar" class="btn btn-success w-100 mt-2">
+        <i class="fa-solid fa-cart-plus"></i> Agregar al carrito (Enter)
+      </button>
+       <!-- 🔵 Botón de compra directa  -->
+  <button id="btnComprarAhora" class="btn btn-primary w-100 fw-bold mt-3 py-2">
+    <i class="fa-solid fa-bolt me-1"></i> Comprar ahora
+  </button>
     </div>
   </div>
+
+ 
 </div>
+
 
 <!-- ===== OFFCANVAS FILTROS (tu bloque) ===== -->
 <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="panelSettings">
@@ -305,44 +310,97 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+async function inicializarCotizacion() {
+  try {
+    const res = await fetch('/motoshoppy/api/get_cotizacion.php');
+    const data = await res.json();
+    if (data && data.usd_pyg && data.ars_pyg) {
+      localStorage.setItem('cotizacion', JSON.stringify(data));
+      console.log("💱 Cotización actualizada:", data);
+    } else {
+      console.warn("⚠ No se recibieron datos válidos de cotización.");
+    }
+  } catch (e) {
+    console.error("Error al cargar cotización:", e);
+  }
+}
+inicializarCotizacion();
+
 /* ==== Detalle ==== */
 function mostrarDetalle(p) {
   productoSeleccionado = p;
   document.getElementById('detalleVacio').classList.add('d-none');
   document.getElementById('detalleContenido').classList.remove('d-none');
 
+  // Imagen
   const img = document.getElementById('detImagen');
   img.src = p.imagen ? `/motoshoppy/${p.imagen.replace(/\\/g, '/')}` : '/motoshoppy/imagenes/noimg.png';
   img.onclick = () => abrirZoom(img.src);
 
+  // Datos generales
   document.getElementById('detNombre').textContent = p.nombre;
   document.getElementById('detCodigo').textContent = p.codigo ? `Código: ${p.codigo}` : '';
   document.getElementById('detMarca').textContent = p.nombre_marca ? `Marca: ${p.nombre_marca}` : '';
 
-  const base = Number(p.precio_expuesto || 0);
-  const lista1 = base * 1.05, lista2 = base * 1.07, lista3 = base * 1.10;
+  // === Obtener cotizaciones ===
+  const cot = JSON.parse(localStorage.getItem('cotizacion') || '{}');
+  const usd_pyg = parseFloat(cot.usd_pyg || 6000); // Guaraníes por USD
+  const ars_pyg = parseFloat(cot.ars_pyg || 4.5);  // Guaraníes por ARS
+
+  // === Precios base y listas ===
+  const basePYG = Number(p.precio_expuesto || 0);
+  const lista1 = basePYG * 1.05, lista2 = basePYG * 1.07, lista3 = basePYG * 1.10;
+
+  // === Render ===
   const precioHtml = `
-    <div class="mb-2">
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="fw-semibold text-success fs-5">Precio base:</span>
-        <span id="precioBase" class="text-success fw-bold fs-5">$ ${money(base)}</span>
+    <div class="p-2">
+      <!-- Precio base -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold text-success fs-5">
+          <i class="fa-solid fa-sack-dollar me-1"></i>Precio base:
+        </span>
+        <span id="precioBase" class="text-success fw-bold fs-5">₲ ${money(basePYG)}</span>
       </div>
-      <div class="d-flex justify-content-between align-items-center mt-2">
-        <label for="selectPrecioLista" class="form-label text-warning fw-semibold mb-0 me-2">Precio de lista:</label>
-        <select id="selectPrecioLista" class="form-select form-select-sm w-auto d-inline-block">
-          <option value="${base}">Base</option>
-          <option value="${lista1}">Lista 1 (+5%) - $ ${money(lista1)}</option>
-          <option value="${lista2}">Lista 2 (+7%) - $ ${money(lista2)}</option>
-          <option value="${lista3}">Lista 3 (+10%) - $ ${money(lista3)}</option>
+
+      <!-- Conversión base -->
+      <div class="bg-dark bg-opacity-25 p-2 rounded small text-light mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div><i class="fa-solid fa-dollar-sign text-warning me-1"></i><span class="fw-semibold">USD:</span></div>
+          <div id="usdBase" class="fw-semibold">-</div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+          <div><i class="fa-solid fa-money-bill-wave text-info me-1"></i><span class="fw-semibold">ARS:</span></div>
+          <div id="arsBase" class="fw-semibold">-</div>
+        </div>
+      </div>
+
+      <!-- Precio de lista -->
+      <div class="mt-3">
+        <label for="selectPrecioLista" class="form-label text-warning fw-semibold mb-1">
+          <i class="fa-solid fa-list me-1"></i>Precio de lista:
+        </label>
+        <select id="selectPrecioLista" class="form-select form-select-sm w-100 mt-1">
+          <option value="${basePYG}">Base</option>
+          <option value="${lista1}">Lista 1 (+5%) - ₲ ${money(lista1)}</option>
+          <option value="${lista2}">Lista 2 (+7%) - ₲ ${money(lista2)}</option>
+          <option value="${lista3}">Lista 3 (+10%) - ₲ ${money(lista3)}</option>
         </select>
       </div>
-      <div class="d-flex justify-content-between align-items-center mt-2">
-        <span class="fw-semibold text-info">Total final:</span>
-        <span id="precioTotal" class="fw-bold fs-5 text-info">$ ${money(base)}</span>
+
+      <!-- Total final -->
+      <div class="text-center mt-3 bg-black bg-opacity-25 rounded py-3 px-2">
+        <span class="fw-semibold text-info fs-5 d-block mb-1">
+          <i class="fa-solid fa-cart-shopping me-1"></i>Total final:
+        </span>
+        <div id="precioTotal" class="fw-bold fs-4 text-info">₲ ${money(basePYG)}</div>
+        <div class="small text-white-50 mt-1">
+          ≈ <span id="usdVal">-</span> USD | <span id="arsVal">-</span> ARS
+        </div>
       </div>
     </div>`;
   document.getElementById('detPrecio').innerHTML = precioHtml;
 
+  // === Descripción ===
   let descHtml = '';
   if (p.descripcion) {
     try {
@@ -365,18 +423,34 @@ function mostrarDetalle(p) {
       }">${p.stock_actual}</span> / Mínimo ${p.stock_minimo || 0}
     </div>`;
 
+  // === Actualización dinámica ===
   const inputCantidad = document.getElementById('detCantidad');
   inputCantidad.value = 1;
+
   const actualizarTotal = () => {
     const precioSel = parseFloat(document.getElementById('selectPrecioLista').value);
     const cantidad = parseInt(inputCantidad.value || 1);
-    document.getElementById('precioTotal').textContent = `$ ${money(precioSel * cantidad)}`;
+    const totalPYG = precioSel * cantidad;
+
+    const totalUSD = totalPYG / usd_pyg;
+    const totalARS = totalPYG / ars_pyg;
+
+    // Totales
+    document.getElementById('precioTotal').textContent = `₲ ${money(totalPYG)}`;
+    document.getElementById('usdVal').textContent = totalUSD.toFixed(2);
+    document.getElementById('arsVal').textContent = money(totalARS.toFixed(0));
+
+    // Base
+    document.getElementById('usdBase').textContent = (basePYG / usd_pyg).toFixed(2);
+    document.getElementById('arsBase').textContent = money((basePYG / ars_pyg).toFixed(0));
   };
+
   ['input', 'change'].forEach(ev => inputCantidad.addEventListener(ev, actualizarTotal));
   document.getElementById('selectPrecioLista').addEventListener('change', actualizarTotal);
   document.getElementById('menosCant').onclick = () => { inputCantidad.value = Math.max(1, parseInt(inputCantidad.value || 1) - 1); actualizarTotal(); };
   document.getElementById('masCant').onclick = () => { inputCantidad.value = parseInt(inputCantidad.value || 1) + 1; actualizarTotal(); };
 
+  // === Botón agregar ===
   const btnAgregar = document.getElementById('btnAgregar');
   btnAgregar.disabled = p.stock_estado === 'sin_stock';
   btnAgregar.onclick = () => {
@@ -385,7 +459,10 @@ function mostrarDetalle(p) {
     const productoConPrecio = { ...p, precio_expuesto: precioSeleccionado };
     agregarAlCarrito(productoConPrecio, qty);
   };
+
+  actualizarTotal(); // inicial
 }
+
 
 /* ==== Zoom ==== */
 function abrirZoom(src) {
@@ -412,6 +489,33 @@ function agregarAlCarrito(prod, cantidad = 1) {
     if (el) el.textContent = carrito.reduce((a, b) => a + (b.cantidad || 1), 0);
   });
 }
+
+/* ==== Compra directa ==== */
+document.getElementById('btnComprarAhora').addEventListener('click', () => {
+  const p = productoSeleccionado;
+  if (!p) {
+    Swal.fire({ icon: 'info', title: 'Seleccioná un producto primero', timer: 1300, showConfirmButton: false });
+    return;
+  }
+
+  const precioSeleccionado = parseFloat(document.querySelector('#selectPrecioLista')?.value || p.precio_expuesto || 0);
+  const productoConPrecio = { ...p, precio_expuesto: precioSeleccionado, cantidad: 1 };
+
+  Swal.fire({
+    title: 'Confirmar compra',
+    html: `<strong>${productoConPrecio.nombre}</strong><br>₲ ${money(productoConPrecio.precio_expuesto)}`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Comprar ahora',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#0d6efd'
+  }).then(res => {
+    if (res.isConfirmed) {
+      Swal.fire({ icon: 'success', title: '✅ Compra realizada', timer: 1600, showConfirmButton: false });
+    }
+  });
+});
+
 </script>
 
 

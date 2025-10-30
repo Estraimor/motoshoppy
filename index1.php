@@ -168,6 +168,28 @@ $alertasStock = $conexion->query("
   </div>
 </div>
 
+
+  <!-- === BLOQUE DE GRÁFICOS === -->
+  <div class="row mt-4">
+    <div class="col-md-7 mb-4">
+      <div class="card bg-dark text-white shadow-sm border-secondary">
+        <div class="card-body">
+          <h5 class="text-warning fw-bold mb-3"><i class="fa-solid fa-chart-column me-2"></i>Ventas por mes</h5>
+          <canvas id="graficoVentas"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-5 mb-4">
+      <div class="card bg-dark text-white shadow-sm border-secondary">
+        <div class="card-body">
+          <h5 class="text-info fw-bold mb-3"><i class="fa-solid fa-pie-chart me-2"></i>Estado de stock</h5>
+          <canvas id="graficoStock"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 <script>
 // === COTIZACIÓN ===
 async function cargarCotizacion() {
@@ -208,5 +230,104 @@ document.getElementById('formCotizacion').addEventListener('submit', async (e) =
 
 cargarCotizacion();
 </script>
+
+
+<!-- === CHART.JS === -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// === GRÁFICO DE VENTAS POR MES ===
+async function cargarGraficoVentas() {
+  try {
+    const res = await fetch('/motoshoppy/api/get_ventas_mes.php');
+    const data = await res.json();
+
+    const ctx = document.getElementById('graficoVentas');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.meses,
+        datasets: [{
+          label: 'Ventas',
+          data: data.totales,
+          backgroundColor: 'rgba(255, 193, 7, 0.6)',
+          borderColor: 'rgba(255, 193, 7, 1)',
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            ticks: { color: '#ccc' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          },
+          y: {
+            ticks: { color: '#ccc' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#fff' } },
+          tooltip: {
+            backgroundColor: '#222',
+            borderColor: '#ffc107',
+            borderWidth: 1
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error cargando gráfico de ventas', e);
+  }
+}
+
+// === GRÁFICO DE STOCK ===
+async function cargarGraficoStock() {
+  try {
+    const res = await fetch('/motoshoppy/api/get_stock_estado.php');
+    const data = await res.json();
+
+    const ctx = document.getElementById('graficoStock');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Stock óptimo', 'Bajo stock', 'Sin stock'],
+        datasets: [{
+          data: [data.optimo, data.bajo, data.sin],
+          backgroundColor: [
+            'rgba(40, 167, 69, 0.8)',
+            'rgba(255, 193, 7, 0.8)',
+            'rgba(220, 53, 69, 0.8)'
+          ],
+          borderColor: ['#2a2a2a', '#2a2a2a', '#2a2a2a'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: { color: '#fff', font: { size: 13 } },
+            position: 'bottom'
+          },
+          tooltip: {
+            backgroundColor: '#111',
+            borderColor: '#00c8ff',
+            borderWidth: 1
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error cargando gráfico de stock', e);
+  }
+}
+
+// === INICIALIZAR ===
+cargarGraficoVentas();
+cargarGraficoStock();
+</script>
+
 
 <?php include './dashboard/footer.php'; ?>
