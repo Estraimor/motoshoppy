@@ -490,31 +490,158 @@ function agregarAlCarrito(prod, cantidad = 1) {
   });
 }
 
-/* ==== Compra directa ==== */
-document.getElementById('btnComprarAhora').addEventListener('click', () => {
+/* ==== Compra directa con modal completo ==== */
+document.getElementById('btnComprarAhora').addEventListener('click', async () => {
   const p = productoSeleccionado;
   if (!p) {
-    Swal.fire({ icon: 'info', title: 'Seleccioná un producto primero', timer: 1300, showConfirmButton: false });
+    Swal.fire({
+      icon: 'info',
+      title: 'Seleccioná un producto primero',
+      timer: 1300,
+      showConfirmButton: false
+    });
     return;
   }
 
   const precioSeleccionado = parseFloat(document.querySelector('#selectPrecioLista')?.value || p.precio_expuesto || 0);
   const productoConPrecio = { ...p, precio_expuesto: precioSeleccionado, cantidad: 1 };
 
-  Swal.fire({
-    title: 'Confirmar compra',
-    html: `<strong>${productoConPrecio.nombre}</strong><br>₲ ${money(productoConPrecio.precio_expuesto)}`,
-    icon: 'question',
+  // Modal inicial: tipo de comprobante
+  const { value: comprobante } = await Swal.fire({
+    title: 'Tipo de comprobante',
+    input: 'radio',
+    inputOptions: {
+      'ticket': 'Ticket',
+      'factura': 'Factura',
+      'ninguno': 'Ninguno'
+    },
+    inputValue: 'ticket',
+    confirmButtonText: 'Continuar',
     showCancelButton: true,
-    confirmButtonText: 'Comprar ahora',
     cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#0d6efd'
-  }).then(res => {
-    if (res.isConfirmed) {
-      Swal.fire({ icon: 'success', title: '✅ Compra realizada', timer: 1600, showConfirmButton: false });
+    inputValidator: (v) => !v && 'Seleccioná una opción'
+  });
+  if (!comprobante) return;
+
+  // --- Construimos contenido HTML dinámico ---
+  const htmlPago = `
+    <div class="text-start">
+      <label class="form-label fw-bold mt-2">Método de pago</label>
+      <select id="metodoPago" class="form-select">
+        <option value="efectivo">Efectivo</option>
+        <option value="transferencia">Transferencia</option>
+        <option value="tarjeta">Tarjeta</option>
+        <option value="otro">Otro</option>
+      </select>
+      <div id="otroMetodo" class="mt-2 d-none">
+        <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
+      </div>
+
+      ${comprobante === 'factura' ? `
+        <hr class="my-3">
+        <label class="form-label fw-bold">Datos del cliente</label>
+        <input id="cliNombre" class="form-control mb-2" placeholder="Nombre">
+        <input id="cliApellido" class="form-control mb-2" placeholder="Apellido">
+        <input id="cliDni" class="form-control mb-2" placeholder="DNI">
+        <input id="cliCelular" class="form-control mb-2" placeholder="Celular">
+      ` : ''}
+    </div>
+  `;
+
+  const { value: confirmar } = await Swal.fire({
+    title: 'Confirmar venta',
+    html: `
+      <div class="text-start">
+        <p><strong>Producto:</strong> ${productoConPrecio.nombre}</p>
+        <p><strong>Total:</strong> ₲ ${money(productoConPrecio.precio_expuesto)}</p>
+        <p><strong>Comprobante:</strong> ${comprobante.toUpperCase()}</p>
+        ${htmlPago}
+      </div>
+    `,
+    width: 600,
+    confirmButtonText: 'Finalizar venta',
+    showCancelButton: true,
+    cancelButtonText: 'Cancelar',
+    didOpen: () => {
+      const sel = document.getElementById('metodoPago');
+      sel.addEventListener('change', () => {
+        document.getElementById('otroMetodo').classList.toggle('d-none', sel.value !== 'otro');
+      });
+
+      // Autocompletar cliente si el comprobante es factura
+      if (comprobante === 'factura') {
+        const dniInput = document.getElementById('cliDni');
+        dniInput.addEventListener('input', async (e) => {
+          const dni = e.target.value.trim();
+          if (dni.length >= 6) {
+            try {
+              const r = await fetch(`/motoshoppy/ventas/api_buscar_cliente.php?dni=${dni}`);
+              const d = await r.json();
+              if (d.ok && d.cliente) {
+                document.getElementById('cliNombre').value = d.cliente.nombre;
+                document.getElementById('cliApellido').value = d.cliente.apellido;
+                document.getElementById('cliCelular').value = d.cliente.celular;
+              }
+            } catch (err) {
+              console.warn('No se pudo autocompletar cliente', err);
+            }
+          }
+        });
+      }
+    },
+    preConfirm: () => {
+      const metodo = document.getElementById('metodoPago').value;
+      const metodo_desc = metodo === 'otro' ? document.getElementById('otroTexto').value.trim() : metodo;
+      const cliente = comprobante === 'factura'
+        ? {
+            nombre: document.getElementById('cliNombre').value.trim(),
+            apellido: document.getElementById('cliApellido').value.trim(),
+            dni: document.getElementById('cliDni').value.trim(),
+            celular: document.getElementById('cliCelular').value.trim()
+          }
+        : null;
+
+      return { metodo, metodo_desc, cliente };
     }
   });
+
+  if (!confirmar) return;
+
+  // --- Datos listos para enviar ---
+  const payload = {
+    tipo_comprobante: comprobante,
+    metodo_pago: confirmar.metodo_desc,
+    productos: [productoConPrecio],
+    total: productoConPrecio.precio_expuesto,
+    cliente: confirmar.cliente
+  };
+
+  // --- Envío al backend ---
+  try {
+    const res = await fetch('/motoshoppy/ventas/api_comprar.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: '✅ Venta completada',
+        text: `Comprobante: ${comprobante.toUpperCase()} - ${payload.metodo_pago}`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({ icon: 'error', title: 'Error', text: data.msg || 'No se pudo registrar la venta.' });
+    }
+  } catch (err) {
+    console.error(err);
+    Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo contactar con el servidor.' });
+  }
 });
+
 
 </script>
 
