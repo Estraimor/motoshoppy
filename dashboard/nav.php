@@ -98,7 +98,7 @@ $is_config_active = strpos($uri, "/motoshoppy/configuracion/") !== false;
 
         <div class="submenu" style="<?= $is_ventas_active ? 'display:flex;' : 'display:none;' ?>">
             <a href="/motoshoppy/ventas/index.php"><i class="fa-solid fa-cash-register"></i> Punto de Venta</a>
-            <a href="/motoshoppy/ventas/historial.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a>
+            <a href="/motoshoppy/historial_ventas/index.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a>
         </div>
     </div>
 
