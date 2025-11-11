@@ -1,0 +1,269 @@
+/* === PANEL DETALLE GENERAL === */
+#detalleContenido {
+  color: #f8f9fa;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+#detNombre {
+  color: #ffddcc;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+#detCodigo, #detMarca {
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+/* === DESCRIPCIÓN === */
+#detDesc {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+#detDesc div {
+  padding: 3px 0;
+  color: #f1f1f1;
+}
+
+#detDesc b, #detDesc span.text-warning {
+  color: #ffb74d;
+  font-weight: 600;
+}
+
+/* === BLOQUE DE PRECIOS === */
+#detPrecio {
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+#detPrecio .fw-semibold {
+  font-size: 1rem;
+}
+
+#precioBase, #precioTotal {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* Alineación del precio final */
+#precioTotal {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+/* === BOTONES === */
+#btnAgregar {
+  background-color: #00b050;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+#btnAgregar:hover {
+  background-color: #00c25a;
+  transform: scale(1.02);
+}
+
+#btnFinalizarCompra {
+  background-color: #0055ff;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+#btnFinalizarCompra:hover {
+  background-color: #337aff;
+  transform: scale(1.02);
+}
+
+/* === INPUT CANTIDAD === */
+#detCantidad {
+  width: 60px;
+  text-align: center;
+  background-color: #111;
+  color: #fff;
+  border: 1px solid #ff3c00;
+  border-radius: 6px;
+}
+
+.btn-outline-warning {
+  color: #ff9800;
+  border-color: #ff9800;
+}
+.btn-outline-warning:hover {
+  background-color: #ff9800;
+  color: #000;
+}
+
+/* === ZOOM IMAGEN === */
+.zoomOverlayCustom {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1055;
+  animation: fadeInZoom 0.25s ease;
+}
+.zoomInnerCustom {
+  max-width: 90%;
+  max-height: 90%;
+}
+.zoomImgCustom {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+  cursor: zoom-out;
+  animation: scaleInZoom 0.25s ease;
+}
+
+@keyframes fadeInZoom {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleInZoom {
+  from { transform: scale(0.9); opacity: 0.5; }
+  to { transform: scale(1); opacity: 1; }
+}
+  
+
+
+/* Scroll en el menú de opciones */
+.select2-results__options {
+  max-height: 180px !important;
+  overflow-y: auto !important;
+}
+/* Asegura el scroll en la estructura interna de Select2 */
+.select2-results > .select2-results__options {
+  max-height: 180px !important;
+  overflow-y: auto !important;
+}
+
+/* Estilo oscuro coherente con tu UI */
+.select2-container .select2-selection--single {
+  background-color: #111 !important;
+  border: 1px solid #444 !important;
+  color: #fff !important;
+  height: 38px !important;
+  display: flex;
+  align-items: center;
+}
+
+.select2-container .select2-selection__rendered {
+  color: #fff !important;
+  line-height: 38px !important;
+}
+
+.select2-container .select2-selection__arrow {
+  height: 36px !important;
+}
+
+.select2-dropdown {
+  background-color: #1c1c1c !important;
+  border: 1px solid #333 !important;
+}
+
+.select2-results__option {
+  color: #fff !important;
+  padding: 6px 10px !important;
+}
+
+.select2-results__option--highlighted {
+  background-color: #444 !important;
+}
+
+
+
+/* Carrito css */
+.modulo {
+  background: rgba(25, 25, 25, 0.9);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+table.table-dark {
+  --bs-table-bg: rgba(33, 33, 33, 0.6);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  color: #ffc107 !important;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transition: 0.3s;
+}
+
+.btn-outline-warning:hover {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-success {
+  background: linear-gradient(90deg, #00c851, #007e33);
+  border: none;
+}
+
+.btn-success:hover {
+  filter: brightness(1.15);
+}
+
+.text-glow {
+  color: #00ff91;
+  text-shadow: 0 0 8px #00ff91;
+}
+
+.empty-cart {
+  text-align: center;
+  color: #aaa;
+  padding: 40px 0;
+  font-style: italic;
+}
+
+.empty-cart i {
+  font-size: 3rem;
+  color: #ffc107;
+  margin-bottom: 10px;
+}
+
+.qtyInput {
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.mini-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.btn-outline-danger {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ff4444;
+  color: #fff;
+}
+
+.content-header {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 15px;
+}

@@ -1,0 +1,16 @@
+#listaCategorias {
+    z-index: 1050; /* por encima del modal */
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#listaCategorias .list-group-item {
+    background: #212529;
+    color: #fff;
+    cursor: pointer;
+}
+
+#listaCategorias .list-group-item:hover {
+    background: #ff3c00;
+    color: #fff;
+}

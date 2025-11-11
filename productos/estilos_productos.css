@@ -1,0 +1,486 @@
+/* ====== ESTILOS PRODUCTOS (Dark UI) ====== */
+
+/* ==== Card contenedores ==== */
+.card {
+    border: none;
+    border-radius: 14px;
+    background: rgba(30, 30, 30, 0.92); /* Fondo translúcido sobre tu background */
+    backdrop-filter: blur(6px);
+    color: #f1f1f1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+}
+
+/* ==== Header ==== */
+.content-header h2 {
+    font-weight: 700;
+    color: #ff6600; /* Naranja que combina con tu logo */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ==== Labels ==== */
+.form-label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #f5f5f5;
+}
+
+/* ==== Inputs / Select ==== */
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border: 1px solid #444;
+    padding: 10px 14px;
+    background: #1f1f1f;
+    color: #f1f1f1;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: #ff6600;
+    box-shadow: 0 0 0 0.25rem rgba(255, 102, 0, 0.3);
+}
+
+/* ==== Botón principal ==== */
+.btn-success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    color: #fff;
+}
+.btn-success:hover {
+    background: linear-gradient(135deg, #219150, #27ae60);
+    transform: translateY(-1px);
+}
+
+/* ==== Botón outline ==== */
+.btn-outline-info {
+    border-radius: 10px;
+    font-weight: 500;
+    border-width: 2px;
+    transition: all 0.3s ease;
+    color: #00cec9;
+    border-color: #00cec9;
+}
+.btn-outline-info:hover {
+    background: #00cec9;
+    color: #fff;
+}
+
+/* ==== Switch JSON ==== */
+.form-check-input {
+    width: 50px;
+    height: 26px;
+    cursor: pointer;
+}
+.form-check-input:checked {
+    background-color: #ff6600;
+    border-color: #ff6600;
+}
+
+/* ==== Títulos internos ==== */
+h5, h6 {
+    font-weight: 700;
+    color: #f39c12;
+}
+
+
+
+
+/* ==== Bloques JSON (clave/valor) ==== */
+.campo-json-wrapper {
+    background: rgba(40,40,40,0.9);
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px dashed #555;
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+    animation: fadeInSlide 0.5s ease forwards;
+    
+}
+.campo-json-wrapper:hover {
+    border-color: #ff6600;
+    background: rgba(50,50,50,0.95);
+}
+.campo-json-wrapper .form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 6px;
+    color: #f1f1f1;
+}
+.campo-json-wrapper input {
+    margin-bottom: 6px;
+}
+
+/* ==== Botón Agregar atributo ==== */
+#addJsonCampo {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    padding: 8px 14px;
+}
+
+/* ==== Animaciones ==== */
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); height: 0; margin: 0; padding: 0; }
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   🧩 TABLA DE PRODUCTOS (Dark UI mejorado)
+   ========================================================= */
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(25, 25, 25, 0.95);
+    backdrop-filter: blur(6px);
+    color: #f1f1f1;
+    margin-bottom: 0;
+}
+
+/* Encabezado */
+.table thead {
+    background: linear-gradient(135deg, #ff6600, #ff9500);
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Filas */
+.table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+.table tbody tr:hover {
+    background: rgba(255, 102, 0, 0.15);
+    transform: scale(1.01);
+}
+
+/* Celdas */
+.table td, 
+.table th {
+    padding: 14px;
+    vertical-align: middle;
+}
+
+/* Botones Info */
+.table .btn-info {
+    background: linear-gradient(135deg, #0984e3, #74b9ff);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #fff;
+    transition: 0.2s;
+}
+.table .btn-info:hover {
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    transform: translateY(-2px);
+}
+
+/* Botones Warning */
+.table .btn-warning {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #fff;
+    transition: 0.2s;
+}
+.table .btn-warning:hover {
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    transform: translateY(-2px);
+}
+
+/* =========================================================
+   ⚙️ DataTables
+   ========================================================= */
+.dataTables_wrapper {
+    color: #f1f1f1;
+}
+.dataTables_wrapper .dataTables_filter input {
+    background: #1f1f1f;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    padding: 6px 10px;
+    margin-left: 6px;
+}
+.dataTables_wrapper .dataTables_info {
+    color: #bbb;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: #2c2c2c;
+    border-radius: 6px;
+    border: none;
+    padding: 6px 12px;
+    margin: 2px;
+    color: #f1f1f1 !important;
+    transition: 0.2s;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #ff6600;
+    color: #fff !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #ff6600 !important;
+    color: #fff !important;
+}
+
+/* =========================================================
+   🧱 DETALLE DEL PRODUCTO (Diseño refinado y equilibrado)
+   ========================================================= */
+#detalleContenido {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  padding: 15px 10px;
+}
+
+/* ----------- Columna izquierda (info general) ----------- */
+#detalleContenido .col-info {
+  flex: 1 1 50%;
+  min-width: 360px;
+  background: rgba(40, 40, 40, 0.6);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
+}
+
+#detalleContenido .col-info p {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed rgba(255,255,255,0.08);
+  padding-bottom: 4px;
+}
+
+#detalleContenido .col-info strong {
+  color: #ffb347;
+  min-width: 145px;
+  font-weight: 600;
+}
+
+/* Inputs modo edición */
+#detalleContenido .col-info input {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #666;
+  color: #eee;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  transition: 0.2s ease;
+}
+
+#detalleContenido .col-info input:focus {
+  border-color: #ff9900;
+  box-shadow: 0 0 6px #ff9900;
+  outline: none;
+}
+
+/* ----------- Columna derecha (imagen + input) ----------- */
+#detalleContenido .col-img {
+  flex: 1 1 40%;
+  min-width: 320px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#detalleContenido img,
+#previewImg {
+  width: 100%;
+  max-width: 280px;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #111;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: zoom-in;
+}
+
+#detalleContenido img:hover,
+#previewImg:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 153, 0, 0.6);
+}
+
+/* Input para nueva imagen */
+#detalleContenido .col-img input[type="file"] {
+  margin-top: 10px;
+  width: 80%;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid #666;
+  color: #ccc;
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* =========================================================
+   🧩 ATRIBUTOS JSON (Diseño más limpio y legible)
+   ========================================================= */
+#bloqueAtributos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 10px;
+}
+
+#bloqueAtributos .atributo-box {
+  background: rgba(45, 45, 45, 0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+}
+
+#bloqueAtributos .atributo-box:hover {
+  border-color: #ff9900;
+  background: rgba(55, 55, 55, 0.9);
+}
+
+#bloqueAtributos label {
+  color: #ffb347;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+#bloqueAtributos input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid #666;
+  color: #eee;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: 0.25s ease;
+}
+
+/* Inputs editables */
+#bloqueAtributos input:not([readonly]) {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: #ff9900;
+}
+#bloqueAtributos input:not([readonly]):focus {
+  outline: none;
+  box-shadow: 0 0 8px #ff9900;
+}
+
+/* =========================================================
+   🎨 MODAL DETALLE (más elegante y equilibrado)
+   ========================================================= */
+.modal-body {
+  padding: 25px 30px;
+  background: rgba(25,25,25,0.95);
+  border-radius: 0 0 10px 10px;
+}
+
+.modal-title {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #ffb347;
+}
+
+.modal-content {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  background: rgba(20,20,20,0.95);
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* =========================================================
+   🔍 MODAL ZOOM IMAGEN
+   ========================================================= */
+#modalZoom .modal-dialog {
+  max-width: 650px;
+}
+#modalZoom img {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.7);
+}
+
+
+
+
+
+
+/* Nav de settings  */
+.offcanvas.bg-dark {
+  width: 350px;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.6);
+}
+.offcanvas-title i {
+  color: #ffb347;
+}
+.form-label i {
+  color: #ffb347;
+  margin-right: 5px;
+}
+.form-check-label {
+  color: #ccc;
+}
+.form-check-input:checked {
+  background-color: #ffb347;
+  border-color: #ffb347;
+}
+#btnAplicarFiltros, #btnLimpiarFiltros {
+  width: 48%;
+}
+

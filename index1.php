@@ -1,0 +1,427 @@
+<?php
+include './dashboard/nav.php';
+require_once './conexion/conexion.php';
+
+// === Obtener métricas del sistema ===
+$totalCategorias = $conexion->query("SELECT COUNT(*) FROM categoria")->fetchColumn();
+$totalMarcas = $conexion->query("SELECT COUNT(*) FROM marcas")->fetchColumn();
+$totalProductos = $conexion->query("SELECT COUNT(*) FROM producto")->fetchColumn();
+$totalVentasHoy = $conexion->query("SELECT COUNT(*) FROM ventas WHERE DATE(fecha) = CURDATE()")->fetchColumn() ?? 0;
+
+// === Detectar productos en alerta de stock ===
+$alertasStock = $conexion->query("
+  SELECT nombre, codigo, cantidad_actual, stock_minimo 
+  FROM stock_producto 
+  INNER JOIN producto ON producto.idProducto = stock_producto.producto_idProducto
+  WHERE cantidad_actual <= stock_minimo
+  ORDER BY cantidad_actual ASC
+  LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
+?>
+
+<div class="content-header d-flex justify-content-between align-items-center mb-3">
+  <h2>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']); ?> 👋</h2>
+  <small class="text-muted">Hoy es <?= date('d/m/Y'); ?></small>
+</div>
+
+<div class="content-body">
+
+  <!-- === TARJETAS DE RESUMEN === -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card bg-gradient-dark text-warning text-center shadow-sm h-100">
+        <div class="card-body">
+          <i class="fa-solid fa-layer-group fa-2x mb-2"></i>
+          <h4><?= $totalCategorias ?></h4>
+          <small>Categorías</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card bg-gradient-dark text-success text-center shadow-sm h-100">
+        <div class="card-body">
+          <i class="fa-solid fa-tags fa-2x mb-2"></i>
+          <h4><?= $totalMarcas ?></h4>
+          <small>Marcas registradas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card bg-gradient-dark text-info text-center shadow-sm h-100">
+        <div class="card-body">
+          <i class="fa-solid fa-boxes-stacked fa-2x mb-2"></i>
+          <h4><?= $totalProductos ?></h4>
+          <small>Productos activos</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+  <div class="card bg-gradient-dark text-danger text-center shadow-sm h-100"
+       role="button"
+       data-bs-toggle="modal"
+       data-bs-target="#modalVentasHoy"
+       style="cursor:pointer;">
+    <div class="card-body">
+      <i class="fa-solid fa-chart-line fa-2x mb-2"></i>
+      <h4><?= $totalVentasHoy ?></h4>
+      <small>Ventas hoy</small>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <!-- === BLOQUE DE COTIZACIONES === -->
+  <div class="card bg-dark text-white shadow-sm mb-4 border-secondary">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+      <div>
+        <h5 class="fw-bold text-warning mb-2"><i class="fa-solid fa-coins me-2"></i>Cotizaciones del día</h5>
+        <div class="small text-white-50">
+          <div><strong>1 USD</strong> = <span id="usdArs">-</span> ARS | <span id="usdPyg">-</span> PYG</div>
+          <div><strong>1 PYG</strong> = <span id="pygUsd">-</span> USD | <span id="pygArs">-</span> ARS</div>
+          <div class="text-warning mt-1" style="font-size:0.75rem;">
+            <i class="fa-regular fa-clock me-1"></i>Última actualización: <span id="fechaCotizacion">-</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCotizacion">
+        <i class="fa-solid fa-pen-to-square"></i> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- === VENTAS HOY === -->
+   <!-- === MODAL: Ventas de hoy === -->
+<div class="modal fade" id="modalVentasHoy" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-receipt text-info me-2"></i>Ventas de hoy
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" id="tablaVentasHoy">
+            <thead class="text-info">
+              <tr>
+                <th style="width:90px">ID Venta</th>
+                <th style="width:150px">Fecha/Hora</th>
+                <th>Vendedor</th>
+                <th>Cliente</th>
+                <th>Producto</th>
+                <th class="text-end" style="width:80px">Cant.</th>
+                <th class="text-end" style="width:120px">P. Unit.</th>
+                <th class="text-end" style="width:120px">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr>
+                <th colspan="7" class="text-end">Total día:</th>
+                <th id="totalDia" class="text-end">₲ 0</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-outline-light" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <!-- === ALERTAS DE STOCK === -->
+  <div class="card bg-dark text-white shadow-sm mb-4 border-0">
+    <div class="card-body">
+      <h5 class="text-danger fw-bold mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Alertas de stock</h5>
+      <?php if (count($alertasStock) === 0): ?>
+        <div class="text-success small">✅ Todos los productos tienen stock suficiente.</div>
+      <?php else: ?>
+        <div class="table-responsive">
+          <table class="table table-sm table-dark align-middle mb-0">
+            <thead class="text-warning">
+              <tr>
+                <th>Producto</th>
+                <th>Código</th>
+                <th>Stock actual</th>
+                <th>Mínimo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($alertasStock as $p): ?>
+                <tr>
+                  <td><?= htmlspecialchars($p['nombre']) ?></td>
+                  <td><?= htmlspecialchars($p['codigo']) ?></td>
+                  <td class="<?= $p['cantidad_actual'] == 0 ? 'text-danger' : 'text-warning' ?>">
+                    <?= $p['cantidad_actual'] ?>
+                  </td>
+                  <td><?= $p['stock_minimo'] ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- === PANEL INFORMATIVO === -->
+  <div class="card bg-gradient-dark text-white border-0 shadow-sm">
+    <div class="card-body">
+      <h5 class="text-info fw-bold mb-2"><i class="fa-solid fa-chart-pie me-2"></i>Resumen general</h5>
+      <p class="text-white-50 mb-0">Revisa las métricas de desempeño del sistema, analiza ventas, niveles de stock y cotizaciones para mantener la operación óptima del negocio.</p>
+    </div>
+  </div>
+</div>
+
+<!-- === MODAL ACTUALIZAR COTIZACIÓN === -->
+<div class="modal fade" id="modalCotizacion" tabindex="-1" aria-labelledby="modalCotizacionLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content bg-dark text-white border-secondary shadow-lg">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="modalCotizacionLabel">
+          <i class="fa-solid fa-pen-to-square text-warning me-2"></i>Actualizar cotización
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formCotizacion" autocomplete="off">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="usd_ars" class="form-label text-warning fw-semibold">
+              <i class="fa-solid fa-dollar-sign me-1"></i>1 USD en ARS
+            </label>
+            <input type="number" step="0.01" min="0" name="usd_ars" id="usd_ars" class="form-control bg-dark text-white border-secondary" required>
+          </div>
+          <div class="mb-3">
+            <label for="usd_pyg" class="form-label text-warning fw-semibold">
+              <i class="fa-solid fa-coins me-1"></i>1 USD en PYG
+            </label>
+            <input type="number" step="0.01" min="0" name="usd_pyg" id="usd_pyg" class="form-control bg-dark text-white border-secondary" required>
+          </div>
+          <div class="mb-2">
+            <label for="ars_pyg" class="form-label text-warning fw-semibold">
+              <i class="fa-solid fa-money-bill-wave me-1"></i>1 ARS en PYG
+            </label>
+            <input type="number" step="0.01" min="0" name="ars_pyg" id="ars_pyg" class="form-control bg-dark text-white border-secondary" required>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="submit" class="btn btn-warning w-100 fw-bold"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+  <!-- === BLOQUE DE GRÁFICOS === -->
+<div class="row mt-4">
+  <div class="col-md-7 mb-4">
+    <div class="card bg-dark text-white shadow-sm border-secondary">
+      <div class="card-body">
+        <h5 class="text-warning fw-bold mb-3"><i class="fa-solid fa-chart-column me-2"></i>Ventas por mes</h5>
+        <canvas id="graficoVentas"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5 mb-4">
+    <div class="card bg-dark text-white shadow-sm border-secondary">
+      <div class="card-body">
+        <h5 class="text-info fw-bold mb-3"><i class="fa-solid fa-pie-chart me-2"></i>Estado de stock</h5>
+        <canvas id="graficoStock"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// === COTIZACIÓN ===
+async function cargarCotizacion() {
+  try {
+    const res = await fetch('/motoshoppy/api/get_cotizacion.php');
+    const data = await res.json();
+
+    document.getElementById('usdArs').innerText = parseFloat(data.usd_ars).toFixed(2);
+    document.getElementById('usdPyg').innerText = parseFloat(data.usd_pyg).toLocaleString('es-PY');
+    document.getElementById('pygUsd').innerText = (1 / data.usd_pyg).toFixed(6);
+    document.getElementById('pygArs').innerText = (data.usd_ars / data.usd_pyg).toFixed(4);
+    document.getElementById('fechaCotizacion').innerText = new Date(data.fecha_actualizacion).toLocaleString();
+
+    document.getElementById('usd_ars').value = data.usd_ars;
+    document.getElementById('usd_pyg').value = data.usd_pyg;
+    document.getElementById('ars_pyg').value = data.ars_pyg;
+
+  } catch (e) {
+    document.getElementById('usdArs').innerText = '-';
+    document.getElementById('usdPyg').innerText = '-';
+  }
+}
+
+document.getElementById('formCotizacion').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const res = await fetch('/motoshoppy/api/update_cotizacion.php', { method: 'POST', body: formData });
+  const r = await res.json();
+  if (r.ok) {
+    Swal.fire({ icon: 'success', title: 'Cotización actualizada', timer: 1500, showConfirmButton: false });
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCotizacion'));
+    modal.hide();
+    cargarCotizacion();
+  } else {
+    Swal.fire({ icon: 'error', title: 'Error', text: r.msg || 'No se pudo actualizar.' });
+  }
+});
+
+cargarCotizacion();
+</script>
+
+
+<!-- === CHART.JS === -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// === GRÁFICO DE VENTAS POR MES ===
+async function cargarGraficoVentas() {
+  try {
+    const res = await fetch('/motoshoppy/config_index/get_ventas_mes.php');
+    const data = await res.json();
+
+    const ctx = document.getElementById('graficoVentas');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.meses,
+        datasets: [{
+          label: 'Ventas',
+          data: data.totales,
+          backgroundColor: 'rgba(255, 193, 7, 0.6)',
+          borderColor: 'rgba(255, 193, 7, 1)',
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            ticks: { color: '#ccc' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          },
+          y: {
+            ticks: { color: '#ccc' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#fff' } },
+          tooltip: {
+            backgroundColor: '#222',
+            borderColor: '#ffc107',
+            borderWidth: 1
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error cargando gráfico de ventas', e);
+  }
+}
+
+// === GRÁFICO DE STOCK ===
+async function cargarGraficoStock() {
+  try {
+    const res = await fetch('/motoshoppy/config_index/get_stock_estado.php');
+    const data = await res.json();
+
+    const ctx = document.getElementById('graficoStock');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Stock óptimo', 'Bajo stock', 'Sin stock'],
+        datasets: [{
+          data: [data.optimo, data.bajo, data.sin],
+          backgroundColor: [
+            'rgba(40, 167, 69, 0.8)',
+            'rgba(255, 193, 7, 0.8)',
+            'rgba(220, 53, 69, 0.8)'
+          ],
+          borderColor: ['#2a2a2a', '#2a2a2a', '#2a2a2a'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: { color: '#fff', font: { size: 13 } },
+            position: 'bottom'
+          },
+          tooltip: {
+            backgroundColor: '#111',
+            borderColor: '#00c8ff',
+            borderWidth: 1
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error cargando gráfico de stock', e);
+  }
+}
+
+// === INICIALIZAR ===
+cargarGraficoVentas();
+cargarGraficoStock();
+</script>
+
+
+<script>
+document.getElementById('modalVentasHoy').addEventListener('show.bs.modal', async () => {
+  const tbody = document.querySelector('#tablaVentasHoy tbody');
+  const totalDia = document.getElementById('totalDia');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Cargando...</td></tr>';
+  totalDia.textContent = '$ 0';
+
+  try {
+    const res = await fetch('/motoshoppy/api/get_ventas_hoy.php');
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.msg || 'Error al obtener ventas');
+
+    if (data.ventas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No hubo ventas hoy.</td></tr>';
+      return;
+    }
+
+    let total = 0;
+    tbody.innerHTML = '';
+    data.ventas.forEach(v => {
+      total += parseFloat(v.subtotal);
+      tbody.innerHTML += `
+        <tr>
+          <td>${v.idVenta}</td>
+          <td>${v.fecha}</td>
+          <td>${v.vendedor || '-'}</td>
+          <td>${v.cliente || '-'}</td>
+          <td>${v.producto}</td>
+          <td class="text-end">${v.cantidad}</td>
+          <td class="text-end">$${Number(v.precio_unitario).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+          <td class="text-end">$${Number(v.subtotal).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+        </tr>`;
+    });
+
+    totalDia.textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${err.message}</td></tr>`;
+  }
+});
+</script>
+
+
+<?php include './dashboard/footer.php'; ?>
