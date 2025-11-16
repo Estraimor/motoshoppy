@@ -2,8 +2,9 @@
 require_once '../conexion/conexion.php';
 
 $idVenta = $_POST['idVenta'];
+$modo = $_POST['modo'] ?? 'view'; // view = normal, select = con checkbox
 
-$sql = "SELECT dv.cantidad, dv.precio_unitario, dv.subtotal,
+$sql = "SELECT dv.producto_id, dv.cantidad, dv.precio_unitario, dv.subtotal,
                p.nombre, p.modelo,
                m.nombre_marca,
                u.lugar AS ubicacion_lugar, u.estante AS ubicacion_estante
@@ -22,6 +23,10 @@ $detalles = $stmt->fetchAll();
 <table class="table table-dark table-striped table-bordered align-middle">
     <thead class="table-secondary text-dark">
         <tr>
+            <?php if($modo === 'select'): ?>
+                <th style="width:50px;">✔</th>
+            <?php endif; ?>
+
             <th>Producto</th>
             <th>Marca</th>
             <th>Modelo</th>
@@ -34,6 +39,14 @@ $detalles = $stmt->fetchAll();
     <tbody>
     <?php foreach ($detalles as $row): ?>
         <tr>
+            <?php if($modo === 'select'): ?>
+                <td class="text-center">
+                    <input type="checkbox" class="chkDevolver"
+                        data-id="<?= $row['producto_id'] ?>"
+                        data-cant="<?= $row['cantidad'] ?>">
+                </td>
+            <?php endif; ?>
+
             <td><?= $row['nombre'] ?></td>
             <td><?= $row['nombre_marca'] ?: '-' ?></td>
             <td><?= $row['modelo'] ?: '-' ?></td>

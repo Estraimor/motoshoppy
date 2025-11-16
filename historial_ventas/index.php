@@ -169,32 +169,114 @@ $(document).on("click", "#btnCancelarVenta", function(){
     });
 });
 
-// Devolución Parcial
-$(document).on("click", "#btnDevolverParcial", function(){
+// Devolución Parcial (SELECCIÓN MULTIPLE)
+$(document).on("click", "#btnDevolverParcial", function () {
     let id = $(this).data("id");
 
-    $.post("obtener_detalle_select.php", {idVenta:id}, function(html){
-        Swal.fire({
-            title: "Devolución Parcial",
-            html: html + `
-                <br><input type='number' id='dp_cant' class='form-control' placeholder='Cantidad a devolver'>
-                <br><textarea id='dp_motivo' class='form-control' placeholder='Motivo'></textarea>
-            `,
-            showCancelButton:true,
-            confirmButtonText:"Confirmar"
-        }).then(r=>{
-            if(r.isConfirmed){
-                let prod = $("#selectProducto").val();
-                let cant = $("#dp_cant").val();
-                let mot = $("#dp_motivo").val();
+    $.post("obtener_detalle.php", { idVenta: id, modo: "select" }, function (html) {
 
-                $.post("devolucion_parcial.php",{idVenta:id, producto_id:prod, cantidad:cant, motivo:mot}, function(resp){
-                    Swal.fire("✅ Devolución Registrada","","success").then(()=>location.reload());
-                });
+        Swal.fire({
+            title: "Seleccioná los productos a devolver",
+            width: "850px",
+
+            // 🔥 DESACTIVA EL FOCUS TRAP Y PERMITE ESCRIBIR
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: true,
+            focusConfirm: false,
+
+            html: `
+                <div style="
+                    max-height:320px;
+                    overflow-y:auto;
+                    border:1px solid #ccc;
+                    border-radius:8px;
+                    padding:4px;
+                ">
+                    ${html}
+                </div>
+
+                <label class="mt-3 fw-bold">Motivo</label>
+                <textarea id="dp_motivo" 
+                    class="form-control" 
+                    style="resize:none; height:90px; margin-top:5px;"
+                    placeholder="Escribí el motivo de la devolución"></textarea>
+            `,
+            
+            showCancelButton: true,
+            confirmButtonText: "Confirmar",
+            confirmButtonColor: "#6f42c1",
+            cancelButtonText: "Cancelar",
+
+            didOpen: () => {
+                // 🔥 SOLUCIÓN DEFINITIVA PARA PERMITIR ESCRIBIR
+                setTimeout(() => {
+                    const ta = document.getElementById("dp_motivo");
+                    if (ta) {
+                        ta.removeAttribute("readonly");
+                        ta.focus();
+                    }
+                }, 50);
             }
+        }).then(r => {
+
+            if (!r.isConfirmed) return;
+
+            let seleccionados = [];
+
+            $(".chkDevolver:checked").each(function () {
+                seleccionados.push({
+                    producto_id: $(this).data("id"),
+                    cantidad: $(this).data("cant")
+                });
+            });
+
+            // Validar selección
+            if (seleccionados.length === 0) {
+                Swal.fire("Error", "Seleccioná al menos un producto", "error");
+                return;
+            }
+
+            // Validar motivo
+            let mot = $("#dp_motivo").val().trim();
+            if (mot === "") {
+                Swal.fire("Atención", "Ingresá un motivo.", "warning");
+                return;
+            }
+
+            // Enviar devolución múltiple
+            $.post("devolucion_parcial.php", {
+                idVenta: id,
+                items: JSON.stringify(seleccionados),
+                motivo: mot
+            }, function (resp) {
+
+                // Si la venta quedó sin productos → sugerir anulación total
+                if (resp.trim() === "completa") {
+                    Swal.fire({
+                        icon: "info",
+                        title: "Venta completamente devuelta",
+                        text: "La venta quedó sin unidades. ¿Querés anularla?",
+                        showCancelButton: true,
+                        confirmButtonText: "Anular ahora",
+                        confirmButtonColor: "#d33"
+                    }).then(res => {
+                        if (res.isConfirmed) location.reload();
+                    });
+
+                } else {
+                    Swal.fire("Devolución registrada", "", "success")
+                        .then(() => location.reload());
+                }
+
+            });
         });
+
     });
 });
+
+
+
 </script>
 
 <?php include '../dashboard/footer.php'; ?>
