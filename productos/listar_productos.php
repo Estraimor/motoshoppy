@@ -4,21 +4,49 @@ require_once '../conexion/conexion.php';
 
 // Traer productos
 $stmt = $conexion->query("
-    SELECT p.idproducto, p.codigo, p.nombre, p.modelo, p.precio_expuesto, 
-           c.nombre_categoria,
-           m.idmarcas AS idmarca,   -- ✅ NECESARIO PARA EDITAR
-           m.nombre_marca,
-           p.descripcion, 
-           p.peso_ml, p.peso_g, p.imagen,
-           u.lugar, u.estante
+    SELECT 
+        p.idproducto, 
+        p.codigo, 
+        p.nombre, 
+        p.modelo, 
+        p.precio_expuesto,
+        p.precio_costo,      -- si querés permitir verlo
+        c.nombre_categoria,
+
+        m.idmarcas AS idmarca,
+        m.nombre_marca,
+
+        p.descripcion, 
+        p.peso_ml, 
+        p.peso_g, 
+        p.imagen,
+
+        u.lugar, 
+        u.estante,
+
+        -- 🔥 STOCK
+        sp.idstock_producto,
+        sp.stock_minimo,
+        sp.cantidad_actual,
+        sp.cantidad_exhibida
+
     FROM producto p
-    LEFT JOIN categoria c ON p.Categoria_idCategoria = c.idCategoria
-    LEFT JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
-    LEFT JOIN ubicacion_producto u ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
+    LEFT JOIN categoria c 
+        ON p.Categoria_idCategoria = c.idCategoria
+    LEFT JOIN marcas m 
+        ON p.marcas_idmarcas = m.idmarcas
+    LEFT JOIN ubicacion_producto u 
+        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
+
+    -- 🔥 JOIN REAL QUE FALTABA
+    LEFT JOIN stock_producto sp 
+        ON sp.producto_idProducto = p.idproducto
+
     ORDER BY p.idproducto DESC
 ");
 
 $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -75,10 +103,11 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <tbody>
                     <?php foreach ($productos as $p): ?>
                         <tr>
-                            <td><?= htmlspecialchars($p['codigo']) ?></td>
-                            <td><?= htmlspecialchars($p['nombre']) ?></td>
-                            <td><?= htmlspecialchars($p['nombre_marca']) ?></td>
-                            <td><?= htmlspecialchars($p['nombre_categoria']) ?></td>
+                            <td><?= htmlspecialchars($p['codigo'] ?? '') ?></td>
+<td><?= htmlspecialchars($p['nombre'] ?? '') ?></td>
+<td><?= htmlspecialchars($p['nombre_marca'] ?? '') ?></td>
+<td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
+
                             <td>$<?= number_format($p['precio_expuesto'], 2, ',', '.') ?></td>
                             <td class="text-center">
                                 <!-- Botón detalle de cada producto -->
@@ -314,13 +343,17 @@ $(document).ready(function () {
 
 let productoActual = null;
 
-// === Modo edición (con marca select2, categoría readonly y cubiertas opcionales) ===
+// ==============================
+//     MODO EDICIÓN DEL MODAL
+// ==============================
 $(document).on('click', '#btnEditar', function () {
 
     const data = productoActual;
-
     const contenido = $('#detalleContenido');
 
+    // ===============================
+    //   CAMPOS PRINCIPALES
+    // ===============================
     contenido.html(`
         <div class="col-info w-50">
 
@@ -345,6 +378,15 @@ $(document).on('click', '#btnEditar', function () {
 
             <label class="mt-2"><strong>Precio Expuesto:</strong></label>
             <input type="number" id="edit_precio" class="form-control form-control-sm" value="${data.precio_expuesto ?? 0}">
+            
+            ${
+                ("<?= $_SESSION['rol'] ?>") === "Administrador"
+                ? `
+                <label class="mt-2"><strong>Precio Costo:</strong></label>
+                <input type="number" id="edit_precio_costo" class="form-control form-control-sm" value="${data.precio_costo ?? 0}">
+                `
+                : ""
+            }
 
             <label class="mt-2"><strong>Peso (ml):</strong></label>
             <input type="number" id="edit_pesoml" class="form-control form-control-sm" value="${data.peso_ml ?? ''}">
@@ -359,7 +401,9 @@ $(document).on('click', '#btnEditar', function () {
         </div>
     `);
 
-    // === Cargar Marcas vía AJAX y activar buscador Select2 ===
+    // ===============================
+    //    CARGAR MARCAS (Select2)
+    // ===============================
     $.ajax({
         url: 'ajax_cargar_marcas.php',
         type: 'GET',
@@ -368,12 +412,9 @@ $(document).on('click', '#btnEditar', function () {
             const select = $('#edit_marca');
             select.html(`<option value="">Sin marca</option>` + opcionesHTML);
 
-            if (data.idmarca && select.find(`option[value="${data.idmarca}"]`).length) {
-    select.val(String(data.idmarca)).trigger('change');
-}
+            if (data.idmarca && select.find(`option[value="${data.idmarca}"]`).length)
+                select.val(String(data.idmarca)).trigger('change');
 
-
-            // Activar select2
             select.select2({
                 dropdownParent: $('#modalDetalle'),
                 width: '100%',
@@ -383,10 +424,13 @@ $(document).on('click', '#btnEditar', function () {
         }
     });
 
-    // === Atributos cubiertas (si corresponden) ===
+    // ===============================
+    //   ATRIBUTOS DE CUBIERTA
+    // ===============================
     let cubiertasHTML = '';
     if (data.aro || data.ancho || data.perfil_cubierta || data.tipo || data.varias_aplicaciones) {
-        cubiertasHTML = `
+
+        cubiertasHTML += `
             <div class="w-100 mt-3 p-2 border rounded">
                 <h6 class="text-warning mb-2"><i class="fa-solid fa-road"></i> Atributos de Cubierta</h6>
 
@@ -407,23 +451,106 @@ $(document).on('click', '#btnEditar', function () {
             </div>
         `;
     }
-    $('#bloqueAtributos').html(cubiertasHTML);
 
-    // Vista previa imagen
-    $(document).on('change', '#nuevaImagen', function(event){
+    // ===============================
+    //     ATRIBUTOS JSON EDITABLES
+    // ===============================
+    let atributosHTML = "";
+
+    try {
+        if (data.descripcion) {
+            const jsonData = JSON.parse(data.descripcion);
+
+            atributosHTML = `
+                <div class="w-100 mt-3 p-2 border rounded">
+                    <h6 class="text-warning mb-2"><i class="fa-solid fa-key"></i> Atributos adicionales</h6>
+                    <div id="contenedorAtributos">
+            `;
+
+            Object.entries(jsonData).forEach(([key, val]) => {
+                atributosHTML += `
+                    <div class="row mb-2 atributo-item">
+                        <div class="col-5"><input type="text" class="form-control form-control-sm attr-key" value="${key}"></div>
+                        <div class="col-5"><input type="text" class="form-control form-control-sm attr-value" value="${val}"></div>
+                        <div class="col-2">
+                            <button class="btn btn-danger btn-sm borrar-atributo"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            atributosHTML += `
+                    </div>
+                    <button id="btnAgregarAtributo" class="btn btn-outline-warning btn-sm mt-2">
+                        <i class="fa-solid fa-plus"></i> Agregar atributo
+                    </button>
+                </div>
+            `;
+        }
+    } catch (e) {
+        atributosHTML = `<p class="text-danger">Error al interpretar JSON</p>`;
+    }
+
+    // ===============================
+    //           STOCK
+    // ===============================
+    let stockHTML = `
+        <div class="w-100 mt-3 p-2 border rounded">
+            <h6 class="text-warning mb-2"><i class="fa-solid fa-box"></i> Stock</h6>
+
+            <label>Mínimo:</label>
+            <input type="number" id="edit_stock_minimo" class="form-control form-control-sm" value="${data.stock_minimo ?? 0}">
+
+            <label class="mt-2">Cantidad Actual:</label>
+            <input type="number" id="edit_cantidad_actual" class="form-control form-control-sm" value="${data.cantidad_actual ?? 0}">
+
+            <label class="mt-2">Cantidad Exhibida:</label>
+            <input type="number" id="edit_cantidad_exhibida" class="form-control form-control-sm" value="${data.cantidad_exhibida ?? 0}">
+        </div>
+    `;
+
+    // Render final
+    $('#bloqueAtributos').html(cubiertasHTML + atributosHTML + stockHTML);
+
+    // PREVIEW IMAGEN
+    $(document).on('change', '#nuevaImagen', function (event) {
         const file = event.target.files[0];
         if (file) $('#previewImg').attr('src', URL.createObjectURL(file));
     });
 
     // Cambiar botón a Guardar
-    $(this).text('Guardar').removeClass('btn-primary').addClass('btn-success').attr('id','btnGuardar');
+    $(this).text('Guardar')
+        .removeClass('btn-primary')
+        .addClass('btn-success')
+        .attr('id','btnGuardar');
 });
 
+// ======================================
+//   AGREGAR NUEVO ATRIBUTO JSON
+// ======================================
+$(document).on("click", "#btnAgregarAtributo", function () {
+    $("#contenedorAtributos").append(`
+        <div class="row mb-2 atributo-item">
+            <div class="col-5"><input type="text" class="form-control form-control-sm attr-key" placeholder="Clave"></div>
+            <div class="col-5"><input type="text" class="form-control form-control-sm attr-value" placeholder="Valor"></div>
+            <div class="col-2"><button class="btn btn-danger btn-sm borrar-atributo"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
+    `);
+});
 
-// === GUARDAR ===
+// BORRAR ATRIBUTO JSON
+$(document).on("click", ".borrar-atributo", function () {
+    $(this).closest(".atributo-item").remove();
+});
+
+// ==============================
+//         GUARDAR
+// ==============================
 $(document).on('click', '#btnGuardar', function () {
 
+    const data = productoActual;
     const formData = new FormData();
+
     formData.append('id', data.idproducto);
     formData.append('codigo', $('#edit_codigo').val());
     formData.append('nombre', $('#edit_nombre').val());
@@ -433,9 +560,16 @@ $(document).on('click', '#btnGuardar', function () {
     formData.append('peso_ml', $('#edit_pesoml').val());
     formData.append('peso_g', $('#edit_pesog').val());
 
+    // Si es admin → guardar precio costo
+    if ("<?= $_SESSION['rol'] ?>" === "Administrador") {
+        formData.append('precio_costo', $('#edit_precio_costo').val());
+    }
+
+    // Imagen
     const img = $('#nuevaImagen')[0].files[0];
     if (img) formData.append('imagen', img);
 
+    // Atributos cubiertas
     if ($('#edit_aro').length) {
         formData.append('aro', $('#edit_aro').val());
         formData.append('ancho', $('#edit_ancho').val());
@@ -444,6 +578,28 @@ $(document).on('click', '#btnGuardar', function () {
         formData.append('varias', $('#edit_varias').val());
     }
 
+    // ==========================
+    //   ATRIBUTOS JSON
+    // ==========================
+    let atributos = {};
+    $(".atributo-item").each(function () {
+        let key = $(this).find(".attr-key").val().trim();
+        let value = $(this).find(".attr-value").val().trim();
+        if (key) atributos[key] = value;
+    });
+
+    formData.append("atributos_json", JSON.stringify(atributos));
+
+    // ==========================
+    //        STOCK
+    // ==========================
+    formData.append('stock_minimo', $('#edit_stock_minimo').val());
+    formData.append('cantidad_actual', $('#edit_cantidad_actual').val());
+    formData.append('cantidad_exhibida', $('#edit_cantidad_exhibida').val());
+
+    // ==========================
+    //       AJAX GUARDAR
+    // ==========================
     $.ajax({
         url: "actualizar_producto.php",
         type: "POST",
@@ -456,6 +612,7 @@ $(document).on('click', '#btnGuardar', function () {
         }
     });
 });
+
 
 
 
