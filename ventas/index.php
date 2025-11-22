@@ -549,7 +549,14 @@ document.getElementById('btnComprarAhora').addEventListener('click', async () =>
   }
 
   const precioSeleccionado = parseFloat(document.querySelector('#selectPrecioLista')?.value || p.precio_expuesto || 0);
-  const productoConPrecio = { ...p, precio_expuesto: precioSeleccionado, cantidad: 1 };
+const qty = parseInt(document.getElementById('detCantidad')?.value || 1);
+
+const productoConPrecio = { 
+  ...p, 
+  precio_expuesto: precioSeleccionado, 
+  cantidad: qty 
+};
+
 
   // Modal inicial: tipo de comprobante
   const { value: comprobante } = await Swal.fire({

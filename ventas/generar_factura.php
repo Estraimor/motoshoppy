@@ -1,5 +1,10 @@
 <?php
+require_once '../conexion/conexion.php';
 require_once '../vendor/setasign/fpdf/fpdf.php';
+
+/* ============================================================
+   ===============  CLASE COMPLETA DE LA FACTURA  ===============
+   ============================================================ */
 
 class FacturaParaguayaPDF extends FPDF
 {
@@ -7,6 +12,7 @@ class FacturaParaguayaPDF extends FPDF
     public $cliApellido;
     public $cliDni;
     public $cliCelular;
+    public $metodoPago;
 
     // Conversión FPDF ISO
     function conv($txt) {
@@ -96,13 +102,9 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(14, 6, $this->conv(substr(date("Y"),2)), 1, 0, 'L');
 
         // MÉTODO DE PAGO
-$this->Cell(39, 6, $this->conv('MÉTODO DE PAGO'), 1, 0, 'L');
-
-// valor del método, tomado de variable externa
-$metodo = $this->metodoPago ?? '---';
-
-$this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
-
+        $this->Cell(39, 6, $this->conv('MÉTODO DE PAGO'), 1, 0, 'L');
+        $metodo = $this->metodoPago ?? '---';
+        $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
 
         // CLIENTE
         $this->Cell(40, 6, $this->conv('NOMBRE O RAZÓN SOCIAL:'), 1, 0, 'L');
@@ -111,12 +113,12 @@ $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
         $this->Cell(22, 6, $this->conv('C.I. O RUC:'), 1, 0, 'L');
         $this->Cell(43, 6, $this->conv($this->cliDni), 1, 1, 'L');
 
-        // DIRECCIÓN
-        $this->Cell(20, 6, $this->conv('DIRECCIÓN:'), 1, 0, 'L');
-        $this->Cell(100, 6, '', 1, 0, 'L');
+        // CELULAR
+        $this->Cell(15, 6, $this->conv('Celular:'), 1, 0, 'L');
+        $this->Cell(100, 6, $this->conv($this->cliCelular), 1, 0, 'L');
 
         $this->Cell(36, 6, $this->conv('NOTA DE REMISIÓN N°:'), 1, 0, 'L');
-        $this->Cell(34, 6, '', 1, 1, 'L');
+        $this->Cell(39, 6, '', 1, 1, 'L');
 
         $this->Ln(2);
     }
@@ -134,9 +136,6 @@ $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
         $w10   = 24;
         $h     = 6;
 
-        // Check compatible en ISO-8859-1
-        $check = "3";
-        // ENCABEZADO
         $this->SetFont('Arial','B',8);
         $this->Cell($wCant,$h,$this->conv('CANT.'),1,0,'C');
         $this->Cell($wDesc,$h,$this->conv('CLASE DE MERCADERÍAS Y/O SERVICIOS'),1,0,'C');
@@ -147,30 +146,25 @@ $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
 
         $this->SetFont('Arial','',8);
 
-        // TOTALES
         $total10 = 0;
 
         foreach ($items as $it) {
 
-    $this->Cell($wCant,$h,$it['cant'],1,0,'C');
-    $this->Cell($wDesc,$h,$this->conv($it['desc']),1,0,'L');
+            $this->Cell($wCant,$h,$it['cant'],1,0,'C');
+            $this->Cell($wDesc,$h,$this->conv($it['desc']),1,0,'L');
 
-    $this->Cell($wPU,$h,number_format($it['pu'],0,',','.'),1,0,'R');
+            $this->Cell($wPU,$h,number_format($it['pu'],0,',','.'),1,0,'R');
 
-    // EXENTAS
-    $this->Cell($wEx,$h,'0',1,0,'R');
+            $this->Cell($wEx,$h,'0',1,0,'R');
 
-    // IVA 5% VACÍO
-    $this->Cell($w5,$h,'',1,0,'C');
+            $this->Cell($w5,$h,'',1,0,'C');
 
-    // IVA 10% → SIN CHECK
-    $this->Cell($w10,$h,'',1,1,'C');
+            $this->Cell($w10,$h,'',1,1,'C');
 
-    $total10 += $it['pu'];
-}
+            $total10 += $it['pu'];
+        }
 
-
-        // RELLENO — SOLO 5 FILAS
+        // Relleno
         $maxFilas = 5;
         for ($i = count($items); $i < $maxFilas; $i++) {
             $this->Cell($wCant,$h,'',1,0);
@@ -181,82 +175,120 @@ $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
             $this->Cell($w10,$h,'',1,1);
         }
 
-        // TOTALES
         $this->Ln(2);
         $this->SetFont('Arial', '', 8);
 
-        $valorParcial = $total10 - ($total10 / 11); // precio sin IVA 10%
-$valorParcial = round($valorParcial);
-
-$this->Cell(30,6,$this->conv('VALOR PARCIAL'),1,0,'L');
-$this->Cell(160,6,number_format($valorParcial,0,',','.'),1,1,'R');
-
+        $valorParcial = round($total10 - ($total10 / 11));
+        $this->Cell(30,6,$this->conv('VALOR PARCIAL'),1,0,'L');
+        $this->Cell(160,6,number_format($valorParcial,0,',','.'),1,1,'R');
 
         $this->Cell(40,6,$this->conv('TOTAL A PAGAR Gs.'),1,0,'L');
         $this->Cell(150,6,number_format($total10,0,',','.'),1,1,'R');
 
+        $iva10calc = $total10 / 11;
+
         // IVA
-$iva10calc = $total10 / 11;
+        $this->SetFont('Arial','',8);
+        $this->Cell(50,6,$this->conv('LIQUIDACIÓN DEL IVA:'),1,0,'L');
+        $this->Cell(40,6,'5%',1,0,'C');
+        $this->Cell(40,6,'10%',1,0,'C');
+        $this->Cell(60,6,'TOTAL IVA',1,1,'C');
 
-// ENCABEZADO
-$this->SetFont('Arial','',8);
-$this->Cell(50,6,$this->conv('LIQUIDACIÓN DEL IVA:'),1,0,'L');
-$this->Cell(40,6,'5%',1,0,'C');
-$this->Cell(40,6,'10%',1,0,'C');
-$this->Cell(60,6,'TOTAL IVA',1,1,'C');
+        $this->Cell(50,6,'',1,0);
+        $this->Cell(40,6,'0',1,0,'R');
 
-// FILA DE VALORES
-$this->Cell(50,6,'',1,0);
+        $this->SetFont('ZapfDingbats','',11);
+        $this->Cell(40,6,"3",1,0,'C');   // ✔
 
-// IVA 5%
-$this->Cell(40,6,'0',1,0,'R');
-
-// IVA 10% con ✔
-$this->SetFont('ZapfDingbats','',11);
-$this->Cell(40,6,"3",1,0,'C');   // ✔
-
-$this->SetFont('Arial','',8);
-
-// TOTAL IVA
-$this->Cell(60,6,number_format($iva10calc,0,',','.'),1,1,'R');
-
+        $this->SetFont('Arial','',8);
+        $this->Cell(60,6,number_format($iva10calc,0,',','.'),1,1,'R');
 
         $this->Ln(3);
     }
 }
 
-// ======================================================
-// DATOS DEL FORMULARIO
-// ======================================================
-$cliNombre = $_POST['cliNombreFactura'] ?? 'Juan';
-$cliApellido = $_POST['cliApellidoFactura'] ?? 'García';
-$cliDni = $_POST['cliDniFactura'] ?? '3.456.789-0';
-$cliCelular = $_POST['cliCelularFactura'] ?? '0972 445566';
+/* ============================================================
+   ===============  FIN DE LA CLASE COMPLETA  =================
+   ============================================================ */
 
-// ITEMS DE PRUEBA
-$items = [
-    ['cant'=>2,'desc'=>'Servicio rectificación cilindro','pu'=>250000],
-    ['cant'=>1,'desc'=>'Cambio de aros y pistón','pu'=>180000],
-    ['cant'=>1,'desc'=>'Rectificación tapa cilindro','pu'=>220000],
+
+/* ============================================================
+   ===============     CARGA DE LA VENTA     ==================
+   ============================================================ */
+
+$id = intval($_GET['id'] ?? 0);
+if ($id <= 0) die("ID inválido");
+
+// Obtener cabecera
+$sql = $conexion->prepare("
+    SELECT v.*, c.nombre AS cliNombre, c.apellido AS cliApellido,
+           c.dni AS cliDni, c.celular AS cliCelular
+    FROM ventas v
+    LEFT JOIN clientes c ON c.idCliente = v.cliente_id
+    WHERE v.idVenta = ?
+");
+$sql->execute([$id]);
+$venta = $sql->fetch(PDO::FETCH_ASSOC);
+if (!$venta) die("Venta no encontrada");
+
+// Obtener detalle
+$sql2 = $conexion->prepare("
+    SELECT d.cantidad, d.precio_unitario, 
+       p.nombre,
+       m.nombre_marca,
+       c.nombre_categoria,
+       p.modelo
+FROM detalle_venta d
+JOIN producto p ON p.idProducto = d.producto_id
+join categoria c on p.Categoria_idCategoria = c.idCategoria
+join marcas m on p.marcas_idmarcas = m.idmarcas 
+WHERE d.venta_id = ?
+
+");
+$sql2->execute([$id]);
+$rows = $sql2->fetchAll(PDO::FETCH_ASSOC);
+
+$items = [];
+foreach ($rows as $r) {
+    // Construcción dinámica de descripción completa
+$descripcion = $r['nombre'];
+
+if (!empty($r['nombre_categoria'])) {
+    $descripcion .= " – Categoría: " . $r['nombre_categoria'];
+}
+
+if (!empty($r['nombre_marca'])) {
+    $descripcion .= " – Marca: " . $r['nombre_marca'];
+}
+
+if (!empty($r['modelo'])) {
+    $descripcion .= " – Modelo: " . $r['modelo'];
+}
+
+$items[] = [
+    'cant' => intval($r['cantidad']),
+    'desc' => $descripcion,
+    'pu'   => intval($r['precio_unitario']) * intval($r['cantidad']) // subtotal
 ];
 
-// GENERACIÓN PDF
+}
+
+/* ============================================================
+   ===============      GENERAR FACTURA      ==================
+   ============================================================ */
+
 $pdf = new FacturaParaguayaPDF('P','mm','A4');
 
-$pdf->cliNombre = $cliNombre;
-$pdf->cliApellido = $cliApellido;
-$pdf->cliDni = $cliDni;
-$pdf->cliCelular = $cliCelular;
-
-// ORIGINAL + DUPLICADO
-$pdf->AddPage();
-$pdf->datosCliente();
-$pdf->tablaItems($items);
+$pdf->cliNombre  = $venta['cliNombre'];
+$pdf->cliApellido = $venta['cliApellido'];
+$pdf->cliDni     = $venta['cliDni'];
+$pdf->cliCelular = $venta['cliCelular'];
+$pdf->metodoPago = $venta['metodo_pago'];
 
 $pdf->AddPage();
 $pdf->datosCliente();
 $pdf->tablaItems($items);
 
 if (ob_get_length()) ob_clean();
-$pdf->Output('I','factura_paraguaya_final.pdf');
+$pdf->Output('I', "factura_$id.pdf");
 exit;

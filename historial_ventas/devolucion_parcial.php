@@ -2,27 +2,54 @@
 require_once '../conexion/conexion.php';
 session_start();
 
-// Datos recibidos
-$idVenta = $_POST['idVenta'];
-$items = json_decode($_POST['items'], true); // array con productos y cantidades
-$motivo = $_POST['motivo'] ?? '';
-$usuario = $_SESSION['idusuario'];
+// ============================================
+// DEBUG (solo activar si necesitás ver qué llega)
+// ============================================
+// echo "<pre>POST RECIBIDO: "; print_r($_POST);
+// echo "JSON DE ITEMS: "; print_r(json_decode($_POST['items'], true));
+// exit;
 
 // ============================================
-// 1) Procesar cada producto seleccionado
+// 1) Recibir datos
+// ============================================
+$idVenta = $_POST['idVenta'];
+$items   = json_decode($_POST['items'], true);
+$motivo  = $_POST['motivo'] ?? '';
+$usuario = $_SESSION['idusuario'];
+
+// Seguridad mínima
+if (!$idVenta || !is_array($items)) {
+    echo "Error: Datos inválidos";
+    exit;
+}
+
+// ============================================
+// 2) Procesar cada producto seleccionado
 // ============================================
 foreach ($items as $it) {
 
+    // Validación
+    if (!isset($it['producto_id']) || !isset($it['cantidad'])) {
+        continue;
+    }
+
+    $idDetalle  = $it['idDetalle'];
     $productoId = $it['producto_id'];
     $cantidad   = $it['cantidad'];
 
-    // 1) Registrar devolución
-    $sql = "INSERT INTO devoluciones_venta (venta_id, producto_id, cantidad, usuario_id, motivo)
+    // -----------------------------------------------------
+    // A) Registrar devolución
+    // -----------------------------------------------------
+    $sql = "INSERT INTO devoluciones_venta 
+            (venta_id, producto_id, cantidad, usuario_id, motivo)
             VALUES (?,?,?,?,?)";
+
     $stmt = $conexion->prepare($sql);
     $stmt->execute([$idVenta, $productoId, $cantidad, $usuario, $motivo]);
 
-    // 2) Reponer stock en stock_producto
+    // -----------------------------------------------------
+    // B) Actualizar stock
+    // -----------------------------------------------------
     $upd = $conexion->prepare("
         UPDATE stock_producto 
         SET cantidad_actual = cantidad_actual + ?, 
@@ -31,17 +58,19 @@ foreach ($items as $it) {
     ");
     $upd->execute([$cantidad, $cantidad, $productoId]);
 
-    // 3) Actualizar detalle de venta
+    // -----------------------------------------------------
+    // C) Actualizar detalle de venta
+    // -----------------------------------------------------
     $upd2 = $conexion->prepare("
         UPDATE detalle_venta 
-        SET cantidad = cantidad - ?
-        WHERE venta_id = ? AND producto_id = ?
+        SET cantidad = cantidad - ?, devuelto = 1
+        WHERE idDetalle = ?
     ");
-    $upd2->execute([$cantidad, $idVenta, $productoId]);
+    $upd2->execute([$cantidad, $idDetalle]);
 }
 
 // ============================================
-// 2) ¿Quedó la venta en 0?
+// 3) ¿La venta quedó en cero?
 // ============================================
 $sqlCheck = $conexion->prepare("
     SELECT SUM(cantidad) AS totalRestante
@@ -51,11 +80,12 @@ $sqlCheck = $conexion->prepare("
 $sqlCheck->execute([$idVenta]);
 $totalRestante = $sqlCheck->fetchColumn();
 
-// Si quedó en cero
 if ($totalRestante == 0) {
-    echo "completa";
+    echo "completa";   // <-- esto detona "Venta cancelada completamente"
     exit;
 }
 
-// Sino todo OK
+// ============================================
+// 4) Todo bien
+// ============================================
 echo "ok";
