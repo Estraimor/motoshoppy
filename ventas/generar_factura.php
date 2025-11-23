@@ -3,7 +3,7 @@ require_once '../conexion/conexion.php';
 require_once '../vendor/setasign/fpdf/fpdf.php';
 
 /* ============================================================
-   ===============  CLASE COMPLETA DE LA FACTURA  ===============
+   ===============  CLASE COMPLETA FACTURA  ====================
    ============================================================ */
 
 class FacturaParaguayaPDF extends FPDF
@@ -14,181 +14,262 @@ class FacturaParaguayaPDF extends FPDF
     public $cliCelular;
     public $metodoPago;
 
-    // Conversión FPDF ISO
     function conv($txt) {
         return mb_convert_encoding($txt, 'ISO-8859-1', 'UTF-8');
     }
 
-    // Mes en español
     function mesEsp() {
         $meses = [
-            'January' => 'ENERO','February' => 'FEBRERO','March' => 'MARZO','April' => 'ABRIL',
-            'May' => 'MAYO','June' => 'JUNIO','July' => 'JULIO','August' => 'AGOSTO',
-            'September' => 'SEPTIEMBRE','October' => 'OCTUBRE','November' => 'NOVIEMBRE','December' => 'DICIEMBRE'
+            'January'=>'ENERO','February'=>'FEBRERO','March'=>'MARZO','April'=>'ABRIL',
+            'May'=>'MAYO','June'=>'JUNIO','July'=>'JULIO','August'=>'AGOSTO',
+            'September'=>'SEPTIEMBRE','October'=>'OCTUBRE','November'=>'NOVIEMBRE','December'=>'DICIEMBRE'
         ];
         return $meses[date('F')];
     }
 
-    // -------------------------------------------------------------
-    // HEADER
-    // -------------------------------------------------------------
+    /* ------------------------------------
+     * FUNCIÓN OFICIAL PARA MULTICELL ALTURA
+     * ------------------------------------ */
+    function NbLines($w, $txt)
+    {
+        $cw = &$this->CurrentFont['cw'];
+        if ($w == 0)
+            $w = $this->w - $this->rMargin - $this->x;
+        $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
+        $s = str_replace("\r", '', $txt);
+        $nb = strlen($s);
+        if ($nb > 0 && $s[$nb - 1] == "\n")
+            $nb--;
+        $sep = -1;
+        $i = 0;
+        $j = 0;
+        $l = 0;
+        $nl = 1;
+        while ($i < $nb)
+        {
+            $c = $s[$i];
+            if ($c == "\n")
+            {
+                $i++;
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+                continue;
+            }
+            if ($c == ' ')
+                $sep = $i;
+            $l += $cw[$c];
+            if ($l > $wmax)
+            {
+                if ($sep == -1)
+                {
+                    if ($i == $j)
+                        $i++;
+                }
+                else
+                    $i = $sep + 1;
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+            }
+            else
+                $i++;
+        }
+        return $nl;
+    }
+
+    /* ------------------------------------
+     * ENCABEZADO
+     * ------------------------------------ */
     function Header()
     {
-        // Marco general
-        $this->SetDrawColor(0,0,0);
+        // marco
         $this->Rect(10, 10, 190, 277);
 
-        // Banner superior
-        $this->SetFillColor(235, 235, 235);
-        $this->Rect(10, 10, 190, 32, 'F');
+        $this->SetFillColor(235,235,235);
+        $this->Rect(10,10,190,32,'F');
 
-        // Logo
-        $logoPath = "../uploads/img/logo_motosshoppy.jpg";
-        if (file_exists($logoPath)) {
-            $this->Image($logoPath, 12, 12, 70, 28);
+        // logo
+        $logo = "../uploads/img/logo_motosshoppy.jpg";
+        if(file_exists($logo)){
+            $this->Image($logo, 12, 12, 70, 28);
         }
 
-        // Título
+        // titulo
         $this->SetXY(90, 14);
-        $this->SetFont('Arial', 'B', 16);
-        $this->Cell(53, 7, $this->conv('RECTIFICADORA PAIVA'), 0, 2, 'C');
+        $this->SetFont('Arial','B',16);
+        $this->Cell(53,7,$this->conv('RECTIFICADORA PAIVA'),0,2,'C');
 
-        $this->SetFont('Arial', '', 7);
-        $this->MultiCell(60, 3.2, $this->conv(
+        $this->SetFont('Arial','',7);
+        $this->MultiCell(60,3.2,$this->conv(
             "Reparación de tapas - Armado de cigüeñal\n".
             "Rectificación de cilindros\n".
             "Ruta N°1 Km 2,5 - Encarnación - Itapúa - Paraguay\n".
             "Cel: (0975) 651 002 - jgaravandino@gmail.com"
-        ), 0, 'C');
+        ),0,'C');
 
-        // Cuadro timbrado derecha
-        $xR = 150; $yR = 12;
-        $this->Rect($xR, $yR, 48, 28);
+        // timbrado
+        $xR = 150;
+        $yR = 12;
 
-        $this->SetXY($xR + 2, $yR + 2);
-        $this->SetFont('Arial', '', 7);
-        $this->MultiCell(43, 3, $this->conv(
+        $this->Rect($xR,$yR,48,28);
+
+        $this->SetXY($xR+2,$yR+2);
+        $this->SetFont('Arial','',7);
+        $this->MultiCell(43,3,$this->conv(
             "TIMBRADO N°: 18.348.377\n".
-            "Fecha Inicio Vigencia: 02/10/2025\n".
-            "Fecha Fin Vigencia: 31/10/2026\n".
+            "Inicio: 02/10/2025\n".
+            "Fin: 31/10/2026\n".
             "RUC: 3.281.779-7"
-        ), 0, 'L');
+        ),0,'L');
 
-        // Factura
-        $this->SetXY($xR + 2, $yR + 16);
-        $this->SetFont('Arial', 'B', 12);
-        $this->Cell(44, 5, $this->conv('FACTURA'), 0, 2, 'C');
-        $this->Cell(44, 5, $this->conv('N° ...-...-.......'), 0, 0, 'C');
+        $this->SetXY($xR+2,$yR+16);
+        $this->SetFont('Arial','B',12);
+        $this->Cell(44,5,$this->conv('FACTURA'),0,2,'C');
+        $this->Cell(44,5,$this->conv('N° ...-...-.......'),0,0,'C');
 
         $this->Ln(18);
     }
 
-    // -------------------------------------------------------------
-    // DATOS CLIENTE
-    // -------------------------------------------------------------
+    /* ------------------------------------
+     * DATOS DEL CLIENTE
+     * ------------------------------------ */
     function datosCliente()
     {
-        $this->SetFont('Arial', '', 8);
-        $this->SetY(45);
+        $this->SetFont('Arial','',8);
+        $this->SetY($this->GetY());
 
         // FECHA
-        $this->Cell(22, 6, $this->conv('FECHA'), 1, 0, 'L');
-        $this->Cell(28, 6, $this->conv(date("d/m/Y")), 1, 0, 'L');
+        $this->Cell(22,6,$this->conv('FECHA'),1,0,'L');
+        $this->Cell(28,6,$this->conv(date("d/m/Y")),1,0,'L');
 
-        $this->Cell(18, 6, $this->conv('DE'), 1, 0, 'L');
-        $this->Cell(22, 6, $this->conv($this->mesEsp()), 1, 0, 'L');
+        $this->Cell(18,6,$this->conv('DE'),1,0,'L');
+        $this->Cell(22,6,$this->conv($this->mesEsp()),1,0,'L');
 
-        $this->Cell(12, 6, $this->conv('DE 20'), 1, 0, 'L');
-        $this->Cell(14, 6, $this->conv(substr(date("Y"),2)), 1, 0, 'L');
+        $this->Cell(12,6,$this->conv('DE 20'),1,0,'L');
+        $this->Cell(14,6,$this->conv(substr(date("Y"),2)),1,0,'L');
 
-        // MÉTODO DE PAGO
-        $this->Cell(39, 6, $this->conv('MÉTODO DE PAGO'), 1, 0, 'L');
-        $metodo = $this->metodoPago ?? '---';
-        $this->Cell(35, 6, $this->conv($metodo), 1, 1, 'C');
+        // metodo pago
+        $this->Cell(39,6,$this->conv('MÉTODO DE PAGO'),1,0,'L');
+        $met = $this->metodoPago ?? '---';
+        $this->Cell(35,6,$this->conv($met),1,1,'C');
 
-        // CLIENTE
-        $this->Cell(40, 6, $this->conv('NOMBRE O RAZÓN SOCIAL:'), 1, 0, 'L');
-        $this->Cell(85, 6, $this->conv($this->cliNombre . " " . $this->cliApellido), 1, 0, 'L');
+        // cliente
+        $this->Cell(40,6,$this->conv('NOMBRE O RAZÓN SOCIAL:'),1,0,'L');
+        $this->Cell(85,6,$this->conv($this->cliNombre." ".$this->cliApellido),1,0,'L');
 
-        $this->Cell(22, 6, $this->conv('C.I. O RUC:'), 1, 0, 'L');
-        $this->Cell(43, 6, $this->conv($this->cliDni), 1, 1, 'L');
+        $this->Cell(22,6,$this->conv('C.I / RUC:'),1,0,'L');
+        $this->Cell(43,6,$this->conv($this->cliDni),1,1,'L');
 
-        // CELULAR
-        $this->Cell(15, 6, $this->conv('Celular:'), 1, 0, 'L');
-        $this->Cell(100, 6, $this->conv($this->cliCelular), 1, 0, 'L');
-
-        $this->Cell(36, 6, $this->conv('NOTA DE REMISIÓN N°:'), 1, 0, 'L');
-        $this->Cell(39, 6, '', 1, 1, 'L');
+        // CEL
+        $this->Cell(15,6,$this->conv('Celular:'),1,0,'L');
+        $this->Cell(100,6,$this->conv($this->cliCelular),1,0,'L');
+        $this->Cell(36,6,$this->conv('NOTA REMISIÓN N°:'),1,0,'L');
+        $this->Cell(39,6,'',1,1,'L');
 
         $this->Ln(2);
     }
 
-    // -------------------------------------------------------------
-    // TABLA ITEMS
-    // -------------------------------------------------------------
+    /* ------------------------------------
+     * TABLA ITEMS (CON ALTURA DINÁMICA)
+     * ------------------------------------ */
     function tablaItems($items)
     {
-        $wCant = 15;
-        $wDesc = 80;
-        $wPU   = 25;
-        $wEx   = 23;
-        $w5    = 23;
-        $w10   = 24;
-        $h     = 6;
+        $wCant  = 12;
+        $wNom   = 40;
+        $wCat   = 30;
+        $wMarca = 28;
+        $wModelo= 25;
+        $wPU    = 20;
+        $wEx    = 15;
+        $w5     = 10;
+        $w10    = 10;
+        $h      = 6;
 
+        // encabezado
         $this->SetFont('Arial','B',8);
-        $this->Cell($wCant,$h,$this->conv('CANT.'),1,0,'C');
-        $this->Cell($wDesc,$h,$this->conv('CLASE DE MERCADERÍAS Y/O SERVICIOS'),1,0,'C');
-        $this->Cell($wPU,$h,$this->conv('PRECIO UNITARIO'),1,0,'C');
-        $this->Cell($wEx,$h,$this->conv('EXENTAS'),1,0,'C');
+        $this->Cell($wCant,$h,$this->conv('CANT'),1,0,'C');
+        $this->Cell($wNom,$h,$this->conv('NOMBRE'),1,0,'C');
+        $this->Cell($wCat,$h,$this->conv('CATEGORÍA'),1,0,'C');
+        $this->Cell($wMarca,$h,$this->conv('MARCA'),1,0,'C');
+        $this->Cell($wModelo,$h,$this->conv('MODELO'),1,0,'C');
+        $this->Cell($wPU,$h,$this->conv('P. UNIT'),1,0,'C');
+        $this->Cell($wEx,$h,$this->conv('EXENTA'),1,0,'C');
         $this->Cell($w5,$h,$this->conv('5%'),1,0,'C');
-        $this->Cell($w10,$h,$this->conv('10% '),1,1,'C');
+        $this->Cell($w10,$h,$this->conv('10%'),1,1,'C');
 
         $this->SetFont('Arial','',8);
 
         $total10 = 0;
 
-        foreach ($items as $it) {
+        foreach($items as $it){
 
-            $this->Cell($wCant,$h,$it['cant'],1,0,'C');
-            $this->Cell($wDesc,$h,$this->conv($it['desc']),1,0,'L');
+    // calcular lineas para el nombre
+    $txt = $this->conv($it['nombre']);
+    $lineas = $this->NbLines($wNom, $txt);
+    $hFila = max(6, $lineas * 5);
 
-            $this->Cell($wPU,$h,number_format($it['pu'],0,',','.'),1,0,'R');
+    // salto de página
+    if($this->GetY() + $hFila > 255){
+        $this->AddPage();
+        $this->datosCliente();
 
-            $this->Cell($wEx,$h,'0',1,0,'R');
+        $this->SetFont('Arial','B',8);
+        $this->Cell($wCant,$h,$this->conv('CANT'),1,0,'C');
+        $this->Cell($wNom,$h,$this->conv('NOMBRE'),1,0,'C');
+        $this->Cell($wCat,$h,$this->conv('CATEGORÍA'),1,0,'C');
+        $this->Cell($wMarca,$h,$this->conv('MARCA'),1,0,'C');
+        $this->Cell($wModelo,$h,$this->conv('MODELO'),1,0,'C');
+        $this->Cell($wPU,$h,$this->conv('P. UNIT'),1,0,'C');
+        $this->Cell($wEx,$h,$this->conv('EXENTA'),1,0,'C');
+        $this->Cell($w5,$h,$this->conv('5%'),1,0,'C');
+        $this->Cell($w10,$h,$this->conv('10%'),1,1,'C');
+        $this->SetFont('Arial','',8);
+    }
 
-            $this->Cell($w5,$h,'',1,0,'C');
+    // === CANT ===
+    $this->Cell($wCant,$hFila,$it['cant'],1,0,'C');
 
-            $this->Cell($w10,$h,'',1,1,'C');
+    // === NOMBRE (MULTICELL) ===
+    $x = $this->GetX();
+    $y = $this->GetY();
 
-            $total10 += $it['pu'];
-        }
+    // SIN BORDE -> luego dibujamos el rect manual
+    $this->MultiCell($wNom,5,$txt,0,'L');
 
-        // Relleno
-        $maxFilas = 5;
-        for ($i = count($items); $i < $maxFilas; $i++) {
-            $this->Cell($wCant,$h,'',1,0);
-            $this->Cell($wDesc,$h,'',1,0);
-            $this->Cell($wPU,$h,'',1,0);
-            $this->Cell($wEx,$h,'',1,0);
-            $this->Cell($w5,$h,'',1,0);
-            $this->Cell($w10,$h,'',1,1);
-        }
+    // regresar el cursor para seguir columnas
+    $this->SetXY($x+$wNom, $y);
 
+    // dibujar borde del nombre según altura dinámica
+    $this->Rect($x, $y, $wNom, $hFila);
+
+    // === RESTO COLUMNAS (MISMA ALTURA) ===
+    $this->Cell($wCat,$hFila,$this->conv($it['categoria']),1,0,'L');
+    $this->Cell($wMarca,$hFila,$this->conv($it['marca']),1,0,'L');
+    $this->Cell($wModelo,$hFila,$this->conv($it['modelo']),1,0,'L');
+    $this->Cell($wPU,$hFila,number_format($it['pu'],0,',','.'),1,0,'R');
+    $this->Cell($wEx,$hFila,'0',1,0,'R');
+    $this->Cell($w5,$hFila,'',1,0,'C');
+    $this->Cell($w10,$hFila,'',1,1,'C');
+
+    $total10 += $it['pu'];
+}
+
+
+        // PIE
         $this->Ln(2);
-        $this->SetFont('Arial', '', 8);
 
-        $valorParcial = round($total10 - ($total10 / 11));
+        $valorParcial = round($total10 - ($total10/11));
         $this->Cell(30,6,$this->conv('VALOR PARCIAL'),1,0,'L');
         $this->Cell(160,6,number_format($valorParcial,0,',','.'),1,1,'R');
 
         $this->Cell(40,6,$this->conv('TOTAL A PAGAR Gs.'),1,0,'L');
         $this->Cell(150,6,number_format($total10,0,',','.'),1,1,'R');
 
-        $iva10calc = $total10 / 11;
+        $iva10 = $total10/11;
 
-        // IVA
-        $this->SetFont('Arial','',8);
         $this->Cell(50,6,$this->conv('LIQUIDACIÓN DEL IVA:'),1,0,'L');
         $this->Cell(40,6,'5%',1,0,'C');
         $this->Cell(40,6,'10%',1,0,'C');
@@ -198,28 +279,20 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(40,6,'0',1,0,'R');
 
         $this->SetFont('ZapfDingbats','',11);
-        $this->Cell(40,6,"3",1,0,'C');   // ✔
+        $this->Cell(40,6,"3",1,0,'C');
 
         $this->SetFont('Arial','',8);
-        $this->Cell(60,6,number_format($iva10calc,0,',','.'),1,1,'R');
-
-        $this->Ln(3);
+        $this->Cell(60,6,number_format($iva10,0,',','.'),1,1,'R');
     }
 }
 
 /* ============================================================
-   ===============  FIN DE LA CLASE COMPLETA  =================
-   ============================================================ */
-
-
-/* ============================================================
-   ===============     CARGA DE LA VENTA     ==================
+   ===============    CARGA DE LA VENTA    =====================
    ============================================================ */
 
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) die("ID inválido");
 
-// Obtener cabecera
 $sql = $conexion->prepare("
     SELECT v.*, c.nombre AS cliNombre, c.apellido AS cliApellido,
            c.dni AS cliDni, c.celular AS cliCelular
@@ -231,64 +304,79 @@ $sql->execute([$id]);
 $venta = $sql->fetch(PDO::FETCH_ASSOC);
 if (!$venta) die("Venta no encontrada");
 
-// Obtener detalle
 $sql2 = $conexion->prepare("
     SELECT d.cantidad, d.precio_unitario, 
-       p.nombre,
-       m.nombre_marca,
-       c.nombre_categoria,
-       p.modelo
-FROM detalle_venta d
-JOIN producto p ON p.idProducto = d.producto_id
-join categoria c on p.Categoria_idCategoria = c.idCategoria
-join marcas m on p.marcas_idmarcas = m.idmarcas 
-WHERE d.venta_id = ?
-
+           p.nombre,
+           m.nombre_marca,
+           c.nombre_categoria,
+           p.modelo
+    FROM detalle_venta d
+    JOIN producto p ON p.idProducto = d.producto_id
+    JOIN categoria c ON p.Categoria_idCategoria = c.idCategoria
+    JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
+    WHERE d.venta_id = ?
 ");
 $sql2->execute([$id]);
 $rows = $sql2->fetchAll(PDO::FETCH_ASSOC);
 
 $items = [];
 foreach ($rows as $r) {
-    // Construcción dinámica de descripción completa
-$descripcion = $r['nombre'];
 
-if (!empty($r['nombre_categoria'])) {
-    $descripcion .= " – Categoría: " . $r['nombre_categoria'];
-}
+    $nombre     = str_replace(['–','—'],'-',$r['nombre']);
+    $categoria  = str_replace(['–','—'],'-',$r['nombre_categoria']);
+    $marca      = str_replace(['–','—'],'-',$r['nombre_marca']);
+    $modelo     = str_replace(['–','—'],'-',$r['modelo']);
 
-if (!empty($r['nombre_marca'])) {
-    $descripcion .= " – Marca: " . $r['nombre_marca'];
-}
-
-if (!empty($r['modelo'])) {
-    $descripcion .= " – Modelo: " . $r['modelo'];
-}
-
-$items[] = [
-    'cant' => intval($r['cantidad']),
-    'desc' => $descripcion,
-    'pu'   => intval($r['precio_unitario']) * intval($r['cantidad']) // subtotal
-];
-
+    $items[] = [
+        'cant'      => intval($r['cantidad']),
+        'nombre'    => $nombre,
+        'categoria' => $categoria,
+        'marca'     => $marca,
+        'modelo'    => $modelo,
+        'pu'        => intval($r['precio_unitario']) * intval($r['cantidad'])
+    ];
 }
 
 /* ============================================================
-   ===============      GENERAR FACTURA      ==================
+   ===============     GENERAR 2 COPIAS      ==================
    ============================================================ */
 
 $pdf = new FacturaParaguayaPDF('P','mm','A4');
 
-$pdf->cliNombre  = $venta['cliNombre'];
+$pdf->cliNombre   = $venta['cliNombre'];
 $pdf->cliApellido = $venta['cliApellido'];
-$pdf->cliDni     = $venta['cliDni'];
-$pdf->cliCelular = $venta['cliCelular'];
-$pdf->metodoPago = $venta['metodo_pago'];
+$pdf->cliDni      = $venta['cliDni'];
+$pdf->cliCelular  = $venta['cliCelular'];
+$pdf->metodoPago  = $venta['metodo_pago'];
 
 $pdf->AddPage();
+
+// COPIA 1 - CLIENTE
+$pdf->SetFont('Arial','B',10);
+$pdf->Ln(2);
+
 $pdf->datosCliente();
 $pdf->tablaItems($items);
 
+/* ============================================================
+   ===============   COPIA PARA EL EMPLEADOR   =================
+   ============================================================ */
+
+// Nueva hoja
+$pdf->AddPage();
+
+// TEXTO DE COPIA
+$pdf->SetFont('Arial','B',12);
+$pdf->Cell(190,8, $pdf->conv('COPIA PARA EL EMPLEADOR'),0,1,'C');
+$pdf->Ln(2);
+
+// Volvemos a imprimir todo el encabezado y datos del cliente
+$pdf->datosCliente();
+
+// Tabla de ítems nuevamente
+$pdf->tablaItems($items);
+
+
 if (ob_get_length()) ob_clean();
-$pdf->Output('I', "factura_$id.pdf");
+$pdf->Output('I',"factura_$id.pdf");
 exit;
