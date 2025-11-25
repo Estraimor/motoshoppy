@@ -1,16 +1,20 @@
-.devuelto-parcial td {
+/* Fila devuelta: amarillo quemado
+tr.devuelto-parcial,
+tr.devuelto-parcial td,
+.table-dark tr.devuelto-parcial td {
     background-color: #a37f00 !important;
-    color: #fff !important;
-}
-/* Venta cancelada o devuelta totalmente → rojo */
-.venta-cancelada td,
-.venta-devuelta-total td {
-    background-color: #a80000 !important;
     color: #fff !important;
 }
 
-/* Venta con devolución parcial → amarillo */
-.venta-devuelta-parcial td {
+/* Venta cancelada o totalmente devuelta: rojo */
+/* .venta-cancelada td,
+.venta-devuelta-total td {
+    background-color: #a80000 !important;
+    color: #fff !important;
+} */
+
+/* Venta con devolución parcial: amarillo */
+/* .venta-devuelta-parcial td {
     background-color: #a37f00 !important;
     color: #fff !important;
-}
+} */

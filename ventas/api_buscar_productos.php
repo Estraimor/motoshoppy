@@ -32,6 +32,7 @@ SELECT
   c.idCategoria,
   s.cantidad_actual AS stock_actual,
   s.stock_minimo,
+  s.cantidad_exhibida,
   CASE 
     WHEN s.cantidad_actual <= 0 THEN 'sin_stock'
     WHEN s.cantidad_actual <= s.stock_minimo THEN 'bajo_stock'
@@ -49,6 +50,7 @@ LEFT JOIN stock_producto s ON s.producto_idProducto = p.idProducto
 LEFT JOIN atributos_cubiertas ac ON ac.producto_idProducto = p.idProducto
 WHERE 1=1
 ";
+
 
 
 
@@ -120,12 +122,18 @@ foreach ($rows as $r) {
   }
   $r['descripcion_res'] = $mini;
 
-  // Control visual de stock
-  $stock = (int)($r['stock_actual'] ?? 0);
-  $r['stock_estado'] = $stock <= 0 ? 'sin_stock' : ($stock <= ($r['stock_minimo'] ?? 1) ? 'bajo_stock' : 'ok');
-  $r['stock_actual'] = $stock;
+  // Control visual de stock usando cantidad_exhibida
+$exhibido = (int)($r['cantidad_exhibida'] ?? 0);
 
-  $out[] = $r;
+$r['stock_estado'] = 
+    $exhibido <= 0 ? 'sin_stock' :
+    ($exhibido <= ($r['stock_minimo'] ?? 1) ? 'bajo_stock' : 'ok');
+
+// Reescribo stock_actual con el valor que realmente querés mostrar
+$r['stock_actual'] = $exhibido;
+
+$out[] = $r;
+
 }
 
 /* ==========================

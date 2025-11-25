@@ -167,121 +167,124 @@
             JAVASCRIPT
     ================================ -->
     <script>
-    $(document).ready(() => {
+$(document).ready(() => {
 
-        $('#tablaHistorial').DataTable({
-            order: [[1, 'desc']],
-            pageLength: 10
-        });
-
-        // ===============================
-        //   VER DETALLE
-        // ===============================
-        $(document).on("click", ".ver-detalle", function(){
-
-            $("#d_fecha").text($(this).data("fecha"));
-            $("#d_vendedor").text($(this).data("vendedor"));
-            $("#d_metodo").text($(this).data("metodo"));
-            $("#d_comprobante").text($(this).data("comprobante"));
-            $("#d_total").text("$" + $(this).data("total"));
-
-            let idVenta = $(this).data("id");
-
-            $.post("obtener_detalle.php", { idVenta, modo: "view" }, function(data){
-                $("#detalleContenido").html(data);
-                $("#modalDetalle").modal("show");
-
-                $("#btnCancelarVentaContainer").html(
-                    `<button class="btn btn-danger" id="btnCancelarVenta" data-id="${idVenta}">
-                        ❌ Cancelar Venta Completa
-                    </button>`
-                );
-
-                $("#btnDevolverParcialContainer").html(
-                    `<button class="btn btn-primary" id="btnDevolverParcial" data-id="${idVenta}">
-                        🔄 Devolución Parcial
-                    </button>`
-                );
-            });
-        });
-
+    // ===========================================
+    //  TABLA HISTORIAL
+    // ===========================================
+    $('#tablaHistorial').DataTable({
+        order: [[1, 'desc']],
+        pageLength: 10
     });
 
+    // ===========================================
+    //  VER DETALLE
+    // ===========================================
+    $(document).on("click", ".ver-detalle", function(){
 
-    // ===============================
-    //   CANCELAR VENTA COMPLETA
-    // ===============================
-    $(document).on("click", "#btnCancelarVenta", function(){
-        let id = $(this).data("id");
-
-        Swal.fire({
-            title: "¿Cancelar venta completa?",
-            input: "text",
-            inputLabel: "Motivo de la cancelación",
-            inputPlaceholder: "Ej: Producto defectuoso, error de carga, etc",
-            showCancelButton: true,
-            confirmButtonText: "Cancelar Venta",
-            confirmButtonColor: "#d33"
-        }).then(result=>{
-            if(result.isConfirmed){
-                $.post("cancelar_venta.php", {idVenta:id, motivo: result.value}, function(resp){
-                    if(resp.trim()=="ok"){
-                        Swal.fire("✅ Venta Cancelada","","success").then(()=>location.reload());
-                    }
-                });
-            }
-        });
-    });
-
-
-    // ===============================
-    //   DEVOLUCIÓN PARCIAL
-    // ===============================
-    $(document).on("click", "#btnDevolverParcial", function () {
+        $("#d_fecha").text($(this).data("fecha"));
+        $("#d_vendedor").text($(this).data("vendedor"));
+        $("#d_metodo").text($(this).data("metodo"));
+        $("#d_comprobante").text($(this).data("comprobante"));
+        $("#d_total").text("$" + $(this).data("total"));
 
         let idVenta = $(this).data("id");
 
-        $.post("obtener_detalle.php", { idVenta, modo: "select" }, function (html) {
+        $.post("obtener_detalle.php", { idVenta, modo: "view" }, function(data){
+            $("#detalleContenido").html(data);
+            $("#modalDetalle").modal("show");
 
-            $("#detalleContenido").html(html);
+            $("#btnCancelarVentaContainer").html(`
+                <button class="btn btn-danger" id="btnCancelarVenta" data-id="${idVenta}">
+                    ❌ Cancelar Venta Completa
+                </button>
+            `);
 
-            $("#detalleContenido").append(`
-                <div class="mt-3">
-                    <label class="fw-bold">Motivo de la devolución</label>
-                    <textarea id="dp_motivo" 
-                        class="form-control" 
-                        style="height:90px; resize:none;"
-                        placeholder="Escribí el motivo..."></textarea>
-                </div>
-
-                <div class="text-end mt-3">
-                    <button class="btn btn-primary"
-                            id="btnConfirmarDevolucion"
-                            data-id="${idVenta}">
-                        Confirmar Devolución
-                    </button>
-                </div>
+            $("#btnDevolverParcialContainer").html(`
+                <button class="btn btn-primary" id="btnDevolverParcial" data-id="${idVenta}">
+                    🔄 Devolución Parcial
+                </button>
             `);
         });
     });
 
+});
 
-    // ===============================
-    //   CONFIRMAR DEVOLUCIÓN PARCIAL
-    // ===============================
-    $(document).on("click", "#btnConfirmarDevolucion", function () {
 
-        let idVenta = $(this).data("id");
-        let motivo = $("#dp_motivo").val().trim();
+// ===========================================
+//  CANCELAR VENTA COMPLETA
+// ===========================================
+$(document).on("click", "#btnCancelarVenta", function(){
+    let id = $(this).data("id");
 
-        if (motivo === "") {
-            Swal.fire("Atención", "Ingresá un motivo.", "warning");
-            return;
+    Swal.fire({
+        title: "¿Cancelar venta completa?",
+        input: "text",
+        inputLabel: "Motivo de la cancelación",
+        inputPlaceholder: "Ej: Producto defectuoso, error de carga, etc",
+        showCancelButton: true,
+        confirmButtonText: "Cancelar Venta",
+        confirmButtonColor: "#d33"
+    }).then(result=>{
+        if(result.isConfirmed){
+            $.post("cancelar_venta.php", {idVenta:id, motivo: result.value}, function(resp){
+                if(resp.trim()=="ok"){
+                    Swal.fire("✅ Venta Cancelada","","success").then(()=>location.reload());
+                }
+            });
         }
+    });
+});
 
-        let items = [];
 
-        $(".chkDevolver:checked").each(function () {
+// ===========================================
+//  ABRIR MODO DEVOLUCIÓN PARCIAL
+// ===========================================
+$(document).on("click", "#btnDevolverParcial", function () {
+
+    let idVenta = $(this).data("id");
+
+    $.post("obtener_detalle.php", { idVenta, modo: "select" }, function (html) {
+
+        $("#detalleContenido").html(html);
+
+        $("#detalleContenido").append(`
+            <div class="mt-3">
+                <label class="fw-bold">Motivo de la devolución</label>
+                <textarea id="dp_motivo" 
+                    class="form-control" 
+                    style="height:90px; resize:none;"
+                    placeholder="Escribí el motivo..."></textarea>
+            </div>
+
+            <div class="text-end mt-3">
+                <button class="btn btn-primary"
+                        id="btnConfirmarDevolucion"
+                        data-id="${idVenta}">
+                    Confirmar Devolución
+                </button>
+            </div>
+        `);
+    });
+});
+
+
+// ===========================================
+//  CONFIRMAR DEVOLUCIÓN PARCIAL
+// ===========================================
+$(document).on("click", "#btnConfirmarDevolucion", function () {
+
+    let idVenta = $(this).data("id");
+    let motivo = $("#dp_motivo").val().trim();
+
+    if (motivo === "") {
+        Swal.fire("Atención", "Ingresá un motivo.", "warning");
+        return;
+    }
+
+    let items = [];
+
+    $(".chkDevolver:checked").each(function () {
 
         let idDetalle = $(this).attr("data-id");
         let productoId = $(this).attr("data-producto");
@@ -294,28 +297,47 @@
         });
     });
 
+    if (items.length === 0) {
+        Swal.fire("Error", "Seleccioná al menos un producto válido.", "error");
+        return;
+    }
 
-        if (items.length === 0) {
-            Swal.fire("Error", "Seleccioná al menos un producto válido.", "error");
-            return;
+    $.post("devolucion_parcial.php", {
+        idVenta: idVenta,
+        motivo: motivo,
+        items: JSON.stringify(items)
+    }, function (resp) {
+
+        resp = resp.trim();
+
+        console.log("RESPUESTA:", resp);
+
+        // =====================================
+        //  MANEJO DE RESPUESTAS DEL BACKEND
+        // =====================================
+
+        if (resp === "ok") {
+            Swal.fire("Devolución realizada", "", "success")
+                .then(()=> location.reload());
         }
-        console.log("ITEMS A ENVIAR:", items);
-        $.post("devolucion_parcial.php", {
-            idVenta: idVenta,
-            motivo: motivo,
-            items: JSON.stringify(items)    // ✅ AHORA ENVÍA EL ARRAY CORRECTO
-        }, function (resp) {
-
-            if (resp.trim() === "ok") {
-                Swal.fire("Devolución realizada", "", "success")
-                    .then(()=> location.reload());
-            } 
-            else {
-                Swal.fire("Error", resp, "error");
-            }
-        });
+        else if (resp === "completa") {
+            Swal.fire("Venta completamente devuelta", "", "success")
+                .then(()=> location.reload());
+        }
+        else if (resp === "no_hay_productos") {
+            Swal.fire(
+                "No hay productos para devolver",
+                "Todos los productos ya fueron devueltos previamente.",
+                "error"
+            );
+        }
+        else {
+            Swal.fire("Error inesperado", resp, "error");
+        }
     });
-    </script>
+});
+</script>
+
 
 
     <?php include '../dashboard/footer.php'; ?>
