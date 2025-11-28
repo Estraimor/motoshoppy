@@ -1,8 +1,9 @@
 <?php
 require_once '../conexion/conexion.php';
 
-$idVenta = $_POST['idVenta'];
-$modo = $_POST['modo'] ?? 'view'; // view = normal, select = con checkbox
+// Asegura que llegue como número limpio
+$idVenta = intval(trim($_POST['idVenta']));
+$modo = $_POST['modo'] ?? 'view';
 
 $sql = "
 SELECT 
@@ -12,14 +13,6 @@ SELECT
     dv.precio_unitario, 
     dv.subtotal,
     dv.devuelto,
-
-    -- 🔥 Verifica si este producto tiene devoluciones reales
-    (
-        SELECT COUNT(*) 
-        FROM devoluciones_venta dvv
-        WHERE dvv.venta_id = dv.venta_id
-          AND dvv.producto_id = dv.producto_id   -- ✔ CORREGIDO
-    ) AS devuelto_real,
 
     p.nombre, 
     p.modelo,
@@ -35,6 +28,7 @@ LEFT JOIN ubicacion_producto u
        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
 
 WHERE dv.venta_id = :idVenta
+ORDER BY dv.idDetalle ASC
 ";
 
 $stmt = $conexion->prepare($sql);
@@ -43,14 +37,6 @@ $stmt->execute();
 $detalles = $stmt->fetchAll();
 ?>
 
-<style>
-tr.devuelto-parcial,
-tr.devuelto-parcial td,
-.table-dark tr.devuelto-parcial td {
-    background-color: #a37f00 !important;
-    color: #fff !important;
-}
-</style>
 
 <table class="table table-dark table-striped table-bordered align-middle">
     <thead class="table-secondary text-dark">
@@ -70,11 +56,12 @@ tr.devuelto-parcial td,
     </thead>
 
     <tbody>
+
     <?php foreach ($detalles as $row): ?>
 
         <?php
-        // 🔥 Regla final: Se pinta solo si devuelto=1 Y tiene devoluciones registradas
-        $pintar = ($row['devuelto'] == 1 && $row['devuelto_real'] > 0);
+        // Pintar SOLO si devuelto = 1
+        $pintar = ($row['devuelto'] == 1);
         ?>
 
         <tr class="<?= $pintar ? 'devuelto-parcial' : '' ?>">
@@ -93,9 +80,10 @@ tr.devuelto-parcial td,
             </td>
             <?php endif; ?>
 
-            <td><?= $row['nombre'] ?></td>
+            <td><?= $row['producto_id'] ?> - <?= $row['nombre'] ?></td>
             <td><?= $row['nombre_marca'] ?: '-' ?></td>
             <td><?= $row['modelo'] ?: '-' ?></td>
+
             <td>
                 <?= $row['ubicacion_lugar'] 
                     ? $row['ubicacion_lugar'] . ' / Est. ' . $row['ubicacion_estante']
@@ -111,8 +99,11 @@ tr.devuelto-parcial td,
             <td class="text-end">
                 $<?= number_format($row['subtotal'], 2, ',', '.') ?>
             </td>
+
         </tr>
 
     <?php endforeach; ?>
+
     </tbody>
 </table>
+                

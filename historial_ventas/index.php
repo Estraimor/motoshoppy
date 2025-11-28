@@ -65,21 +65,22 @@
                 <?php foreach ($ventas as $row): ?>
 
         <?php
-        // Determinar color según estado
-        $clase = "";
+       $clase = "";
 
-        // Venta cancelada → Rojo
-        if ($row['esta_cancelada'] > 0) {
-            $clase = "venta-cancelada";
+// cancelada
+if ($row['esta_cancelada'] > 0) {
+    $clase = "venta-cancelada";
 
-        // Devolución completa → rojo
-        } elseif ($row['productos_devueltos'] > 0 && $row['productos_devueltos'] == $row['cant_productos']) {
-            $clase = "venta-devuelta-total";
+// devolución parcial o total
+} elseif ($row['productos_devueltos'] > 0) {
+    
+    if ($row['productos_devueltos'] == $row['cant_productos']) {
+        $clase = "venta-devuelta-total";
+    } else {
+        $clase = "venta-devuelta-parcial";
+    }
+}
 
-        // Devolución parcial → amarillo
-        } elseif ($row['productos_devueltos'] > 0) {
-            $clase = "venta-devuelta-parcial";
-        }
         ?>
 
         <tr class="<?= $clase ?>">

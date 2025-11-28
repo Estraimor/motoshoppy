@@ -1,4 +1,4 @@
-/* Fila devuelta: amarillo quemado
+/* Fila de venta con devolución parcial: color de fondo y texto */
 tr.devuelto-parcial,
 tr.devuelto-parcial td,
 .table-dark tr.devuelto-parcial td {
@@ -7,14 +7,17 @@ tr.devuelto-parcial td,
 }
 
 /* Venta cancelada o totalmente devuelta: rojo */
-/* .venta-cancelada td,
+ .venta-cancelada td,
 .venta-devuelta-total td {
     background-color: #a80000 !important;
     color: #fff !important;
-} */
+} 
 
 /* Venta con devolución parcial: amarillo */
-/* .venta-devuelta-parcial td {
+ .venta-devuelta-parcial td {
     background-color: #a37f00 !important;
     color: #fff !important;
-} */
+} 
+.devuelto-parcial {
+    background-color: #c9a500 !important;
+}

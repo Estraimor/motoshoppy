@@ -339,17 +339,28 @@ async function cargarGraficoStock() {
     const res = await fetch('/motoshoppy/config_index/get_stock_estado.php');
     const data = await res.json();
 
+    // Datos del stock general
+    const optimo = data.general.optimo;
+    const bajo = data.general.bajo;
+    const sin = data.general.sin;
+
     const ctx = document.getElementById('graficoStock');
-    new Chart(ctx, {
+
+    // Destruir gráfico previo si existe (evita superposición)
+    if (ctx.chartInstance) {
+      ctx.chartInstance.destroy();
+    }
+
+    ctx.chartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Stock óptimo', 'Bajo stock', 'Sin stock'],
         datasets: [{
-          data: [data.optimo, data.bajo, data.sin],
+          data: [optimo, bajo, sin],
           backgroundColor: [
-            'rgba(40, 167, 69, 0.8)',
-            'rgba(255, 193, 7, 0.8)',
-            'rgba(220, 53, 69, 0.8)'
+            'rgba(40, 167, 69, 0.8)',   // verde
+            'rgba(255, 193, 7, 0.8)',   // amarillo
+            'rgba(220, 53, 69, 0.8)'    // rojo
           ],
           borderColor: ['#2a2a2a', '#2a2a2a', '#2a2a2a'],
           borderWidth: 2
@@ -369,10 +380,12 @@ async function cargarGraficoStock() {
         }
       }
     });
+
   } catch (e) {
     console.error('Error cargando gráfico de stock', e);
   }
 }
+
 
 // === INICIALIZAR ===
 cargarGraficoVentas();
