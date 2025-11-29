@@ -305,17 +305,22 @@ $venta = $sql->fetch(PDO::FETCH_ASSOC);
 if (!$venta) die("Venta no encontrada");
 
 $sql2 = $conexion->prepare("
-    SELECT d.cantidad, d.precio_unitario, 
-           p.nombre,
-           m.nombre_marca,
-           c.nombre_categoria,
-           p.modelo
+    SELECT 
+        d.cantidad,
+        d.precio_unitario,
+        p.nombre,
+
+        COALESCE(m.nombre_marca, '-') AS nombre_marca,
+        COALESCE(c.nombre_categoria, '-') AS nombre_categoria,
+
+        COALESCE(p.modelo, '-') AS modelo
     FROM detalle_venta d
     JOIN producto p ON p.idProducto = d.producto_id
-    JOIN categoria c ON p.Categoria_idCategoria = c.idCategoria
-    JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
+    LEFT JOIN categoria c ON p.Categoria_idCategoria = c.idCategoria
+    LEFT JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
     WHERE d.venta_id = ?
 ");
+
 $sql2->execute([$id]);
 $rows = $sql2->fetchAll(PDO::FETCH_ASSOC);
 
@@ -328,18 +333,16 @@ foreach ($rows as $r) {
     $modelo     = str_replace(['–','—'],'-',$r['modelo']);
 
     $items[] = [
-        'cant'      => intval($r['cantidad']),
-        'nombre'    => $nombre,
-        'categoria' => $categoria,
-        'marca'     => $marca,
-        'modelo'    => $modelo,
-        'pu'        => intval($r['precio_unitario']) * intval($r['cantidad'])
-    ];
+    'cant'      => intval($r['cantidad']),
+    'nombre'    => $nombre,
+    'categoria' => $categoria,
+    'marca'     => $marca,
+    'modelo'    => $modelo,
+    'pu'        => intval($r['precio_unitario']) * intval($r['cantidad'])
+];
+
 }
 
-/* ============================================================
-   ===============     GENERAR 2 COPIAS      ==================
-   ============================================================ */
 
 $pdf = new FacturaParaguayaPDF('P','mm','A4');
 
