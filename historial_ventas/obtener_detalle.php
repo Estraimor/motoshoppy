@@ -1,13 +1,19 @@
 <?php
 require_once '../conexion/conexion.php';
 
-// Asegura que llegue como número limpio
-$idVenta = intval(trim($_POST['idVenta']));
-$modo = $_POST['modo'] ?? 'view';
+// ===============================
+// LIMPIEZA DE ENTRADA
+// ===============================
+$idVenta = intval($_POST['idVenta'] ?? 0);
+$modo    = $_POST['modo'] ?? 'view';
 
-/* ==========================================
-   CONSULTA PRINCIPAL + ID DE DEVOLUCIÓN
-========================================== */
+if ($idVenta <= 0) {
+    die("<div class='alert alert-danger'>ID de venta inválido.</div>");
+}
+
+// ===============================
+// CONSULTA DETALLES + DEVOLUCIÓN
+// ===============================
 $sql = "
 SELECT 
     dv.idDetalle, 
@@ -17,7 +23,7 @@ SELECT
     dv.subtotal,
     dv.devuelto,
 
-    /* Buscar la devolución real si existe */
+    /* ID de la devolución si existe */
     (
         SELECT idDevolucion 
         FROM devoluciones_venta dvv 
@@ -34,8 +40,10 @@ SELECT
     u.estante AS ubicacion_estante
 
 FROM detalle_venta dv
-INNER JOIN producto p ON dv.producto_id = p.idProducto
-LEFT JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
+INNER JOIN producto p 
+        ON dv.producto_id = p.idProducto
+LEFT JOIN marcas m 
+       ON p.marcas_idmarcas = m.idmarcas
 LEFT JOIN ubicacion_producto u 
        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
 
@@ -49,9 +57,10 @@ $stmt->execute();
 $detalles = $stmt->fetchAll();
 ?>
 
+
 <!-- ======================================================
-     CONTENEDOR AISLADO PARA EVITAR CONFLICTO DE ESTILOS
-======================================================= -->
+     CONTENEDOR AISLADO — EVITA CONFLICTOS DE ESTILOS
+====================================================== -->
 <div class="detalle-venta-modal">
 
 <table class="table table-dark table-striped table-bordered align-middle">
@@ -80,12 +89,12 @@ $detalles = $stmt->fetchAll();
     <?php foreach ($detalles as $row): ?>
         <?php 
             $devuelto = ($row['devuelto'] == 1);
-            $idDev = $row['idDevolucionReal'];
+            $idDev    = $row['idDevolucionReal'];
         ?>
 
         <tr>
 
-            <!-- CHECK SOLO EN MODO SELECT -->
+            <!-- CHECKBOX SOLO EN MODO SELECT (Devolución Parcial) -->
             <?php if ($modo === 'select'): ?>
                 <td class="text-center">
                     <input 
@@ -94,7 +103,7 @@ $detalles = $stmt->fetchAll();
                         data-id="<?= $row['idDetalle'] ?>"
                         data-producto="<?= $row['producto_id'] ?>"
                         data-cant="<?= $row['cantidad'] ?>"
-                        <?= $devuelto ? 'disabled readonly checked onclick="return false;"' : '' ?>
+                        <?= $devuelto ? 'disabled checked onclick="return false;"' : '' ?>
                     >
                 </td>
             <?php endif; ?>
@@ -132,6 +141,7 @@ $detalles = $stmt->fetchAll();
 
                 <?php if ($devuelto && $idDev): ?>
 
+                    <!-- BOTÓN PARA CANCELAR UNA DEVOLUCIÓN -->
                     <button 
                         class="btn btn-sm btn-cancelar-dev btnCancelarDevolucion"
                         data-iddev="<?= $idDev ?>"

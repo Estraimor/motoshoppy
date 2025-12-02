@@ -5,49 +5,41 @@
 tr.devuelto-parcial,
 tr.devuelto-parcial td,
 table.table-dark tr.devuelto-parcial td {
-    background-color: #c9a500 !important;  /* amarillo fuerte */
+    background-color: #c9a500 !important;
     color: #ffffff !important;
     font-weight: bold;
 }
 
-
 /* ============================================================
-   COLORES PARA HISTORIAL DE VENTAS EN LA TABLA PRINCIPAL
+   COLORES PARA HISTORIAL DE VENTAS
 ============================================================ */
 
-/* Venta con devolución parcial → amarillo */
 tr.venta-devuelta-parcial td {
     background-color: #c9a500 !important;
     color: #ffffff !important;
     font-weight: bold;
 }
 
-/* Venta devuelta completamente → rojo */
 tr.venta-devuelta-total td {
     background-color: #a80000 !important;
     color: #ffffff !important;
     font-weight: bold;
 }
 
-/* Venta cancelada → rojo oscuro */
 tr.venta-cancelada td {
     background-color: #7a0000 !important;
     color: #ffffff !important;
     font-weight: bold;
 }
 
-/* Animación leve */
 #tablaHistorial tbody tr {
     transition: background-color 0.3s ease-in-out;
 }
 
-
-
 /* ============================================================
-   ESTILOS DEL MODAL DETALLE — AISLADOS PARA EVITAR CONFLICTOS
+   ESTILOS DEL MODAL DETALLE — AISLADOS
 ============================================================ */
 
-/* Contenedor aislado para que nunca interfiera el dashboard */
 .detalle-venta-modal .table-dark {
     --bs-table-bg: rgba(30,30,30,1) !important;
     background-color: rgba(30,30,30,1) !important;
@@ -65,10 +57,10 @@ tr.venta-cancelada td {
     white-space: nowrap !important;
 }
 
-
-/* =======================
+/* ============================================================
    Badge Devuelto
-======================== */
+============================================================ */
+
 .badge-devuelto {
     background-color: #f7c948 !important;
     color: #000 !important;
@@ -78,10 +70,10 @@ tr.venta-cancelada td {
     font-weight: 600;
 }
 
-
-/* =======================
+/* ============================================================
    Botón Cancelar Devolución
-======================== */
+============================================================ */
+
 .btn-cancelar-dev {
     background-color: #b30000 !important;
     color: #fff !important;
@@ -98,21 +90,37 @@ tr.venta-cancelada td {
     transform: scale(1.03);
 }
 
+/* ============================================================
+   FIX SWEETALERT + MODAL (VERSIÓN FINAL Y CORRECTA)
+============================================================ */
 
-/* =======================
-   Mejoras generales modal
-======================== */
-
-#modalDetalle .table td {
-    vertical-align: middle !important;
+/* SweetAlert2 arriba de todo SIEMPRE */
+.swal2-container {
+    z-index: 999999 !important;
 }
 
-#modalDetalle table {
-    border-radius: 10px;
-    overflow: hidden;
+/* Bootstrap funciona normal */
+.modal-backdrop {
+    pointer-events: auto !important;
 }
 
-/* Evita errores de scroll dentro del modal */
-.detalle-venta-modal {
-    width: 100%;
+.modal {
+    pointer-events: auto !important;
+}
+
+.modal.show .modal-dialog {
+    pointer-events: auto !important;
+}
+
+/* ============================================================
+   CUANDO ABRIMOS SWEETALERT, SUSPENDEMOS EL MODAL DE DETALLE
+============================================================ */
+
+.modal-suspendido {
+    pointer-events: none !important;
+    filter: blur(2px) brightness(0.8);
+}
+
+.modal-suspendido .modal-dialog {
+    pointer-events: none !important;
 }

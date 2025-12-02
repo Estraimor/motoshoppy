@@ -2,25 +2,56 @@
 require_once '../conexion/conexion.php';
 session_start();
 
-$idVenta = $_POST['idVenta'];
-$motivo = $_POST['motivo'] ?? '';
-$usuario = $_SESSION['id'];
+$idVenta = intval($_POST['idVenta']);
+$motivo = trim($_POST['motivo']);
+$usuario = $_SESSION['usuario_id'] ?? 0; // Ajustalo según tu login
 
-// 1) Obtener los productos de la venta
-$sql = "SELECT producto_id, cantidad FROM detalle_venta WHERE venta_id = ?";
+// =========================================
+// 1) OBTENER DETALLES DE LA VENTA
+// =========================================
+$sql = "SELECT producto_id, cantidad 
+        FROM detalle_venta 
+        WHERE venta_id = :id";
 $stmt = $conexion->prepare($sql);
-$stmt->execute([$idVenta]);
+$stmt->bindParam(':id', $idVenta);
+$stmt->execute();
 $items = $stmt->fetchAll();
 
-// 2) Reponer stock
-foreach ($items as $item) {
-    $upd = $conexion->prepare("UPDATE producto SET stock = stock + ? WHERE idProducto = ?");
-    $upd->execute([$item['cantidad'], $item['producto_id']]);
+if (!$items) {
+    echo "empty";
+    exit;
 }
 
-// 3) Marcar venta como anulada
-$sql = "UPDATE ventas SET estado='Anulada', motivo_anulacion=?, fecha_anulacion=NOW(), usuario_anulo=? WHERE idVenta=?";
-$stmt = $conexion->prepare($sql);
-$stmt->execute([$motivo, $usuario, $idVenta]);
+// =========================================
+// 2) POR CADA PRODUCTO → SUMAR STOCK
+// =========================================
+foreach ($items as $item) {
+
+    $prod = $item['producto_id'];
+    $cant = $item['cantidad'];
+
+    // stock_producto
+    $sql = "UPDATE stock_producto 
+            SET cantidad_actual = cantidad_actual + :cant
+            WHERE producto_idProducto = :prod";
+    $up = $conexion->prepare($sql);
+    $up->bindParam(':cant', $cant);
+    $up->bindParam(':prod', $prod);
+    $up->execute();
+
+    // guardar registro en ventas_anuladas
+    $ins = $conexion->prepare("
+        INSERT INTO ventas_anuladas
+        (venta_id, producto_id, cantidad_devuelta, motivo, usuario_anulo, fecha)
+        VALUES (:venta, :prod, :cant, :motivo, :user, NOW())
+    ");
+
+    $ins->bindParam(':venta', $idVenta);
+    $ins->bindParam(':prod', $prod);
+    $ins->bindParam(':cant', $cant);
+    $ins->bindParam(':motivo', $motivo);
+    $ins->bindParam(':user', $usuario);
+    $ins->execute();
+}
 
 echo "ok";
