@@ -389,31 +389,122 @@ body {
   color: #000;
 }
 
-/* ALERTAS DE STOCK */
+/* ================================
+   🔥 TABLA DE ALERTAS DE STOCK PRO
+   ================================ */
+
 .card-body h5.text-danger {
-  color: #ff4c4c;
-  font-weight: 700;
+  color: #ff3b3b;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(255, 50, 50, 0.5);
 }
 
+/* Contenedor con efecto neón */
 .table-dark {
-  --bs-table-bg: rgba(25,25,25,0.9);
-  border-radius: 8px;
+  --bs-table-bg: rgba(20, 20, 20, 0.92);
+  border-radius: 12px;
   overflow: hidden;
+  border: 1px solid rgba(255, 80, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 80, 0, 0.15);
+  backdrop-filter: blur(3px);
+  transition: box-shadow 0.3s ease;
 }
 
+.table-dark:hover {
+  box-shadow: 0 0 18px rgba(255, 120, 0, 0.35);
+}
+
+/* Encabezado con gradiente */
 .table-dark thead tr {
-  background: rgba(255, 60, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 60, 0, 0.3);
+  background: linear-gradient(90deg, rgba(255, 90, 0, 0.25), rgba(255, 50, 0, 0.15));
+  border-bottom: 1px solid rgba(255, 90, 0, 0.4);
+}
+
+.table-dark th {
+  font-weight: 700;
+  color: #ffae6c !important;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 6px rgba(255, 150, 0, 0.4);
+}
+
+/* Filas */
+.table-dark tbody tr {
+  transition: background 0.25s ease, transform 0.15s ease;
 }
 
 .table-dark tbody tr:hover {
-  background: rgba(255, 60, 0, 0.08);
+  background: rgba(255, 80, 0, 0.12);
+  transform: scale(1.01);
 }
 
-.table-dark td, .table-dark th {
-  padding: 10px 12px;
+/* Celdas */
+.table-dark td,
+.table-dark th {
+  padding: 12px 14px;
   vertical-align: middle;
 }
+
+/* === Estados de stock === */
+
+/* 🔥 Sin stock (rojo fuerte) */
+.table-dark .text-danger {
+  color: #ff4c4c !important;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+}
+
+/* 🟡 Bajo stock (amarillo suave) */
+.table-dark .text-warning {
+  color: #ffdd57 !important;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 200, 0, 0.3);
+}
+
+/* Badges visuales (Estado) */
+.badge {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+
+.badge.bg-danger {
+  background: linear-gradient(120deg, #cc0000, #ff3b3b);
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+.badge.bg-warning {
+  background: linear-gradient(120deg, #ffdd57, #ffb200);
+  box-shadow: 0 0 8px rgba(255, 200, 0, 0.4);
+}
+
+/* Columna Acciones */
+.btn-reponer {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ff6600, #ff3c00);
+  color: #fff !important;
+  font-size: 0.85rem;
+  transition: all 0.25s ease-in-out;
+  border: none;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-reponer:hover {
+  transform: scale(1.08) translateY(-2px);
+  background: linear-gradient(90deg, #ff3c00, #ff6600);
+  box-shadow: 0 0 14px rgba(255, 90, 0, 0.55);
+  color: #fff !important;
+}
+
+
+
+
+
+
+
 
 /* RESUMEN GENERAL */
 .card.bg-gradient-dark {

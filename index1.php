@@ -10,13 +10,20 @@ $totalVentasHoy = $conexion->query("SELECT COUNT(*) FROM ventas WHERE DATE(fecha
 
 // === Detectar productos en alerta de stock ===
 $alertasStock = $conexion->query("
-  SELECT nombre, codigo, cantidad_actual, stock_minimo 
+  SELECT 
+    producto.nombre, 
+    producto.codigo, 
+    stock_producto.cantidad_actual AS stock_general,
+    stock_producto.cantidad_exhibida AS stock_exhibido,
+    stock_producto.stock_minimo
   FROM stock_producto 
-  INNER JOIN producto ON producto.idProducto = stock_producto.producto_idProducto
-  WHERE cantidad_actual <= stock_minimo
-  ORDER BY cantidad_actual ASC
+  INNER JOIN producto 
+      ON producto.idProducto = stock_producto.producto_idProducto
+  WHERE stock_producto.cantidad_actual <= stock_producto.stock_minimo
+  ORDER BY stock_producto.cantidad_actual ASC
   LIMIT 5
 ")->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <div class="content-header d-flex justify-content-between align-items-center mb-3">
@@ -135,39 +142,82 @@ $alertasStock = $conexion->query("
 
 
   <!-- === ALERTAS DE STOCK === -->
-  <div class="card bg-dark text-white shadow-sm mb-4 border-0">
-    <div class="card-body">
-      <h5 class="text-danger fw-bold mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Alertas de stock</h5>
-      <?php if (count($alertasStock) === 0): ?>
-        <div class="text-success small">✅ Todos los productos tienen stock suficiente.</div>
-      <?php else: ?>
-        <div class="table-responsive">
-          <table class="table table-sm table-dark align-middle mb-0">
-            <thead class="text-warning">
+<div class="card bg-dark text-white shadow-sm mb-4 border-0 fade-in">
+  <div class="card-body">
+
+    <h5 class="text-danger fw-bold mb-3">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      Alertas de stock
+    </h5>
+
+    <?php if (count($alertasStock) === 0): ?>
+      
+      <div class="alert alert-success py-2">
+        ✔️ Todos los productos tienen stock suficiente.
+      </div>
+
+    <?php else: ?>
+
+      <div class="table-responsive">
+        <table class="table table-dark table-striped align-middle mb-0">
+          <thead class="text-warning">
+            <tr>
+              <th>Producto</th>
+              <th>Código</th>
+              <th class="text-center">Stock exhibido</th>
+              <th class="text-center">Stock general</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <?php foreach ($alertasStock as $p): ?>
+
+              <?php 
+                $estado = $p['stock_general'] == 0 
+                  ? '<span class="badge bg-danger px-3 py-2">Sin stock</span>' 
+                  : '<span class="badge bg-warning text-dark px-3 py-2">Bajo stock</span>';
+              ?>
+
               <tr>
-                <th>Producto</th>
-                <th>Código</th>
-                <th>Stock actual</th>
-                <th>Mínimo</th>
+                <td><?= htmlspecialchars($p['nombre']) ?></td>
+                <td><?= htmlspecialchars($p['codigo']) ?></td>
+
+                <!-- Exhibido -->
+                <td class="text-center <?= $p['stock_exhibido'] == 0 ? 'text-danger' : 'text-warning' ?>">
+                  <?= $p['stock_exhibido'] ?>
+                </td>
+
+                <!-- General -->
+                <td class="text-center <?= $p['stock_general'] == 0 ? 'text-danger fw-bold' : 'text-warning' ?>">
+                  <?= $p['stock_general'] ?>
+                </td>
+
+                <td class="text-center"><?= $estado ?></td>
+
+                <td class="text-center">
+                  <a 
+                    href="reponer_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
+                    class="btn btn-reponer btn-sm fw-bold"
+                  >
+                    <i class="fa-solid fa-arrow-right"></i> Reponer
+                  </a>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($alertasStock as $p): ?>
-                <tr>
-                  <td><?= htmlspecialchars($p['nombre']) ?></td>
-                  <td><?= htmlspecialchars($p['codigo']) ?></td>
-                  <td class="<?= $p['cantidad_actual'] == 0 ? 'text-danger' : 'text-warning' ?>">
-                    <?= $p['cantidad_actual'] ?>
-                  </td>
-                  <td><?= $p['stock_minimo'] ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
-    </div>
+
+            <?php endforeach; ?>
+          </tbody>
+
+        </table>
+      </div>
+
+    <?php endif; ?>
+
   </div>
+</div>
+
+
 
   <!-- === PANEL INFORMATIVO === -->
   <div class="card bg-gradient-dark text-white border-0 shadow-sm">
