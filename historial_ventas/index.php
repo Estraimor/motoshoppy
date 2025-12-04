@@ -165,21 +165,53 @@ if ($row['esta_cancelada'] > 0) {
 
 
     <!-- ================================
-            JAVASCRIPT
-    ================================ -->
-  <script>
+     MODAL CANCELAR VENTA
+================================ -->
+<div class="modal fade" id="modalCancelarVenta" tabindex="-1">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content bg-dark text-light">
+
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title fw-bold text-danger">❌ Cancelar Venta</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p class="mb-2">Ingresá el motivo de la cancelación:</p>
+
+        <textarea id="motivoCancelarVenta"
+                  class="form-control"
+                  style="height:120px; resize:none;"
+                  placeholder="Escribí el motivo..."></textarea>
+
+      </div>
+
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+        <button class="btn btn-danger" id="btnConfirmarCancelarVenta">
+          Confirmar Cancelación
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+   <script>
+// ===========================================
+//  DataTable
+// ===========================================
 $(document).ready(() => {
 
-    // ===========================================
-    //  TABLA HISTORIAL
-    // ===========================================
     $('#tablaHistorial').DataTable({
         order: [[1, 'desc']],
         pageLength: 10
     });
 
     // ===========================================
-    //  VER DETALLE
+    //  Ver detalle
     // ===========================================
     $(document).on("click", ".ver-detalle", function(){
 
@@ -193,110 +225,93 @@ $(document).ready(() => {
         let esCancelada = $(this).closest("tr").hasClass("venta-cancelada");
 
         $.post("obtener_detalle.php", { idVenta, modo: "view" }, function(data){
+
             $("#detalleContenido").html(data);
             $("#modalDetalle").modal("show");
 
-            if(esCancelada){
+            // Botones
+            if (esCancelada){
                 $("#btnCancelarVentaContainer").html(`
-                    <button class="btn btn-success" id="btnReactivarVenta" data-id="${idVenta}">
+                    <button type="button"
+                            class="btn btn-success"
+                            id="btnReactivarVenta"
+                            data-id="${idVenta}">
                         🔄 Reactivar Venta
-                    </button>
-                `);
-
+                    </button>`);
                 $("#btnDevolverParcialContainer").html("");
-            } 
-            else {
+
+            } else {
                 $("#btnCancelarVentaContainer").html(`
-                    <button class="btn btn-danger" id="btnCancelarVenta" data-id="${idVenta}">
+                    <button type="button"
+                            class="btn btn-danger"
+                            id="btnCancelarVenta"
+                            data-id="${idVenta}">
                         ❌ Cancelar Venta Completa
-                    </button>
-                `);
+                    </button>`);
 
                 $("#btnDevolverParcialContainer").html(`
-                    <button class="btn btn-primary" id="btnDevolverParcial" data-id="${idVenta}">
+                    <button type="button"
+                            class="btn btn-primary"
+                            id="btnDevolverParcial"
+                            data-id="${idVenta}">
                         🔄 Devolución Parcial
-                    </button>
-                `);
+                    </button>`);
             }
         });
     });
-
 });
 
 
 // ======================================================
-// CANCELAR VENTA COMPLETA — MÉTODO 100% COMPATIBLE
+// CANCELAR VENTA COMPLETA — USANDO MODAL PERSONALIZADO
 // ======================================================
-$(document).on("click", "#btnCancelarVenta", function() {
+let ventaSeleccionada = null;
 
-    let idVenta = $(this).data("id");
+$(document).on("click", "#btnCancelarVenta", function(){
 
-    Swal.fire({
-        title: "¿Cancelar venta completa?",
-        html: `<div id="contenedorMotivo"></div>`,
-        showCancelButton: true,
-        confirmButtonText: "Cancelar Venta",
-        confirmButtonColor: "#d33",
-        cancelButtonText: "Volver",
+    ventaSeleccionada = $(this).data("id");
 
-        didOpen: () => {
+    // Limpiar motivo antes de abrir
+    $("#motivoCancelarVenta").val("");
 
-            // Crear textarea REAL
-            const zone = document.getElementById("contenedorMotivo");
+    // Abrir modal
+    $("#modalCancelarVenta").modal("show");
+});
 
-            zone.innerHTML = `
-                <label class="mb-2 fw-bold">Motivo</label>
-                <textarea id="motivoReal"
-                          class="form-control"
-                          style="height:90px; resize:none;"
-                          placeholder="Escribí el motivo de la cancelación"></textarea>
-            `;
+// Confirmar cancelación en modal
+$(document).on("click", "#btnConfirmarCancelarVenta", function(){
 
-            setTimeout(() => {
-                document.getElementById("motivoReal").focus();
-            }, 150);
-        },
+    let motivo = $("#motivoCancelarVenta").val().trim();
 
-        preConfirm: () => {
-            let motivo = document.getElementById("motivoReal").value.trim();
+    if (motivo.length < 3){
+        Swal.fire("Atención", "Ingresá un motivo válido.", "warning");
+        return;
+    }
 
-            if (motivo === "") {
-                Swal.showValidationMessage("El motivo es obligatorio");
-                return false;
-            }
+    $.post("cancelar_venta.php", {
+        idVenta: ventaSeleccionada,
+        motivo: motivo
+    }, function(resp){
 
-            return motivo;
+        if (resp.trim() === "ok") {
+            Swal.fire("Venta Cancelada", "", "success")
+                .then(() => location.reload());
+
+        } else {
+            Swal.fire("Error", resp, "error");
         }
-    }).then(result => {
-
-        if (!result.isConfirmed) return;
-
-        $.post("cancelar_venta.php", {
-            idVenta: idVenta,
-            motivo: result.value
-        }, function(resp) {
-
-            resp = resp.trim();
-
-            if (resp === "ok") {
-                Swal.fire("Venta Cancelada", "", "success")
-                    .then(() => location.reload());
-            } 
-            else {
-                Swal.fire("Error", resp, "error");
-            }
-        });
     });
-
 });
 
 
 
 
-// ===========================================
-//  REACTIVAR VENTA
-// ===========================================
+// ======================================================
+// REACTIVAR VENTA
+// ======================================================
 $(document).on("click", "#btnReactivarVenta", function(){
+    desbloquearBootstrap();
+
     let id = $(this).data("id");
 
     Swal.fire({
@@ -304,28 +319,31 @@ $(document).on("click", "#btnReactivarVenta", function(){
         showCancelButton: true,
         confirmButtonText: "Reactivar",
         confirmButtonColor: "#28a745"
-    }).then(result=>{
-        if(result.isConfirmed){
+    }).then(result => {
 
-            $.post("activar_venta.php", { idVenta:id }, function(resp){
+        if (result.isConfirmed){
 
-                if(resp.trim() === "ok"){
-                    Swal.fire("Venta Reactivada","","success")
+            $.post("activar_venta.php", { idVenta: id }, function(resp){
+
+                if (resp.trim() === "ok"){
+                    Swal.fire("Venta Reactivada", "", "success")
                         .then(()=> location.reload());
                 } else {
                     Swal.fire("Error", resp, "error");
                 }
             });
-
         }
     });
 });
 
 
-// ===========================================
-//  ABRIR MODO DEVOLUCIÓN PARCIAL
-// ===========================================
+
+// ======================================================
+// DEVOLUCIÓN PARCIAL
+// ======================================================
 $(document).on("click", "#btnDevolverParcial", function () {
+
+    desbloquearBootstrap();
 
     let idVenta = $(this).data("id");
 
@@ -336,8 +354,8 @@ $(document).on("click", "#btnDevolverParcial", function () {
         $("#detalleContenido").append(`
             <div class="mt-3">
                 <label class="fw-bold">Motivo de la devolución</label>
-                <textarea id="dp_motivo" 
-                    class="form-control" 
+                <textarea id="dp_motivo"
+                    class="form-control"
                     style="height:90px; resize:none;"
                     placeholder="Escribí el motivo..."></textarea>
             </div>
@@ -353,11 +371,10 @@ $(document).on("click", "#btnDevolverParcial", function () {
     });
 });
 
-
-// ===========================================
-//  CONFIRMAR DEVOLUCIÓN PARCIAL
-// ===========================================
+// Confirmar devolución parcial
 $(document).on("click", "#btnConfirmarDevolucion", function () {
+
+    desbloquearBootstrap();
 
     let idVenta = $(this).data("id");
     let motivo = $("#dp_motivo").val().trim();
@@ -371,14 +388,10 @@ $(document).on("click", "#btnConfirmarDevolucion", function () {
 
     $(".chkDevolver:checked").each(function () {
 
-        let idDetalle = $(this).attr("data-id");
-        let productoId = $(this).attr("data-producto");
-        let cantidad = $(this).attr("data-cant");
-
         items.push({
-            idDetalle: idDetalle,
-            producto_id: productoId,
-            cantidad: cantidad
+            idDetalle: $(this).attr("data-id"),
+            producto_id: $(this).attr("data-producto"),
+            cantidad: $(this).attr("data-cant")
         });
     });
 
@@ -395,57 +408,92 @@ $(document).on("click", "#btnConfirmarDevolucion", function () {
 
         resp = resp.trim();
 
-        if (resp === "ok") {
-            Swal.fire("Devolución realizada", "", "success")
+        if (resp === "ok" || resp === "completa") {
+            Swal.fire("Listo", "La devolución fue aplicada", "success")
                 .then(()=> location.reload());
-        }
-        else if (resp === "completa") {
-            Swal.fire("Venta completamente devuelta", "", "success")
-                .then(()=> location.reload());
-        }
-        else if (resp === "no_hay_productos") {
-            Swal.fire(
-                "No hay productos para devolver",
-                "Todos los productos ya fueron devueltos previamente.",
-                "error"
-            );
-        }
-        else {
+        } else {
             Swal.fire("Error inesperado", resp, "error");
         }
     });
 });
 
 
-// ======================================================
-// FIX REAL: eliminar aria-hidden del .wrapper SIEMPRE
-// ======================================================
 
-const fixWrapper = () => {
-    document.querySelectorAll('.wrapper[aria-hidden="true"]').forEach(w => {
-        w.removeAttribute('aria-hidden');
-        w.style.pointerEvents = "auto";
+// ======================================================
+// CANCELAR UNA DEVOLUCIÓN (SIN MOTIVO)
+// ======================================================
+$(document).on("click", ".btnCancelarDevolucion", function () {
+
+    desbloquearBootstrap();
+
+    let idDev     = $(this).data("iddev");
+    let idVenta   = $(this).data("idventa");
+    let producto  = $(this).data("producto");
+
+    Swal.fire({
+        title: "¿Cancelar devolución?",
+        html: `
+            <p>Se reactivará el producto <strong>${producto}</strong> en la venta.</p>
+        `,
+        showCancelButton: true,
+        confirmButtonText: "Sí, cancelar",
+        confirmButtonColor: "#d33",
+        cancelButtonText: "Volver"
+    }).then(result => {
+
+        if (!result.isConfirmed) return;
+
+        $.post("cancelar_devolucion.php", {
+            idDevolucion: idDev,
+            idVenta: idVenta,
+            producto_id: producto
+        }, function(resp){
+
+            if (resp.trim() === "ok") {
+                Swal.fire("Listo", "La devolución fue cancelada.", "success")
+                    .then(()=> location.reload());
+            } else {
+                Swal.fire("Error", resp, "error");
+            }
+        });
     });
-};
-
-// Ejecutarlo cuando aparece SweetAlert
-document.addEventListener("DOMNodeInserted", function(e) {
-    if (e.target.classList && e.target.classList.contains("swal2-container")) {
-        setTimeout(fixWrapper, 50);
-    }
 });
 
-// También ejecutarlo cuando SweetAlert recibe foco
-document.addEventListener("focusin", fixWrapper);
 
-// También cuando el usuario intenta escribir
-document.addEventListener("mousedown", fixWrapper);
-document.addEventListener("mouseup", fixWrapper);
-document.addEventListener("click", fixWrapper);
-document.addEventListener("keydown", fixWrapper);
 
+// ======================================================
+// FIX OVERLAY BOOTSTRAP
+// ======================================================
+function desbloquearBootstrap(){
+
+    // 1) Evitar aria-hidden en wrappers del modal
+    document.querySelectorAll('[aria-hidden="true"]').forEach(e => {
+        e.removeAttribute('aria-hidden');
+    });
+
+    // 2) Restaurar pointer-events
+    document.querySelectorAll('*').forEach(e => {
+        if (e.style.pointerEvents === 'none'){
+            e.style.pointerEvents = 'auto';
+        }
+    });
+
+    // 3) Forzar que SweetAlert pueda tomar foco
+    const swal = document.querySelector(".swal2-container");
+    if (swal){
+        swal.removeAttribute("inert");
+        swal.style.pointerEvents = "auto";
+    }
+
+    // 4) Destruir el backdrop de bootstrap si bloquea el input
+    const backdrops = document.querySelectorAll(".modal-backdrop");
+    backdrops.forEach(b => b.style.pointerEvents = "none");
+}
 
 </script>
+
+
+
 
 
 
