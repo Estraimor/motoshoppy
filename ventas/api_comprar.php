@@ -5,7 +5,7 @@ require_once '../conexion/conexion.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 try {
-    // === Verificar sesión ===
+
     if (empty($_SESSION['idusuario'])) {
         throw new Exception("Sesión expirada o no iniciada.");
     }
@@ -17,26 +17,23 @@ try {
         throw new Exception("Datos de venta inválidos.");
     }
 
-    // === Datos base ===
-    $tipo_comprobante = $data['tipo_comprobante'] ?? 'ninguno';
-    $metodo_pago = $data['metodo_pago'] ?? 'efectivo';
+    // === Datos recibidos ===
+    $tipo_comprobante = intval($data['tipo_comprobante'] ?? 0); 
+    $metodo_pago = intval($data['metodo_pago'] ?? 1);
+    $moneda = intval($data['moneda'] ?? 1);  // DEFAULT PYG SIEMPRE
     $productos = $data['productos'];
     $total = floatval($data['total'] ?? 0);
     $clienteData = $data['cliente'] ?? null;
-
-    // === Obtener cotización actual ===
-    $qCot = $conexion->query("SELECT usd_ars, ars_pyg FROM cotizacion ORDER BY fecha_actualizacion DESC LIMIT 1");
-    $cot = $qCot->fetch(PDO::FETCH_ASSOC);
-    $cot_usd = $cot['usd_ars'] ?? 0;
-    $cot_ars = $cot['ars_pyg'] ?? 0;
 
     // === Iniciar transacción ===
     $conexion->beginTransaction();
 
     // === Verificar o crear cliente ===
     $cliente_id = null;
-    if ($tipo_comprobante === 'factura' && $clienteData) {
+
+    if ($tipo_comprobante > 1 && $clienteData) { // FACTURA
         $dni = trim($clienteData['dni']);
+
         $buscar = $conexion->prepare("SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1");
         $buscar->execute([$dni]);
         $cli = $buscar->fetch(PDO::FETCH_ASSOC);
@@ -44,11 +41,11 @@ try {
         if ($cli) {
             $cliente_id = $cli['idCliente'];
         } else {
-            $insertCli = $conexion->prepare("
+            $ins = $conexion->prepare("
                 INSERT INTO clientes (apellido, nombre, dni, celular, email, fecha_alta, estado)
                 VALUES (?, ?, ?, ?, NULL, NOW(), 1)
             ");
-            $insertCli->execute([
+            $ins->execute([
                 $clienteData['apellido'] ?? '',
                 $clienteData['nombre'] ?? '',
                 $clienteData['dni'] ?? '',
@@ -60,25 +57,26 @@ try {
 
     // === Insertar venta ===
     $stmtVenta = $conexion->prepare("
-        INSERT INTO ventas 
-        (fecha, total, metodo_pago, tipo_comprobante, usuario_id, cliente_id, cotizacion_usd, cotizacion_ars)
-        VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO ventas
+        (fecha, total, observaciones, metodo_pago_idmetodo_pago, tipo_comprobante_idtipo_comprobante,
+         clientes_idCliente, usuario_idusuario, moneda_idmoneda)
+        VALUES (NOW(), ?, NULL, ?, ?, ?, ?, ?)
     ");
+
     $stmtVenta->execute([
         $total,
         $metodo_pago,
         $tipo_comprobante,
-        $usuario_id,
         $cliente_id,
-        $cot_usd,
-        $cot_ars
+        $usuario_id,
+        $moneda
     ]);
 
     $venta_id = $conexion->lastInsertId();
 
     // === Insertar detalle ===
     $stmtDetalle = $conexion->prepare("
-        INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario)
+        INSERT INTO detalle_venta (ventas_idVenta, producto_idProducto, cantidad, precio_unitario)
         VALUES (?, ?, ?, ?)
     ");
 
@@ -90,8 +88,8 @@ try {
 
     foreach ($productos as $p) {
         $idProd = intval($p['idProducto']);
-        $cantidad = intval($p['cantidad'] ?? 1);
-        $precio = floatval($p['precio_expuesto'] ?? 0);
+        $cantidad = intval($p['cantidad']);
+        $precio = floatval($p['precio_expuesto']);
 
         $stmtDetalle->execute([$venta_id, $idProd, $cantidad, $precio]);
         $stmtStock->execute([$cantidad, $idProd]);
@@ -103,12 +101,17 @@ try {
     echo json_encode([
         'ok' => true,
         'msg' => 'Venta registrada correctamente',
-        'venta_id' => $venta_id,
-        'tipo_comprobante' => $tipo_comprobante,
-        'metodo_pago' => $metodo_pago,
-        'cliente_id' => $cliente_id
+        'venta_id' => $venta_id
     ]);
+
 } catch (Exception $e) {
-    if ($conexion->inTransaction()) $conexion->rollBack();
-    echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
+
+    if ($conexion->inTransaction()) {
+        $conexion->rollBack();
+    }
+
+    echo json_encode([
+        'ok' => false,
+        'msg' => $e->getMessage()
+    ]);
 }

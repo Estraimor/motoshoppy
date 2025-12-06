@@ -30,13 +30,17 @@ if (!$venta) {
 }
 
 $qDetalle = $conexion->prepare("
-  SELECT d.*, p.nombre AS producto
+  SELECT 
+      d.*, 
+      p.nombre AS producto
   FROM detalle_venta d
-  JOIN producto p ON p.idProducto = d.producto_id
-  WHERE d.venta_id = ?
+  JOIN producto p 
+        ON p.idProducto = d.producto_idProducto
+  WHERE d.ventas_idVenta = ?
 ");
 $qDetalle->execute([$id]);
 $items = $qDetalle->fetchAll(PDO::FETCH_ASSOC);
+
 
 // ======================
 // DNI final a imprimir

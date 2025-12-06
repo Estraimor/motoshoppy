@@ -170,6 +170,12 @@ const debounce = (fn, ms = 250) => {
 /* ==== DataTable ==== */
 let tabla;
 let productoSeleccionado = null;
+let METADATA = {
+  comprobantes: [],
+  metodos_pago: [],
+  monedas: []
+};
+
 
 /* === función que arma los parámetros === */
 function paramsActuales() {
@@ -310,21 +316,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+window.COT = null;
+
 async function inicializarCotizacion() {
   try {
     const res = await fetch('/motoshoppy/api/get_cotizacion.php');
     const data = await res.json();
-    if (data && data.usd_pyg && data.ars_pyg) {
-      localStorage.setItem('cotizacion', JSON.stringify(data));
-      console.log("💱 Cotización actualizada:", data);
-    } else {
-      console.warn("⚠ No se recibieron datos válidos de cotización.");
+
+    if (!data || data.error) {
+      console.warn("⚠ No se pudo obtener la cotización desde la BD.");
+      return;
     }
+
+    // Guardamos la última cotización en memoria global
+    window.COT = data;
+    console.log("💱 Cotización (BD):", window.COT);
+
   } catch (e) {
     console.error("Error al cargar cotización:", e);
   }
 }
+
 inicializarCotizacion();
+
+
+async function cargarMetadataVentas() {
+    try {
+        const r = await fetch('/motoshoppy/api/get_metadata_ventas.php');
+        const d = await r.json();
+
+        METADATA.comprobantes = d.comprobantes;
+        METADATA.metodos_pago = d.metodos_pago;
+        METADATA.monedas = d.monedas;
+
+        console.log("Metadata cargada:", METADATA);
+
+    } catch (err) {
+        console.error("Error cargando metadata:", err);
+    }
+}
+
+cargarMetadataVentas();
+
 
 /* ==== Detalle ==== */
 function mostrarDetalle(p) {
@@ -342,10 +375,11 @@ function mostrarDetalle(p) {
   document.getElementById('detCodigo').textContent = p.codigo ? `Código: ${p.codigo}` : '';
   document.getElementById('detMarca').textContent = p.nombre_marca ? `Marca: ${p.nombre_marca}` : '';
 
-  // === Cotizaciones ===
-  const cot = JSON.parse(localStorage.getItem('cotizacion') || '{}');
-  const usd_pyg = parseFloat(cot.usd_pyg || 6000);
-  const ars_pyg = parseFloat(cot.ars_pyg || 4.5);
+  // === Cotizaciones (desde BD) ===
+const usd_pyg = Number(window.COT?.usd_pyg || 6000);
+const ars_pyg = Number(window.COT?.ars_pyg || 4.5);
+const usd_ars = Number(window.COT?.usd_ars || 1500);
+
 
   // === Precio base ===
   const basePYG = Number(p.precio_expuesto || 0);
@@ -428,13 +462,7 @@ function mostrarDetalle(p) {
       })();
       // ✅ Convertir a Select2 con scroll *después* de insertar el select
   // Inicializar Select2 después de renderizar el HTML
-requestAnimationFrame(() => {
-  $('#selectPrecioLista').select2({
-    dropdownParent: $('#panelDetalle'), // ESTE es el contenedor correcto
-    width: '100%',
-    minimumResultsForSearch: Infinity
-  });
-});
+
 
 
 
@@ -537,6 +565,7 @@ function agregarAlCarrito(prod, cantidad = 1) {
 
 /* ==== Compra directa con modal completo ==== */
 document.getElementById('btnComprarAhora').addEventListener('click', async () => {
+
   const p = productoSeleccionado;
   if (!p) {
     Swal.fire({
@@ -548,196 +577,310 @@ document.getElementById('btnComprarAhora').addEventListener('click', async () =>
     return;
   }
 
-  const precioSeleccionado = parseFloat(document.querySelector('#selectPrecioLista')?.value || p.precio_expuesto || 0);
-const qty = parseInt(document.getElementById('detCantidad')?.value || 1);
+  const precioSeleccionado = parseFloat(
+    document.querySelector('#selectPrecioLista')?.value || 
+    p.precio_expuesto || 
+    0
+  );
 
-const productoConPrecio = { 
-  ...p, 
-  precio_expuesto: precioSeleccionado, 
-  cantidad: qty 
-};
+  const qty = parseInt(document.getElementById('detCantidad')?.value || 1);
 
-
-  // Modal inicial: tipo de comprobante
-  const { value: comprobante } = await Swal.fire({
-    title: 'Tipo de comprobante',
-    input: 'radio',
-    inputOptions: {
-      'ticket': 'Ticket',
-      'factura': 'Factura',
-      'ninguno': 'Ninguno'
-    },
-    inputValue: 'ticket',
-    confirmButtonText: 'Continuar',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    inputValidator: (v) => !v && 'Seleccioná una opción'
-  });
-  if (!comprobante) return;
-
-  // --- Construimos contenido HTML dinámico ---
-  // --- Construimos contenido HTML dinámico ---
-const htmlPago = `
-  <div class="text-start">
-    <label class="form-label fw-bold mt-2">Método de pago</label>
-    <select id="metodoPago" class="form-select">
-      <option value="efectivo">Efectivo</option>
-      <option value="transferencia">Transferencia</option>
-      <option value="tarjeta">Tarjeta</option>
-      <option value="otro">Otro</option>
-    </select>
-    <div id="otroMetodo" class="mt-2 d-none">
-      <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
-    </div>
-
-    ${
-      comprobante === 'factura'
-        ? `
-          <hr class="my-3">
-          <label class="form-label fw-bold">Datos del cliente (Factura)</label>
-          <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
-          <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
-          <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
-          <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">`
-        : `
-          <hr class="my-3">
-          <label class="form-label fw-bold">DNI del cliente (Ticket)</label>
-          <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">`
-    }
-  </div>
-`;
-
-
-
-  const { value: confirmar } = await Swal.fire({
-    title: 'Confirmar venta',
-    html: `
-      <div class="text-start">
-        <p><strong>Producto:</strong> ${productoConPrecio.nombre}</p>
-        <p><strong>Total:</strong> ₲ ${money(productoConPrecio.precio_expuesto)}</p>
-        <p><strong>Comprobante:</strong> ${comprobante.toUpperCase()}</p>
-        ${htmlPago}
-      </div>
-    `,
-    width: 600,
-    confirmButtonText: 'Finalizar venta',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    didOpen: () => {
-      const sel = document.getElementById('metodoPago');
-      sel.addEventListener('change', () => {
-        document.getElementById('otroMetodo').classList.toggle('d-none', sel.value !== 'otro');
-      });
-
-      // Autocompletar cliente si el comprobante es factura
-      if (comprobante === 'factura') {
-        const dniInput = document.getElementById('cliDni');
-        dniInput.addEventListener('input', async (e) => {
-          const dni = e.target.value.trim();
-          if (dni.length >= 6) {
-            try {
-              const r = await fetch(`/motoshoppy/ventas/api_buscar_cliente.php?dni=${dni}`);
-              const d = await r.json();
-              if (d.ok && d.cliente) {
-                document.getElementById('cliNombre').value = d.cliente.nombre;
-                document.getElementById('cliApellido').value = d.cliente.apellido;
-                document.getElementById('cliCelular').value = d.cliente.celular;
-              }
-            } catch (err) {
-              console.warn('No se pudo autocompletar cliente', err);
-            }
-          }
-        });
-      }
-    },
-    preConfirm: () => {
-  const metodo = document.getElementById('metodoPago').value;
-  const metodo_desc = metodo === 'otro' ? document.getElementById('otroTexto').value.trim() : metodo;
-
-  let cliente = null;
-if (comprobante === 'factura') {
-  cliente = {
-    nombre: document.getElementById('cliNombreFactura').value.trim(),
-    apellido: document.getElementById('cliApellidoFactura').value.trim(),
-    dni: document.getElementById('cliDniFactura').value.trim(),
-    celular: document.getElementById('cliCelularFactura').value.trim()
-  };
-} else if (comprobante === 'ticket') {
-  cliente = { dni: document.getElementById('cliDniTicket').value.trim() };
-}
-
-
-  return { metodo, metodo_desc, cliente };
-}
-
-  });
-
-  if (!confirmar) return;
-
-  // --- Datos listos para enviar ---
-  const payload = {
-    tipo_comprobante: comprobante,
-    metodo_pago: confirmar.metodo_desc,
-    productos: [productoConPrecio],
-    total: productoConPrecio.precio_expuesto,
-    cliente: confirmar.cliente
+  const productoConPrecio = { 
+    ...p, 
+    precio_expuesto: precioSeleccionado, 
+    cantidad: qty 
   };
 
-  // --- Envío al backend ---
-try {
-  const res = await fetch('/motoshoppy/ventas/api_comprar.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await res.json();
-
-  if (data.ok) {
-  Swal.fire({
-    icon: 'success',
-    title: '✅ Venta completada',
-    text: `Comprobante: ${comprobante.toUpperCase()} - ${payload.metodo_pago}`,
-    timer: 1800,
-    showConfirmButton: false
-  });
-
-  // 🔄 Recargar tabla de productos
-  if (tabla) tabla.ajax.reload(null, false);
-
-// 🧾 Obtener DNI desde el payload, no desde el DOM
-const dni = payload.cliente?.dni || '';
-
-// 🧾 Abrir PDF según tipo de comprobante
-if (data.tipo_comprobante === 'ticket') {
-  window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, '_blank');
-} else if (data.tipo_comprobante === 'factura') {
-  window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, '_blank');
-} else {
-  console.warn('Tipo de comprobante no reconocido:', data.tipo_comprobante);
-}
-
-
-} else {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: data.msg || 'No se pudo registrar la venta.'
-  });
-}
-
-} catch (err) {
-  console.error(err);
-  Swal.fire({
-    icon: 'error',
-    title: 'Error de conexión',
-    text: 'No se pudo contactar con el servidor.'
-  });
-}
-
-
-
+  // 🔥 ESTA ES LA LÍNEA QUE FALTABA
+  await seleccionarComprobanteYConfirmarVenta(productoConPrecio);
 
 });
+
+
+
+// ======================================
+// SELECCIONAR COMPROBANTE Y CONFIRMAR
+// ======================================
+async function seleccionarComprobanteYConfirmarVenta(productoConPrecio) {
+
+    // Si metadata aún no cargó
+    if (!METADATA || METADATA.comprobantes.length === 0) {
+        await cargarMetadataVentas();
+    }
+
+    // Construir radios de comprobantes
+    let opts = {};
+    METADATA.comprobantes.forEach(c => {
+        opts[c.id] = c.nombre;   // ✔ USAMOS ID, NO TEXTO
+    });
+
+    // ===============================
+    // 1) SELECCIÓN DE COMPROBANTE
+    // ===============================
+    const { value: comprobanteID } = await Swal.fire({
+        title: 'Tipo de comprobante',
+        input: 'radio',
+        inputOptions: opts,
+        inputValue: Object.keys(opts)[0],
+        confirmButtonText: 'Continuar',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        inputValidator: v => !v && 'Seleccioná una opción'
+    });
+
+    if (!comprobanteID) return;
+
+    // Obtenemos el nombre real
+    const comprobanteNombre = METADATA.comprobantes.find(c => c.id == comprobanteID)?.nombre.toLowerCase();
+
+
+    // 2) MÉTODOS DE PAGO (con required lógico)
+let optionsMetodo = `
+    <option value="" disabled selected>Selecciona un método de pago</option>
+`;
+METADATA.metodos_pago.forEach(m => {
+    optionsMetodo += `<option value="${m.id}">${m.nombre}</option>`;
+});
+
+   // ===============================
+// 3) MONEDAS
+// ===============================
+let optionsMoneda = `
+    <option value="" disabled selected>Selecciona la moneda</option>
+`;
+
+METADATA.monedas.forEach(m => {
+    optionsMoneda += `
+        <option value="${m.idmoneda}">
+            ${m.codigo} – ${m.nombre}
+        </option>
+    `;
+});
+
+
+    // ===============================
+    // 4) ARMAR HTML DEL MODAL
+    // ===============================
+    const htmlPago = `
+        <div class="text-start">
+
+            <label class="form-label fw-bold mt-2">Método de pago</label>
+            <select id="metodoPago" class="form-select">
+                ${optionsMetodo}
+            </select>
+
+            <div id="otroMetodo" class="mt-3 d-none">
+                <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
+            </div>
+
+            <hr class="my-3">
+
+<label class="form-label fw-bold">Moneda</label>
+<select id="monedaPago" class="form-select d-none">
+    ${optionsMoneda}
+</select>
+
+
+            ${
+                comprobanteNombre === "factura"
+                ? `
+                    <hr class="my-3">
+                    <label class="form-label fw-bold">Datos del cliente (Factura)</label>
+
+                    <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
+                    <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
+                    <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
+                    <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
+                `
+                : `
+                    <hr class="my-3">
+                    <label class="form-label fw-bold">DNI del cliente (Ticket)</label>
+                    <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">
+                `
+            }
+
+        </div>
+    `;
+
+    // ===============================
+    // 5) CONFIRMAR VENTA
+    // ===============================
+    const { value: confirmar } = await Swal.fire({
+        title: 'Confirmar venta',
+        html: `
+            <div class="text-start">
+                <p><strong>Producto:</strong> ${productoConPrecio.nombre}</p>
+                <p><strong>Total:</strong> ₲ ${money(productoConPrecio.precio_expuesto)}</p>
+                <p><strong>Comprobante:</strong> ${comprobanteNombre.toUpperCase()}</p>
+                ${htmlPago}
+            </div>
+        `,
+        width: 600,
+        confirmButtonText: 'Finalizar venta',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+
+        didOpen: () => {
+            const selMetodo = document.getElementById('metodoPago');
+
+            selMetodo.addEventListener('change', () => {
+
+    // Mostrar caja de texto si "otro"
+    document.getElementById('otroMetodo')
+        .classList.toggle('d-none', selMetodo.value !== 'otro');
+
+    // Mostrar moneda SOLO si método = EFECTIVO
+    const selMoneda = document.getElementById('monedaPago');
+
+    // Buscamos el nombre del método seleccionado
+    const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == selMetodo.value);
+
+    if (metodoSeleccionado && metodoSeleccionado.nombre.toLowerCase() === "efectivo") {
+        selMoneda.classList.remove('d-none');
+    } else {
+        selMoneda.classList.add('d-none');
+        selMoneda.value = ""; // limpiar para evitar errores
+    }
+});
+
+
+            // Autocompletar cliente para factura
+            if (comprobanteNombre === "factura") {
+                const dniInput = document.getElementById('cliDniFactura');
+
+                dniInput.addEventListener('input', async (e) => {
+                    const dni = e.target.value.trim();
+                    if (dni.length >= 6) {
+                        const r = await fetch(`/motoshoppy/ventas/api_buscar_cliente.php?dni=${dni}`);
+                        const d = await r.json();
+
+                        if (d.ok && d.cliente) {
+                            document.getElementById('cliNombreFactura').value = d.cliente.nombre;
+                            document.getElementById('cliApellidoFactura').value = d.cliente.apellido;
+                            document.getElementById('cliCelularFactura').value = d.cliente.celular;
+                        }
+                    }
+                });
+            }
+        },
+
+        preConfirm: () => {
+
+    const metodo = document.getElementById('metodoPago').value;
+    const metodo_desc = metodo === '4'
+        ? document.getElementById('otroTexto').value.trim()
+        : metodo;
+
+    const moneda = document.getElementById('monedaPago').value;
+
+    // ============================================
+    // VALIDACIONES REQUIRED
+    // ============================================
+
+    // 1) Método de pago obligatorio
+    if (!metodo) {
+        Swal.showValidationMessage("Debés seleccionar un método de pago");
+        return false;
+    }
+
+    // Obtener método seleccionado desde METADATA
+    const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == metodo);
+
+    // 2) Si es EFECTIVO, moneda obligatoria
+    if (metodoSeleccionado && metodoSeleccionado.nombre.toLowerCase() === "efectivo") {
+        if (!moneda) {
+            Swal.showValidationMessage("Debés seleccionar la moneda del pago en efectivo");
+            return false;
+        }
+    }
+
+    // ============================================
+    // CLIENTE
+    // ============================================
+    let cliente = null;
+
+    if (comprobanteNombre === "factura") {
+
+        const nombre = document.getElementById('cliNombreFactura').value.trim();
+        const apellido = document.getElementById('cliApellidoFactura').value.trim();
+        const dni = document.getElementById('cliDniFactura').value.trim();
+        const celular = document.getElementById('cliCelularFactura').value.trim();
+
+        // Validaciones de factura
+        if (!dni) {
+            Swal.showValidationMessage("Ingresá el DNI del cliente");
+            return false;
+        }
+        if (!nombre || !apellido) {
+            Swal.showValidationMessage("Ingresá nombre y apellido del cliente para la factura");
+            return false;
+        }
+
+        cliente = { nombre, apellido, dni, celular };
+
+    } else {
+        const dni = document.getElementById('cliDniTicket').value.trim();
+        if (!dni) {
+            Swal.showValidationMessage("Debés ingresar el DNI del cliente");
+            return false;
+        }
+        cliente = { dni };
+    }
+
+    return { metodo, metodo_desc, moneda, cliente };
+}
+});
+
+if (!confirmar) return;
+
+
+    // ===============================
+    // 6) PAYLOAD
+    // ===============================
+    const payload = {
+        tipo_comprobante: comprobanteID,
+        metodo_pago: confirmar.metodo_desc,
+        moneda: confirmar.moneda,
+        productos: [productoConPrecio],
+        total: productoConPrecio.precio_expuesto,
+        cliente: confirmar.cliente
+    };
+
+    // ===============================
+    // 7) ENVIAR AL BACKEND
+    // ===============================
+    try {
+        const res = await fetch('/motoshoppy/ventas/api_comprar.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+            return Swal.fire('Error', data.msg || 'No se pudo registrar la venta.', 'error');
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Venta completada',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        if (comprobanteNombre === "ticket") {
+            window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}`, '_blank');
+        } else {
+            window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, '_blank');
+        }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error de conexión', 'No se pudo contactar con el servidor.', 'error');
+    }
+}
+
 
 
 </script>

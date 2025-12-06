@@ -83,6 +83,8 @@ class FacturaParaguayaPDF extends FPDF
     /* ------------------------------------
      * ENCABEZADO
      * ------------------------------------ */
+
+    
     function Header()
     {
         // marco
@@ -282,7 +284,8 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(40,6,"3",1,0,'C');
 
         $this->SetFont('Arial','',8);
-        $this->Cell(60,6,number_format($iva10,0,',','.'),1,1,'R');
+        $this->Cell(60,6,number_format($iva10,2,',','.'),1,1,'R');
+
     }
 }
 
@@ -294,12 +297,27 @@ $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) die("ID inválido");
 
 $sql = $conexion->prepare("
-    SELECT v.*, c.nombre AS cliNombre, c.apellido AS cliApellido,
-           c.dni AS cliDni, c.celular AS cliCelular
+    SELECT 
+        v.*, 
+        mp.nombre AS metodo_pago_nombre,
+        mn.codigo AS moneda_codigo,
+        c.nombre AS cliNombre, 
+        c.apellido AS cliApellido,
+        c.dni AS cliDni, 
+        c.celular AS cliCelular
     FROM ventas v
-    LEFT JOIN clientes c ON c.idCliente = v.cliente_id
+    LEFT JOIN clientes c 
+        ON c.idCliente = v.clientes_idCliente
+    LEFT JOIN metodo_pago mp 
+        ON mp.idmetodo_pago = v.metodo_pago_idmetodo_pago
+    LEFT JOIN moneda mn 
+        ON mn.idmoneda = v.moneda_idmoneda
     WHERE v.idVenta = ?
 ");
+
+
+
+
 $sql->execute([$id]);
 $venta = $sql->fetch(PDO::FETCH_ASSOC);
 if (!$venta) die("Venta no encontrada");
@@ -309,19 +327,17 @@ $sql2 = $conexion->prepare("
         d.cantidad,
         d.precio_unitario,
         p.nombre,
-
         COALESCE(m.nombre_marca, '-') AS nombre_marca,
         COALESCE(c.nombre_categoria, '-') AS nombre_categoria,
-
         COALESCE(p.modelo, '-') AS modelo
     FROM detalle_venta d
-    JOIN producto p ON p.idProducto = d.producto_id
+    JOIN producto p ON p.idProducto = d.producto_idProducto
     LEFT JOIN categoria c ON p.Categoria_idCategoria = c.idCategoria
     LEFT JOIN marcas m ON p.marcas_idmarcas = m.idmarcas
-    WHERE d.venta_id = ?
+    WHERE d.ventas_idVenta = ?
 ");
-
 $sql2->execute([$id]);
+
 $rows = $sql2->fetchAll(PDO::FETCH_ASSOC);
 
 $items = [];
@@ -350,7 +366,16 @@ $pdf->cliNombre   = $venta['cliNombre'];
 $pdf->cliApellido = $venta['cliApellido'];
 $pdf->cliDni      = $venta['cliDni'];
 $pdf->cliCelular  = $venta['cliCelular'];
-$pdf->metodoPago  = $venta['metodo_pago'];
+$metodo = $venta['metodo_pago_nombre'] ?? '';
+$moneda = $venta['moneda_codigo'] ?? '';
+
+if ($moneda !== '') {
+    $pdf->metodoPago = $metodo . " (" . $moneda . ")";
+} else {
+    $pdf->metodoPago = $metodo;
+}
+
+
 
 $pdf->AddPage();
 
@@ -379,7 +404,10 @@ $pdf->datosCliente();
 // Tabla de ítems nuevamente
 $pdf->tablaItems($items);
 
-
+echo "<pre>";
+print_r($venta);
+echo "</pre>";
+exit;
 if (ob_get_length()) ob_clean();
 $pdf->Output('I',"factura_$id.pdf");
 exit;
