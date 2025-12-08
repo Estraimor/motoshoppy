@@ -122,18 +122,35 @@ foreach ($rows as $r) {
   }
   $r['descripcion_res'] = $mini;
 
-  // Control visual de stock usando cantidad_exhibida
-$exhibido = (int)($r['cantidad_exhibida'] ?? 0);
+ $exhibida = (int)$r['cantidad_exhibida'];
+$general  = (int)$r['stock_actual']; // este es el stock en depósito
+$minimo   = (int)$r['stock_minimo'];
 
-$r['stock_estado'] = 
-    $exhibido <= 0 ? 'sin_stock' :
-    ($exhibido <= ($r['stock_minimo'] ?? 1) ? 'bajo_stock' : 'ok');
+// Determinar stock visible (el que se usa en pantalla)
+if ($exhibida > 0) {
+    $visible = $exhibida;
+} elseif ($general > 0) {
+    $visible = $general;
+} else {
+    $visible = 0;
+}
 
-// Reescribo stock_actual con el valor que realmente querés mostrar
-$r['stock_actual'] = $exhibido;
+// Estado de stock
+if ($exhibida <= 0 && $general <= 0) {
+    $r['stock_estado'] = 'sin_stock';
+} elseif ($visible <= $minimo) {
+    $r['stock_estado'] = 'bajo_stock';
+} else {
+    $r['stock_estado'] = 'ok';
+}
 
-$out[] = $r;
+// Enviar ambos valores al front (NO pisar nada)
+$r['stock_exhibido'] = $exhibida;
+$r['stock_general']  = $general;
 
+// Este es el stock que se ve en la tabla
+$r['stock_actual'] = $visible;
+  $out[] = $r;
 }
 
 /* ==========================

@@ -40,7 +40,7 @@ require_once '../conexion/conexion.php';
     </div>
 
     <!-- Panel de detalle / agregado rápido -->
-<div class="col-lg-4">
+  <div class="col-lg-4">
   <div id="panelDetalle" class="card shadow-sm p-2 modulo" style="min-height: 360px;">
     <div class="text-center text-secondary" id="detalleVacio">
       <i class="fa-solid fa-image fa-2x mb-2"></i>
@@ -651,11 +651,12 @@ let optionsMoneda = `
 
 METADATA.monedas.forEach(m => {
     optionsMoneda += `
-        <option value="${m.idmoneda}">
+        <option value="${m.id}">
             ${m.codigo} – ${m.nombre}
         </option>
     `;
 });
+
 
 
     // ===============================

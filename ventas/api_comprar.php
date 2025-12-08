@@ -5,7 +5,6 @@ require_once '../conexion/conexion.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 try {
-
     if (empty($_SESSION['idusuario'])) {
         throw new Exception("Sesión expirada o no iniciada.");
     }
@@ -18,9 +17,9 @@ try {
     }
 
     // === Datos recibidos ===
-    $tipo_comprobante = intval($data['tipo_comprobante'] ?? 0); 
+    $tipo_comprobante = intval($data['tipo_comprobante'] ?? 0);
     $metodo_pago = intval($data['metodo_pago'] ?? 1);
-    $moneda = intval($data['moneda'] ?? 1);  // DEFAULT PYG SIEMPRE
+    $moneda = intval($data['moneda'] ?? 1);
     $productos = $data['productos'];
     $total = floatval($data['total'] ?? 0);
     $clienteData = $data['cliente'] ?? null;
@@ -31,7 +30,7 @@ try {
     // === Verificar o crear cliente ===
     $cliente_id = null;
 
-    if ($tipo_comprobante > 1 && $clienteData) { // FACTURA
+    if ($tipo_comprobante > 1 && $clienteData) {
         $dni = trim($clienteData['dni']);
 
         $buscar = $conexion->prepare("SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1");
@@ -74,25 +73,67 @@ try {
 
     $venta_id = $conexion->lastInsertId();
 
-    // === Insertar detalle ===
+    // === Preparar statements ===
     $stmtDetalle = $conexion->prepare("
         INSERT INTO detalle_venta (ventas_idVenta, producto_idProducto, cantidad, precio_unitario)
         VALUES (?, ?, ?, ?)
     ");
 
-    $stmtStock = $conexion->prepare("
-        UPDATE stock_producto
-        SET cantidad_actual = cantidad_actual - ?
-        WHERE producto_idProducto = ?
-    ");
-
     foreach ($productos as $p) {
+
         $idProd = intval($p['idProducto']);
         $cantidad = intval($p['cantidad']);
         $precio = floatval($p['precio_expuesto']);
 
+        // === CONTROL DE STOCK ===
+        $check = $conexion->prepare("
+            SELECT cantidad_exhibida, cantidad_actual
+            FROM stock_producto
+            WHERE producto_idProducto = ?
+            FOR UPDATE
+        ");
+        $check->execute([$idProd]);
+        $stk = $check->fetch(PDO::FETCH_ASSOC);
+
+        if (!$stk) throw new Exception("Error al obtener stock. Producto ID: $idProd");
+
+        $ex = (int)$stk['cantidad_exhibida'];
+        $gr = (int)$stk['cantidad_actual'];
+
+        // Si ambos son cero → NO se puede vender
+        if ($ex <= 0 && $gr <= 0) {
+            throw new Exception("El producto no tiene stock disponible (ID: $idProd).");
+        }
+
+        // === LÓGICA DE DESCUENTO ===
+        if ($ex > 0) {
+            // Se descuenta primero de exhibida
+            $nuevoEx = max(0, $ex - $cantidad);
+
+            // Si no alcanzó la exhibida → descontar del depósito
+            $resto = max(0, $cantidad - $ex);
+            $nuevoGr = max(0, $gr - $resto);
+        } else {
+            // Solo descuenta del depósito
+            $nuevoEx = 0;
+            $nuevoGr = max(0, $gr - $cantidad);
+        }
+
+        // Evitar valores negativos
+        if ($nuevoEx < 0 || $nuevoGr < 0) {
+            throw new Exception("El stock no puede quedar negativo. (ID: $idProd)");
+        }
+
+        // === ACTUALIZAR STOCK REAL ===
+        $upd = $conexion->prepare("
+            UPDATE stock_producto
+            SET cantidad_exhibida = ?, cantidad_actual = ?
+            WHERE producto_idProducto = ?
+        ");
+        $upd->execute([$nuevoEx, $nuevoGr, $idProd]);
+
+        // === Insertar detalle ===
         $stmtDetalle->execute([$venta_id, $idProd, $cantidad, $precio]);
-        $stmtStock->execute([$cantidad, $idProd]);
     }
 
     // === Confirmar ===

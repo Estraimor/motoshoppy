@@ -404,10 +404,7 @@ $pdf->datosCliente();
 // Tabla de ítems nuevamente
 $pdf->tablaItems($items);
 
-echo "<pre>";
-print_r($venta);
-echo "</pre>";
-exit;
+
 if (ob_get_length()) ob_clean();
 $pdf->Output('I',"factura_$id.pdf");
 exit;
