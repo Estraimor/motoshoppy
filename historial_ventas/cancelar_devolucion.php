@@ -1,21 +1,21 @@
 <?php
 require_once '../conexion/conexion.php';
 
-$idDev = intval($_POST['idDevolucion']);
+$idDev   = intval($_POST['idDevolucion']);
 $idVenta = intval($_POST['idVenta']);
 $producto = intval($_POST['producto_id']);
 
 // ===================================================
 // 1) OBTENER CANTIDAD DEVUELTA
 // ===================================================
-$sql = "SELECT cantidad 
-        FROM devoluciones_venta 
+$sql = "SELECT cantidad
+        FROM devoluciones_venta
         WHERE idDevolucion = :idDev";
 
 $stmt = $conexion->prepare($sql);
-$stmt->bindParam(':idDev', $idDev);
+$stmt->bindParam(':idDev', $idDev, PDO::PARAM_INT);
 $stmt->execute();
-$row = $stmt->fetch();
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$row) {
     echo "error_no_encontrado";
@@ -25,7 +25,7 @@ if (!$row) {
 $cant = intval($row['cantidad']);
 
 // ===================================================
-// 2) SUMAR STOCK EN stock_producto
+// 2) SUMAR STOCK REAL
 // ===================================================
 $sql = "UPDATE stock_producto 
         SET cantidad_actual = cantidad_actual + :cant
@@ -37,22 +37,22 @@ $stmt->bindParam(':prod', $producto, PDO::PARAM_INT);
 $stmt->execute();
 
 // ===================================================
-// 3) BORRAR DEVOLUCIÓN REAL
+// 3) BORRAR REGISTRO DE DEVOLUCIÓN
 // ===================================================
 $sql = "DELETE FROM devoluciones_venta 
         WHERE idDevolucion = :idDev";
 
 $stmt = $conexion->prepare($sql);
-$stmt->bindParam(':idDev', $idDev);
+$stmt->bindParam(':idDev', $idDev, PDO::PARAM_INT);
 $stmt->execute();
 
 // ===================================================
-// 4) MARCAR DETALLE COMO NO DEVUELTO
+// 4) MARCAR EL DETALLE COMO NO DEVUELTO
 // ===================================================
 $sql = "UPDATE detalle_venta 
         SET devuelto = 0
-        WHERE venta_id = :idVenta
-          AND producto_id = :prod";
+        WHERE ventas_idVenta = :idVenta
+          AND producto_idProducto = :prod";
 
 $stmt = $conexion->prepare($sql);
 $stmt->bindParam(':idVenta', $idVenta, PDO::PARAM_INT);

@@ -33,7 +33,9 @@ try {
     if ($tipo_comprobante > 1 && $clienteData) {
         $dni = trim($clienteData['dni']);
 
-        $buscar = $conexion->prepare("SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1");
+        $buscar = $conexion->prepare("
+            SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1
+        ");
         $buscar->execute([$dni]);
         $cli = $buscar->fetch(PDO::FETCH_ASSOC);
 
@@ -56,9 +58,16 @@ try {
 
     // === Insertar venta ===
     $stmtVenta = $conexion->prepare("
-        INSERT INTO ventas
-        (fecha, total, observaciones, metodo_pago_idmetodo_pago, tipo_comprobante_idtipo_comprobante,
-         clientes_idCliente, usuario_idusuario, moneda_idmoneda)
+        INSERT INTO ventas (
+            fecha,
+            total,
+            observaciones,
+            metodo_pago_idmetodo_pago,
+            tipo_comprobante_idtipo_comprobante,
+            clientes_idCliente,
+            usuario_idusuario,
+            moneda_idmoneda
+        )
         VALUES (NOW(), ?, NULL, ?, ?, ?, ?, ?)
     ");
 
@@ -75,7 +84,12 @@ try {
 
     // === Preparar statements ===
     $stmtDetalle = $conexion->prepare("
-        INSERT INTO detalle_venta (ventas_idVenta, producto_idProducto, cantidad, precio_unitario)
+        INSERT INTO detalle_venta (
+            ventas_idVenta,
+            producto_idProducto,
+            cantidad,
+            precio_unitario
+        )
         VALUES (?, ?, ?, ?)
     ");
 
@@ -100,31 +114,26 @@ try {
         $ex = (int)$stk['cantidad_exhibida'];
         $gr = (int)$stk['cantidad_actual'];
 
-        // Si ambos son cero → NO se puede vender
+        // Sin stock → error
         if ($ex <= 0 && $gr <= 0) {
             throw new Exception("El producto no tiene stock disponible (ID: $idProd).");
         }
 
-        // === LÓGICA DE DESCUENTO ===
+        // === Lógica de descuento ===
         if ($ex > 0) {
-            // Se descuenta primero de exhibida
-            $nuevoEx = max(0, $ex - $cantidad);
-
-            // Si no alcanzó la exhibida → descontar del depósito
-            $resto = max(0, $cantidad - $ex);
+            $nuevoEx = max(0, $ex - $cantidad);      // descuenta de exhibición
+            $resto = max(0, $cantidad - $ex);        // lo que falta descuenta del depósito
             $nuevoGr = max(0, $gr - $resto);
         } else {
-            // Solo descuenta del depósito
             $nuevoEx = 0;
             $nuevoGr = max(0, $gr - $cantidad);
         }
 
-        // Evitar valores negativos
         if ($nuevoEx < 0 || $nuevoGr < 0) {
             throw new Exception("El stock no puede quedar negativo. (ID: $idProd)");
         }
 
-        // === ACTUALIZAR STOCK REAL ===
+        // === Actualizar stock ===
         $upd = $conexion->prepare("
             UPDATE stock_producto
             SET cantidad_exhibida = ?, cantidad_actual = ?
@@ -136,7 +145,6 @@ try {
         $stmtDetalle->execute([$venta_id, $idProd, $cantidad, $precio]);
     }
 
-    // === Confirmar ===
     $conexion->commit();
 
     echo json_encode([

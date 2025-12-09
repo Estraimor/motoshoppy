@@ -28,7 +28,7 @@ foreach ($items as $it) {
 
     $idDetalle  = $it['idDetalle'];
     $productoId = $it['producto_id'];
-    $cantidad   = $it['cantidad'];
+    $cantidad   = intval($it['cantidad']);
 
     // -----------------------------------------------------
     // A) ¿Ya existe una devolución de este producto?
@@ -36,26 +36,33 @@ foreach ($items as $it) {
     $check = $conexion->prepare("
         SELECT COUNT(*) 
         FROM devoluciones_venta 
-        WHERE venta_id = ? AND producto_id = ?
+        WHERE ventas_idVenta = ? AND producto_idProducto = ?
     ");
     $check->execute([$idVenta, $productoId]);
-    
+
     if ($check->fetchColumn() > 0) {
         continue; // Ya devuelto → saltar
     }
 
     // -----------------------------------------------------
-    // Registrar devolución
+    // Registrar devolución (estructura real de tu tabla)
     // -----------------------------------------------------
     $sql = "INSERT INTO devoluciones_venta 
-            (venta_id, producto_id, cantidad, usuario_id, motivo)
-            VALUES (?,?,?,?,?)";
+            (ventas_idVenta, producto_idProducto, cantidad, fecha, usuario_idusuario, motivo)
+            VALUES (?,?,?,?,?,?)";
 
     $stmt = $conexion->prepare($sql);
-    $stmt->execute([$idVenta, $productoId, $cantidad, $usuario, $motivo]);
+    $stmt->execute([
+        $idVenta,
+        $productoId,
+        $cantidad,
+        date("Y-m-d H:i:s"),
+        $usuario,
+        $motivo
+    ]);
 
     // -----------------------------------------------------
-    // B) Aumentar stock
+    // B) Aumentar stock (regresa tanto exhibición como depósito)
     // -----------------------------------------------------
     $upd = $conexion->prepare("
         UPDATE stock_producto 
@@ -66,7 +73,7 @@ foreach ($items as $it) {
     $upd->execute([$cantidad, $cantidad, $productoId]);
 
     // -----------------------------------------------------
-    // C) NO descontar más cantidad del detalle
+    // C) Marcar detalle como devuelto
     // -----------------------------------------------------
     $upd2 = $conexion->prepare("
         UPDATE detalle_venta 
@@ -92,7 +99,7 @@ if ($procesados == 0) {
 $sqlCheck = $conexion->prepare("
     SELECT COUNT(*) 
     FROM detalle_venta
-    WHERE venta_id = ? AND devuelto = 0
+    WHERE ventas_idVenta = ? AND devuelto = 0
 ");
 $sqlCheck->execute([$idVenta]);
 $restantes = $sqlCheck->fetchColumn();

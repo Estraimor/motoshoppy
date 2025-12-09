@@ -4,18 +4,20 @@ session_start();
 
 $idVenta = intval($_POST['idVenta']);
 $motivo = trim($_POST['motivo']);
-$usuario = $_SESSION['usuario_id'] ?? 0; // Ajustalo según tu login
+$usuario = $_SESSION['idusuario'] ?? 0; // Tu sistema usa idusuario
 
 // =========================================
 // 1) OBTENER DETALLES DE LA VENTA
 // =========================================
-$sql = "SELECT producto_id, cantidad 
-        FROM detalle_venta 
-        WHERE venta_id = :id";
+$sql = "
+    SELECT producto_idProducto AS producto_id, cantidad
+    FROM detalle_venta
+    WHERE ventas_idVenta = :id
+";
 $stmt = $conexion->prepare($sql);
 $stmt->bindParam(':id', $idVenta);
 $stmt->execute();
-$items = $stmt->fetchAll();
+$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$items) {
     echo "empty";
@@ -23,32 +25,38 @@ if (!$items) {
 }
 
 // =========================================
-// 2) POR CADA PRODUCTO → SUMAR STOCK
+// 2) ANULAR PRODUCTOS Y SUMAR STOCK
 // =========================================
 foreach ($items as $item) {
 
     $prod = $item['producto_id'];
-    $cant = $item['cantidad'];
+    $cant = intval($item['cantidad']);
 
-    // stock_producto
-    $sql = "UPDATE stock_producto 
-            SET cantidad_actual = cantidad_actual + :cant
-            WHERE producto_idProducto = :prod";
+    // ----------------------------------------------------------
+    // A) DEVOLVER STOCK AL DEPÓSITO (NO A EXHIBICIÓN)
+    // ----------------------------------------------------------
+    $sql = "
+        UPDATE stock_producto 
+        SET cantidad_actual = cantidad_actual + :cant
+        WHERE producto_idProducto = :prod
+    ";
     $up = $conexion->prepare($sql);
     $up->bindParam(':cant', $cant);
     $up->bindParam(':prod', $prod);
     $up->execute();
 
-    // guardar registro en ventas_anuladas
+    // ----------------------------------------------------------
+    // B) REGISTRAR ANULACIÓN
+    // ----------------------------------------------------------
     $ins = $conexion->prepare("
         INSERT INTO ventas_anuladas
-        (venta_id, producto_id, cantidad_devuelta, motivo, usuario_anulo, fecha)
+        (ventas_idVenta, producto_idProducto, cantidad_devuelta, motivo, usuario_idusuario, fecha)
         VALUES (:venta, :prod, :cant, :motivo, :user, NOW())
     ");
 
     $ins->bindParam(':venta', $idVenta);
-    $ins->bindParam(':prod', $prod);
-    $ins->bindParam(':cant', $cant);
+    $ins->bindParam(':prod',  $prod);
+    $ins->bindParam(':cant',  $cant);
     $ins->bindParam(':motivo', $motivo);
     $ins->bindParam(':user', $usuario);
     $ins->execute();

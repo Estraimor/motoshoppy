@@ -4,38 +4,52 @@
 
     // Consulta usando PDO
     $sql = "
-    SELECT 
-        v.idVenta,
-        v.fecha,
-        v.total,
-        v.metodo_pago,
-        v.tipo_comprobante,
-        u.nombre AS user_nombre,
-        u.apellido AS user_apellido,
+SELECT 
+    v.idVenta,
+    v.fecha,
+    v.total,
 
-        /* ¿Tiene devoluciones parciales? */
-        (SELECT COUNT(*) 
-            FROM detalle_venta dv 
-            WHERE dv.venta_id = v.idVenta 
-            AND dv.devuelto = 1
-        ) AS productos_devueltos,
+    mp.nombre AS metodo_pago,
+    tc.nombre AS tipo_comprobante,
 
-        /* Cantidad total original de productos */
-        (SELECT SUM(cantidad) 
-            FROM detalle_venta 
-            WHERE venta_id = v.idVenta
-        ) AS cant_productos,
+    u.nombre AS user_nombre,
+    u.apellido AS user_apellido,
 
-        /* Estado cancelada si existe en la tabla ventas_anuladas */
-        (SELECT COUNT(*) 
-            FROM ventas_anuladas va 
-            WHERE va.venta_id = v.idVenta
-        ) AS esta_cancelada
+    /* Cantidad de productos devueltos */
+    (
+        SELECT COUNT(*) 
+        FROM detalle_venta dv 
+        WHERE dv.ventas_idVenta = v.idVenta 
+          AND dv.devuelto = 1
+    ) AS productos_devueltos,
 
-    FROM ventas v
-    LEFT JOIN usuario u ON v.usuario_id = u.idusuario
-    ORDER BY v.fecha DESC
-    ";
+    /* Cantidad total original de productos */
+    (
+        SELECT SUM(dv2.cantidad) 
+        FROM detalle_venta dv2
+        WHERE dv2.ventas_idVenta = v.idVenta
+    ) AS cant_productos,
+
+    /* ¿Está cancelada? */
+    (
+        SELECT COUNT(*) 
+        FROM ventas_anuladas va 
+        WHERE va.ventas_idVenta = v.idVenta
+    ) AS esta_cancelada
+
+FROM ventas v
+LEFT JOIN usuario u 
+    ON v.usuario_idusuario = u.idusuario
+LEFT JOIN metodo_pago mp
+    ON mp.idmetodo_pago = v.metodo_pago_idmetodo_pago
+LEFT JOIN tipo_comprobante tc
+    ON tc.idtipo_comprobante = v.tipo_comprobante_idtipo_comprobante
+
+ORDER BY v.fecha DESC;
+
+
+";
+
 
 
     $stmt = $conexion->prepare($sql);
@@ -87,8 +101,9 @@ if ($row['esta_cancelada'] > 0) {
             <td><?= $row['idVenta'] ?></td>
             <td><?= $row['fecha'] ?></td>
             <td><?= $row['user_nombre'].' '.$row['user_apellido'] ?></td>
-            <td><?= ucfirst($row['metodo_pago']) ?></td>
-            <td><?= ucfirst($row['tipo_comprobante']) ?></td>
+           <td><?= ucfirst($row['metodo_pago'] ?? 'Sin método') ?></td>
+<td><?= ucfirst($row['tipo_comprobante'] ?? 'Sin comprobante') ?></td>
+
             <td>$<?= number_format($row['total'],2,',','.') ?></td>
             <td>
                 <button 
@@ -96,8 +111,9 @@ if ($row['esta_cancelada'] > 0) {
                     data-id="<?= $row['idVenta'] ?>"
                     data-fecha="<?= $row['fecha'] ?>"
                     data-vendedor="<?= $row['user_nombre'].' '.$row['user_apellido'] ?>"
-                    data-metodo="<?= ucfirst($row['metodo_pago']) ?>"
-                    data-comprobante="<?= ucfirst($row['tipo_comprobante']) ?>"
+                    data-metodo="<?= ucfirst($row['metodo_pago'] ?? 'Sin método') ?>"
+data-comprobante="<?= ucfirst($row['tipo_comprobante'] ?? 'Sin comprobante') ?>"
+
                     data-total="<?= number_format($row['total'],2,',','.') ?>"
                 >
                     Ver Detalle

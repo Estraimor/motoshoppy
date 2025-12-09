@@ -15,4 +15,12 @@ $result['comprobantes'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $conexion->query("SELECT idmoneda AS id, codigo, nombre FROM moneda ORDER BY idmoneda ASC");
 $result['monedas'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Cotizaciones
+$stmt = $conexion->query("
+    SELECT usd_ars, usd_pyg, ars_pyg 
+    FROM cotizacion 
+    ORDER BY id DESC LIMIT 1
+");
+$result['cotizacion'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
 echo json_encode($result);

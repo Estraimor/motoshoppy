@@ -27,12 +27,19 @@ require_once '../conexion/conexion.php';
       </thead>
       <tbody></tbody>
       <tfoot>
-        <tr>
-          <th colspan="4" class="text-end">Total:</th>
-          <th id="totalCarrito" class="text-glow text-end">₲ 0,00</th>
-          <th></th>
-        </tr>
-      </tfoot>
+  <tr>
+    <th colspan="4" class="text-end">Total:</th>
+    <th id="totalCarrito" class="text-glow text-end"></th>
+  </tr>
+
+  <tr>
+    <td colspan="5" class="text-end">
+      <span id="totalUSD" class="text-info fw-bold me-3"></span>
+      <span id="totalARS" class="text-warning fw-bold"></span>
+    </td>
+  </tr>
+</tfoot>
+
     </table>
 
     <div class="mt-3 text-end">
@@ -44,260 +51,401 @@ require_once '../conexion/conexion.php';
 </div>
 
 <script>
-/* ==== Helpers ==== */
+
+
+
+/* ============================================================
+   METADATA: Comprobantes, métodos de pago y monedas
+============================================================ */
+let METADATA = {
+    comprobantes: [],
+    metodos_pago: [],
+    monedas: []
+};
+
+async function cargarMetadataVentas() {
+    try {
+        const r = await fetch('/motoshoppy/api/get_metadata_ventas.php');
+        const d = await r.json();
+
+        METADATA.comprobantes = d.comprobantes;
+        METADATA.metodos_pago = d.metodos_pago;
+        METADATA.monedas = d.monedas;
+        METADATA.cotizacion = d.cotizacion;  // ← FALTABA ESTO
+
+        console.log("Metadata cargada:", METADATA);
+    } catch (err) {
+        console.error("Error cargando metadata:", err);
+    }
+}
+
+
+cargarMetadataVentas();
+
+/* ============================================================
+   Formatear moneda
+============================================================ */
 const money = v => Number(v || 0).toLocaleString('es-AR', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
 });
 
-/* ==== Renderizado del carrito ==== */
+
+
+/* ============================================================
+   Renderizar carrito
+============================================================ */
 function renderCarrito() {
-  const key = 'carrito';
-  const carrito = JSON.parse(localStorage.getItem(key) || '[]');
-  const tbody = document.querySelector('#tablaCarrito tbody');
-  tbody.innerHTML = '';
-  let total = 0;
+    const carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+    const tbody = document.querySelector("#tablaCarrito tbody");
+    tbody.innerHTML = "";
+    let total = 0;
 
-  if (carrito.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="empty-cart">
-          <i class="fa-solid fa-cart-arrow-down"></i><br>
-          <span>Tu carrito está vacío</span>
-        </td>
-      </tr>`;
-  }
+    if (carrito.length === 0) {
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="empty-cart">
+                <i class="fa-solid fa-cart-arrow-down"></i><br>
+                <span>Tu carrito está vacío</span>
+            </td>
+        </tr>`;
+        document.getElementById("totalCarrito").textContent = "₲ 0";
 
-  carrito.forEach((p, i) => {
-    const subtotal = p.precio_expuesto * p.cantidad;
-    total += subtotal;
-    const imgSrc = p.imagen
-      ? `/motoshoppy/${String(p.imagen).replace(/\\\\/g, '/').replace(/^\/+/, '')}`
-      : '/motoshoppy/imagenes/noimg.png';
-    tbody.innerHTML += `
-      <tr>
-        <td><img src="${imgSrc}" class="img-fluid rounded-circle mini-img"></td>
-        <td>
-          <div class="fw-semibold">${p.nombre}</div>
-          <div class="small text-secondary">
-            ${p.codigo ? `Cod: ${p.codigo}` : ''}
-            ${p.nombre_marca ? `${p.codigo ? ' · ' : ''}Marca: ${p.nombre_marca}` : ''}
-            ${p.modelo ? `${(p.codigo || p.nombre_marca) ? ' · ' : ''}Modelo: ${p.modelo}` : ''}
-            ${p.nombre_categoria ? `${(p.codigo || p.nombre_marca || p.modelo) ? ' · ' : ''}Cat: ${p.nombre_categoria}` : ''}
-          </div>
-          ${p.stock_estado ? `<div class="small">
-            <span class="badge ${p.stock_estado === 'ok' ? 'bg-success' : (p.stock_estado === 'bajo_stock' ? 'bg-warning text-dark' : 'bg-danger')}">
-              Stock: ${typeof p.stock_actual !== 'undefined' ? p.stock_actual : '-'}
-            </span>
-          </div>` : ''}
-        </td>
-        <td class="text-center">
-          <input type="number" min="1" value="${p.cantidad}" class="form-control form-control-sm text-center qtyInput" data-index="${i}">
-        </td>
-        <td class="text-end">₲ ${money(p.precio_expuesto)}</td>
-        <td class="text-end text-warning fw-bold">₲ ${money(subtotal)}</td>
-        <td class="text-center">
-          <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${i})">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>`;
-  });
+        document.getElementById("totalUSD").textContent = "≈ $ 0,00 USD";
+        document.getElementById("totalARS").textContent = "≈ $ 0,00 ARS";
+        return;
+    }
 
-  document.getElementById('totalCarrito').textContent = `₲ ${money(total)}`;
+    /* =======================================================
+       PRIMERO SUMAMOS EL TOTAL
+    ======================================================= */
+    carrito.forEach((p, i) => {
+        const subtotal = p.precio_expuesto * p.cantidad;
+        total += subtotal;
 
-  document.querySelectorAll('.qtyInput').forEach(inp => {
-    inp.addEventListener('change', e => {
-      const idx = parseInt(e.target.dataset.index);
-      const cant = Math.max(1, parseInt(e.target.value) || 1);
-      carrito[idx].cantidad = cant;
-      localStorage.setItem(key, JSON.stringify(carrito));
-      renderCarrito();
+        const imgSrc = p.imagen
+            ? `/motoshoppy/${String(p.imagen).replace(/\\\\/g, "/").replace(/^\/+/, "")}`
+            : "/motoshoppy/imagenes/noimg.png";
+
+        tbody.innerHTML += `
+        <tr>
+            <td><img src="${imgSrc}" class="img-fluid rounded-circle mini-img"></td>
+
+            <td>
+                <div class="fw-semibold">${p.nombre}</div>
+                <div class="small text-secondary">
+                    ${p.codigo ? `Cod: ${p.codigo}` : ""}
+                    ${p.nombre_marca ? ` · Marca: ${p.nombre_marca}` : ""}
+                    ${p.modelo ? ` · Modelo: ${p.modelo}` : ""}
+                    ${p.nombre_categoria ? ` · Cat: ${p.nombre_categoria}` : ""}
+                </div>
+
+                ${
+                    p.stock_estado
+                        ? `<span class="badge ${
+                              p.stock_estado === "ok"
+                                  ? "bg-success"
+                                  : p.stock_estado === "bajo_stock"
+                                  ? "bg-warning text-dark"
+                                  : "bg-danger"
+                          }">Stock: ${p.stock_actual ?? "-"}</span>`
+                        : ""
+                }
+            </td>
+
+            <td class="text-center">
+                <input type="number" min="1" value="${p.cantidad}" 
+                    class="form-control form-control-sm text-center qtyInput"
+                    data-index="${i}">
+            </td>
+
+            <td class="text-end">₲ ${money(p.precio_expuesto)}</td>
+            <td class="text-end fw-bold text-warning">₲ ${money(subtotal)}</td>
+
+            <td class="text-center">
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarDelCarrito(${i})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
     });
-  });
+
+    /* =======================================================
+       ACTUALIZAMOS EL TOTAL EN GUARANÍES
+    ======================================================= */
+    document.getElementById("totalCarrito").textContent = `₲ ${money(total)}`;
+
+    /* =======================================================
+       AHORA QUE TOTAL YA ESTÁ SUMADO → CONVERTIMOS USD/ARS
+    ======================================================= */
+    const cot = METADATA.cotizacion;
+
+    const totalUSD = cot?.usd_pyg > 0 ? total / cot.usd_pyg : 0;
+    const totalARS = cot?.ars_pyg > 0 ? total / cot.ars_pyg : 0;
+
+    document.getElementById("totalUSD").textContent = `≈ $ ${money(totalUSD)} USD`;
+    document.getElementById("totalARS").textContent = `≈ $ ${money(totalARS)} ARS`;
+
+    /* =======================================================
+       INPUTS DINÁMICOS
+    ======================================================= */
+    document.querySelectorAll(".qtyInput").forEach(inp => {
+        inp.addEventListener("change", e => {
+            const carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+            const idx = parseInt(e.target.dataset.index);
+            carrito[idx].cantidad = Math.max(1, parseInt(e.target.value) || 1);
+            localStorage.setItem("carrito", JSON.stringify(carrito));
+            renderCarrito();
+        });
+    });
 }
 
-/* ==== Funciones CRUD ==== */
-function eliminarDelCarrito(index) {
-  const key = 'carrito';
-  const carrito = JSON.parse(localStorage.getItem(key) || '[]');
-  carrito.splice(index, 1);
-  localStorage.setItem(key, JSON.stringify(carrito));
-  renderCarrito();
+
+/* ============================================================
+   CRUD Carrito
+============================================================ */
+function eliminarDelCarrito(i) {
+    const carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+    carrito.splice(i, 1);
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    renderCarrito();
 }
 
-document.getElementById('btnVaciar').addEventListener('click', () => {
-  Swal.fire({
-    icon: 'warning',
-    title: '¿Vaciar carrito?',
-    text: 'Se eliminarán todos los productos.',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, vaciar',
-    cancelButtonText: 'Cancelar'
-  }).then(r => {
-    if (r.isConfirmed) {
-      localStorage.removeItem('carrito');
-      renderCarrito();
-    }
-  });
+document.getElementById("btnVaciar").addEventListener("click", () => {
+    Swal.fire({
+        icon: "warning",
+        title: "¿Vaciar carrito?",
+        text: "Se eliminarán todos los productos.",
+        showCancelButton: true,
+        confirmButtonText: "Sí, vaciar"
+    }).then(r => {
+        if (r.isConfirmed) {
+            localStorage.removeItem("carrito");
+            renderCarrito();
+        }
+    });
 });
 
-/* ==== Confirmar venta ==== */
-document.querySelector('.btnConfirmar').addEventListener('click', async () => {
-  const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
-  if (carrito.length === 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Carrito vacío',
-      text: 'Agregá productos antes de confirmar.'
-    });
-    return;
-  }
+/* ============================================================
+   Confirmar venta
+============================================================ */
+document.querySelector(".btnConfirmar").addEventListener("click", async () => {
 
-  const total = carrito.reduce((a, b) => a + b.precio_expuesto * b.cantidad, 0);
-
-  // Paso 1: elegir tipo de comprobante
-  const { value: comprobante } = await Swal.fire({
-    title: 'Tipo de comprobante',
-    input: 'radio',
-    inputOptions: {
-      'ticket': 'Ticket',
-      'factura': 'Factura',
-      'ninguno': 'Ninguno'
-    },
-    inputValue: 'ticket',
-    confirmButtonText: 'Continuar',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    inputValidator: v => !v && 'Seleccioná una opción'
-  });
-  if (!comprobante) return;
-
-  // Paso 2: ingresar método de pago y datos del cliente
-  const htmlPago = `
-  <div class="text-start">
-    <label class="form-label fw-bold mt-2">Método de pago</label>
-    <select id="metodoPago" class="form-select">
-      <option value="efectivo">Efectivo</option>
-      <option value="transferencia">Transferencia</option>
-      <option value="tarjeta">Tarjeta</option>
-      <option value="otro">Otro</option>
-    </select>
-    <div id="otroMetodo" class="mt-2 d-none">
-      <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
-    </div>
-
-    ${
-      comprobante === 'factura'
-        ? `
-          <hr class="my-3">
-          <label class="form-label fw-bold">Datos del cliente (Factura)</label>
-          <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
-          <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
-          <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
-          <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">`
-        : `
-          <hr class="my-3">
-          <label class="form-label fw-bold">DNI del cliente (Ticket)</label>
-          <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">`
+    const carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+    if (carrito.length === 0) {
+        Swal.fire({ icon: "warning", title: "Carrito vacío" });
+        return;
     }
-  </div>`;
 
-  const { value: confirmar } = await Swal.fire({
-    title: 'Confirmar venta',
-    html: `
-      <div class="text-start">
-        <p><strong>Productos:</strong> ${carrito.length}</p>
-        <p><strong>Total:</strong> ₲ ${money(total)}</p>
-        <p><strong>Comprobante:</strong> ${comprobante.toUpperCase()}</p>
-        ${htmlPago}
-      </div>`,
-    width: 600,
-    confirmButtonText: 'Finalizar venta',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    didOpen: () => {
-      const sel = document.getElementById('metodoPago');
-      sel.addEventListener('change', () => {
-        document.getElementById('otroMetodo').classList.toggle('d-none', sel.value !== 'otro');
-      });
-    },
-    preConfirm: () => {
-      const metodo = document.getElementById('metodoPago').value;
-      const metodo_desc = metodo === 'otro' ? document.getElementById('otroTexto').value.trim() : metodo;
+    const total = carrito.reduce((a, b) => a + b.precio_expuesto * b.cantidad, 0);
 
-      let cliente = null;
-      if (comprobante === 'factura') {
-        cliente = {
-          nombre: document.getElementById('cliNombreFactura').value.trim(),
-          apellido: document.getElementById('cliApellidoFactura').value.trim(),
-          dni: document.getElementById('cliDniFactura').value.trim(),
-          celular: document.getElementById('cliCelularFactura').value.trim()
-        };
-      } else if (comprobante === 'ticket') {
-        cliente = { dni: document.getElementById('cliDniTicket').value.trim() };
-      }
-      return { metodo, metodo_desc, cliente };
-    }
-  });
+    /* ----------------------------
+       Paso 1: Tipo comprobante
+    ---------------------------- */
+    let optsComp = {};
+    METADATA.comprobantes.forEach(c => optsComp[c.id] = c.nombre);
 
-  if (!confirmar) return;
-
-  // Paso 3: envío al backend
-  const payload = {
-    tipo_comprobante: comprobante,
-    metodo_pago: confirmar.metodo_desc,
-    productos: carrito,
-    total,
-    cliente: confirmar.cliente
-  };
-
-  try {
-    const res = await fetch('/motoshoppy/ventas/api_comprar.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    const { value: comprobanteID } = await Swal.fire({
+        title: "Tipo de comprobante",
+        input: "radio",
+        inputOptions: optsComp,
+        inputValue: Object.keys(optsComp)[0],
+        showCancelButton: true
     });
-    const data = await res.json();
 
-    if (data.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: '✅ Venta completada',
-        text: `Comprobante: ${comprobante.toUpperCase()} - ${payload.metodo_pago}`,
-        timer: 1800,
-        showConfirmButton: false
-      });
+    if (!comprobanteID) return;
 
-      localStorage.removeItem('carrito');
-      renderCarrito();
+    const compData = METADATA.comprobantes.find(c => c.id == comprobanteID);
+    const esFactura = compData.nombre.toLowerCase().includes("factura");
 
-      // 🧾 Abrir PDF correspondiente
-      const dni = payload.cliente?.dni || '';
-      if (data.tipo_comprobante === 'ticket') {
-        window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, '_blank');
-      } else if (data.tipo_comprobante === 'factura') {
-        window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, '_blank');
-      }
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: data.msg || 'No se pudo confirmar la venta.'
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo contactar con el servidor.'
+    /* ----------------------------
+       Paso 2: Método + Moneda + Cliente
+    ---------------------------- */
+    let htmlMetodo = `<option disabled selected value="">Seleccioná método</option>`;
+    METADATA.metodos_pago.forEach(m => {
+        htmlMetodo += `<option value="${m.id}">${m.nombre}</option>`;
     });
-  }
+
+    let htmlMoneda = `<option disabled selected value="">Seleccioná moneda</option>`;
+    METADATA.monedas.forEach(m => {
+        htmlMoneda += `<option value="${m.id}">${m.codigo} - ${m.nombre}</option>`;
+    });
+
+    const htmlPago = `
+        <label class="fw-bold mt-2">Método de Pago</label>
+        <select id="metodoPago" class="form-select">${htmlMetodo}</select>
+
+        <div id="otroMetodo" class="mt-2 d-none">
+            <input id="otroTexto" class="form-control" placeholder="Describí el método...">
+        </div>
+
+        <hr>
+
+        <label class="fw-bold">Moneda (solo efectivo)</label>
+        <select id="monedaPago" class="form-select d-none">${htmlMoneda}</select>
+
+        <hr>
+
+        ${esFactura ? `
+            <label class="fw-bold">Datos del Cliente (Factura)</label>
+            <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
+            <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
+            <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
+            <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
+        ` : `
+            <label class="fw-bold">DNI Cliente (Ticket)</label>
+            <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">
+        `}
+    `;
+
+    const { value: confirmar } = await Swal.fire({
+        title: "Confirmar venta",
+        html: `
+            <p><strong>Total:</strong> ₲ ${money(total)}</p>
+            ${htmlPago}
+        `,
+        width: 600,
+        showCancelButton: true,
+        confirmButtonText: "Finalizar venta",
+        didOpen: () => {
+            const metodoSel = document.getElementById("metodoPago");
+            const monedaSel = document.getElementById("monedaPago");
+
+            metodoSel.addEventListener("change", () => {
+                const m = METADATA.metodos_pago.find(x => x.id == metodoSel.value);
+
+                document.getElementById("otroMetodo")
+                    .classList.toggle("d-none", m.nombre.toLowerCase() !== "otro");
+
+                monedaSel.classList.toggle("d-none", m.nombre.toLowerCase() !== "efectivo");
+            });
+
+            /* === Autocompletar cliente para factura === */
+            if (esFactura) {
+                const dniInput = document.getElementById("cliDniFactura");
+
+                dniInput.addEventListener("input", async e => {
+                    const dni = e.target.value.trim();
+                    if (dni.length < 6) return;
+
+                    try {
+                        const r = await fetch(`/motoshoppy/ventas/api_buscar_cliente.php?dni=${dni}`);
+                        const d = await r.json();
+
+                        if (d.ok && d.cliente) {
+                            document.getElementById("cliNombreFactura").value = d.cliente.nombre;
+                            document.getElementById("cliApellidoFactura").value = d.cliente.apellido;
+                            document.getElementById("cliCelularFactura").value = d.cliente.celular;
+                            dniInput.classList.add("is-valid");
+                        } else {
+                            dniInput.classList.remove("is-valid");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+            }
+        },
+        preConfirm: () => {
+            const metodoID = document.getElementById("metodoPago").value;
+            if (!metodoID) return Swal.showValidationMessage("Seleccioná método de pago");
+
+            const metodoData = METADATA.metodos_pago.find(x => x.id == metodoID);
+            let monedaID = "";
+
+            if (metodoData.nombre.toLowerCase() === "efectivo") {
+                monedaID = document.getElementById("monedaPago").value;
+                if (!monedaID) return Swal.showValidationMessage("Seleccioná la moneda");
+            }
+
+            let cliente = null;
+
+            if (esFactura) {
+                const n = document.getElementById("cliNombreFactura").value.trim();
+                const a = document.getElementById("cliApellidoFactura").value.trim();
+                const dni = document.getElementById("cliDniFactura").value.trim();
+
+                if (!n || !a || !dni) return Swal.showValidationMessage("Completá todos los datos del cliente");
+
+                cliente = { nombre: n, apellido: a, dni };
+            } else {
+                const dni = document.getElementById("cliDniTicket").value.trim();
+                if (!dni) return Swal.showValidationMessage("Ingresá DNI del cliente");
+                cliente = { dni };
+            }
+
+            return { metodo_pago: metodoID, moneda: monedaID, cliente };
+        }
+    });
+
+    if (!confirmar) return;
+
+    /* ----------------------------
+       Enviar al backend
+    ---------------------------- */
+    const payload = {
+        tipo_comprobante: comprobanteID,
+        metodo_pago: confirmar.metodo_pago,
+        moneda: confirmar.moneda || null,
+        productos: carrito,
+        total,
+        cliente: confirmar.cliente
+    };
+
+    try {
+        const r = await fetch("/motoshoppy/ventas/api_comprar.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await r.json();
+
+        if (data.ok) {
+            Swal.fire({
+                icon: "success",
+                title: "Venta registrada",
+                text: `Venta #${data.venta_id}`,
+                timer: 1600,
+                showConfirmButton: false
+            });
+
+            localStorage.removeItem("carrito");
+            renderCarrito();
+
+            /* ----------------------------
+               ABRIR TICKET O FACTURA
+            ---------------------------- */
+            const dni = payload.cliente?.dni || "";
+
+            if (parseInt(payload.tipo_comprobante) === 1) {
+                window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, "_blank");
+            }
+
+            if (parseInt(payload.tipo_comprobante) === 2) {
+                window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, "_blank");
+            }
+
+        } else {
+            Swal.fire({ icon: "error", title: "Error", text: data.msg });
+        }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ icon: "error", title: "Error de conexión" });
+    }
 });
 
-document.addEventListener('DOMContentLoaded', renderCarrito);
+/* ============================================================
+   Inicializar
+============================================================ */
+document.addEventListener("DOMContentLoaded", async () => {
+    await cargarMetadataVentas();  // esperar metadata
+    renderCarrito();               // ahora sí renderiza con cotización cargada
+});
+
 </script>
+
 
 
 <?php include '../dashboard/footer.php'; ?>

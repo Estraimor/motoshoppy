@@ -17,18 +17,18 @@ if ($idVenta <= 0) {
 $sql = "
 SELECT 
     dv.idDetalle, 
-    dv.producto_id, 
+    dv.producto_idProducto AS producto_id,
     dv.cantidad, 
     dv.precio_unitario, 
-    dv.subtotal,
+    (dv.cantidad * dv.precio_unitario) AS subtotal,
     dv.devuelto,
 
     /* ID de la devolución si existe */
     (
         SELECT idDevolucion 
         FROM devoluciones_venta dvv 
-        WHERE dvv.venta_id = dv.venta_id
-          AND dvv.producto_id = dv.producto_id
+        WHERE dvv.ventas_idVenta = dv.ventas_idVenta
+          AND dvv.producto_idProducto = dv.producto_idProducto
         LIMIT 1
     ) AS idDevolucionReal,
 
@@ -41,20 +41,20 @@ SELECT
 
 FROM detalle_venta dv
 INNER JOIN producto p 
-        ON dv.producto_id = p.idProducto
+        ON dv.producto_idProducto = p.idProducto
 LEFT JOIN marcas m 
        ON p.marcas_idmarcas = m.idmarcas
 LEFT JOIN ubicacion_producto u 
        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
 
-WHERE dv.venta_id = :idVenta
+WHERE dv.ventas_idVenta = :idVenta
 ORDER BY dv.idDetalle ASC
 ";
 
 $stmt = $conexion->prepare($sql);
 $stmt->bindParam(':idVenta', $idVenta, PDO::PARAM_INT);
 $stmt->execute();
-$detalles = $stmt->fetchAll();
+$detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 
@@ -163,4 +163,4 @@ $detalles = $stmt->fetchAll();
     </tbody>
 </table>
 
-</div> <!-- cierre del contenedor aislado -->
+</div>
