@@ -14,6 +14,10 @@ require_once '../conexion/conexion.php';
     </button>
   </div>
 </div>
+<div class="text-end text-secondary small mt-1 mb-2">
+  <span class="me-3"><span class="text-success fw-bold">G</span> = General (depósito)</span>
+  <span><span class="text-info fw-bold">E</span> = Exhibido (mostrador)</span>
+</div>
 
 <div class="content-body">
   <div class="row g-3">
@@ -22,17 +26,20 @@ require_once '../conexion/conexion.php';
       <div class="card shadow-sm p-2 modulo">
         <table id="tablaVentas" class="table table-dark table-hover table-sm w-100 align-middle">
           <thead>
-          <tr>
-            
-            <th style="width:100px">Código</th>
-            <th>Nombre</th>
-            <th>Modelo</th>
-            <th>Marca</th>
-            <th>Precio</th>
-            <th>Stock</th>
-            <th style="width:130px">Acciones</th>
-          </tr>
-        </thead>
+  <tr>
+    <th style="width:100px">Código</th>
+    <th>Nombre</th>
+    <th>Modelo</th>
+    <th>Marca</th>
+    <th>Precio</th>
+
+    <!-- ⭐ TITULAR DEL STOCK CON DOS VALORES ⭐ -->
+    <th>Stock<br><span class="text-secondary small">(G / E)</span></th>
+
+    <th style="width:130px">Acciones</th>
+  </tr>
+</thead>
+
 
           <tbody></tbody>
         </table>
@@ -225,14 +232,33 @@ document.addEventListener('DOMContentLoaded', () => {
         render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
       },
       {
-        data: 'stock_actual',
-        render: (v, _, row) => {
-          let color = 'text-success', txt = v;
-          if (row.stock_estado === 'bajo_stock') color = 'text-warning';
-          if (row.stock_estado === 'sin_stock') color = 'text-danger', txt = 'Sin stock';
-          return `<span class="${color} fw-bold">${txt}</span>`;
-        }
-      },
+  data: null,
+  render: (_, __, row) => {
+
+    const g = row.stock_general;   // depósito
+    const e = row.stock_exhibido;  // exhibido
+
+    // Caso sin stock
+    if (row.stock_estado === 'sin_stock') {
+      return `<span class="text-danger fw-bold">Sin stock</span>`;
+    }
+
+    // Colores según estado
+    let colorG = 'text-success';
+    let colorE = 'text-info';
+
+    if (row.stock_estado === 'bajo_stock') {
+      colorG = 'text-warning';
+    }
+
+    return `
+      <span class="${colorG} fw-bold">${g}</span>
+      <span class="text-secondary"> / </span>
+      <span class="${colorE} fw-bold">${e}</span>
+    `;
+  }
+},
+
       {
         data: null,
         render: (_, __, row) => `
