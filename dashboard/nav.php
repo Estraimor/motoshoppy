@@ -13,11 +13,13 @@ $uri = $_SERVER['REQUEST_URI'] ?? '';
 $productos_pages = ['categorias.php', 'marcas.php', 'alta_productos.php', 'listar_productos.php'];
 $ventas_pages = ['index.php', 'carrito.php', 'historial.php', 'detalle_venta.php'];
 $config_pages = ['index.php', 'usuarios.php', 'roles.php', 'ajustes.php'];
+$proveedores_pages = ['index.php'];
 
 // === CHECK ACTIVE ===
 $is_productos_active = array_reduce($productos_pages, fn($carry, $p) => $carry || strpos($uri, "/motoshoppy/$p") !== false, false);
 $is_ventas_active = strpos($uri, "/motoshoppy/ventas/") !== false;
 $is_config_active = strpos($uri, "/motoshoppy/configuracion/") !== false;
+$is_proveedores_active = strpos($uri, "/motoshoppy/proveedores/") !== false;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -80,11 +82,27 @@ $is_config_active = strpos($uri, "/motoshoppy/configuracion/") !== false;
             <a href="/motoshoppy/marcas/index.php"><i class="fa-solid fa-bookmark"></i> Marcas</a>
             <a href="/motoshoppy/productos/alta_productos.php"><i class="fa-solid fa-plus"></i> Crear Productos</a>
             <a href="/motoshoppy/productos/listar_productos.php"><i class="fa-solid fa-list"></i> Lista de Productos</a>
-            <a href="/motoshoppy/productos/#"><i class="fa-solid fa-boxes-stacked"></i> Reponer stock</a>
-            <a href="/motoshoppy/productos/#"><i class="fa-solid fa-right-left"></i> Movimiento Stock</a>
-
+            
         </div>
     </div>
+
+
+    <!-- === PROVEEDORES (SUBMENÚ) === -->
+<div class="nav-item has-submenu <?= $is_proveedores_active ? 'active' : '' ?>">
+    <button class="submenu-toggle">
+        <i class="fa-solid fa-truck-field"></i> Proveedores
+        <i class="fa-solid fa-chevron-down chevron"></i>
+    </button>
+
+    <div class="submenu" style="<?= $is_proveedores_active ? 'display:flex;' : 'display:none;' ?>">
+        <a href="/motoshoppy/proveedores/index.php">
+            <i class="fa-solid fa-address-book"></i> Ver Proveedores
+        </a>
+        <a href="/motoshoppy/reponer_stock/index.php"><i class="fa-solid fa-boxes-stacked"></i> Reponer stock</a>
+        <a href="/motoshoppy/productos/#"><i class="fa-solid fa-right-left"></i> Movimiento Stock</a>
+
+    </div>
+</div>
 
     <!-- === CLIENTES (SE QUEDA NORMAL) === -->
     <a href="/motoshoppy/clientes/index.php" class="<?= $current_page === 'clientes.php' ? 'active' : '' ?>">

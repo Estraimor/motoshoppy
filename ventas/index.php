@@ -588,9 +588,7 @@ if (p.peso_g) ficha += `<div><span class="text-warning">Peso (g):</span> ${p.pes
 if (p.ubicacion_producto_idubicacion_producto)
   ficha += `<div><span class="text-warning">Ubicación:</span> ${p.ubicacion_producto_idubicacion_producto}</div>`;
 
-// Precio costo (si lo querés mostrar)
-if (p.precio_costo)
-  ficha += `<div><span class="text-warning">Costo interno:</span> ₲ ${money(p.precio_costo)}</div>`;
+
 
 // Atributos de cubierta
 if (p.aro || p.ancho || p.perfil_cubierta || p.tipo) {

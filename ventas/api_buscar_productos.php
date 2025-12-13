@@ -24,39 +24,32 @@ SELECT
   p.nombre,
   p.codigo,
   p.modelo,
-
-  -- CAMPOS QUE FALTABAN
   p.precio_expuesto,
   p.precio_costo,
   p.peso_ml,
   p.peso_g,
-  p.ubicacion_producto_idubicacion_producto,
-
+  up.lugar AS ubicacion_producto_idubicacion_producto,
   p.imagen,
   p.descripcion,
-
   m.nombre_marca,
   c.nombre_categoria,
   c.idCategoria,
-
-  -- STOCK
   s.cantidad_actual AS stock_deposito,
   s.stock_minimo,
   s.cantidad_exhibida,
-
-  -- ATRIBUTOS DE CUBIERTAS
   ac.aro,
   ac.ancho,
   ac.perfil_cubierta,
   ac.tipo,
   ac.varias_aplicaciones
-
 FROM producto p
 LEFT JOIN marcas m ON m.idmarcas = p.marcas_idmarcas
 LEFT JOIN categoria c ON c.idCategoria = p.Categoria_idCategoria
 LEFT JOIN stock_producto s ON s.producto_idProducto = p.idProducto
 LEFT JOIN atributos_cubiertas ac ON ac.producto_idProducto = p.idProducto
+LEFT JOIN ubicacion_producto up ON up.idubicacion_producto = p.ubicacion_producto_idubicacion_producto  -- Unir la tabla de ubicaciones
 WHERE 1=1
+
 ";
 
 $params = [];
