@@ -14,10 +14,18 @@ require_once '../conexion/conexion.php';
     </button>
   </div>
 </div>
-<div class="text-end text-secondary small mt-1 mb-2">
-  <span class="me-3"><span class="text-success fw-bold">G</span> = General (depósito)</span>
-  <span><span class="text-info fw-bold">E</span> = Exhibido (mostrador)</span>
+<div class="d-flex justify-content-end mt-1 mb-2">
+  <div class="px-3 py-1 rounded text-light small" 
+       style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.08);">
+    <span class="me-3">
+      <span class="fw-bold" style="color:#28a745;">G</span> = General (depósito)
+    </span>
+    <span>
+      <span class="fw-bold" style="color:#17a2b8;">E</span> = Exhibido (mostrador)
+    </span>
+  </div>
 </div>
+
 
 <div class="content-body">
   <div class="row g-3">
@@ -402,9 +410,9 @@ function mostrarDetalle(p) {
   document.getElementById('detMarca').textContent = p.nombre_marca ? `Marca: ${p.nombre_marca}` : '';
 
   // === Cotizaciones (desde BD) ===
-const usd_pyg = Number(window.COT?.usd_pyg || 6000);
-const ars_pyg = Number(window.COT?.ars_pyg || 4.5);
-const usd_ars = Number(window.COT?.usd_ars || 1500);
+  const usd_pyg = Number(window.COT?.usd_pyg || 6000);
+  const ars_pyg = Number(window.COT?.ars_pyg || 4.5);
+  const usd_ars = Number(window.COT?.usd_ars || 1500);
 
 
   // === Precio base ===
@@ -421,7 +429,7 @@ const usd_ars = Number(window.COT?.usd_ars || 1500);
   return `<option value="${precioLista}">
     ${l.nombre_lista} (-${l.porcentaje_descuento}%)
   </option>`;
-}).join('');
+  }).join('');
 
 
       const precioHtml = `
@@ -523,27 +531,102 @@ const usd_ars = Number(window.COT?.usd_ars || 1500);
     });
 
   // === Descripción ===
-  let descHtml = '';
-  if (p.descripcion) {
-    try {
-      const json = JSON.parse(p.descripcion);
-      descHtml = Object.entries(json).map(([k, v]) =>
-        `<div><span class='text-warning fw-semibold'>${k}:</span> ${Array.isArray(v) ? v.join('/') : v}</div>`).join('');
-    } catch {
-      descHtml = `<div class="text-light">${p.descripcion}</div>`;
-    }
+  // === Descripción mejorada ===
+let descHtml = '';
+
+function renderValor(v) {
+  if (v === null || v === undefined) return "<em class='text-muted'>-</em>";
+
+  if (Array.isArray(v)) {
+    return v.join(", ");
   }
 
+  if (typeof v === "object") {
+    return Object.entries(v)
+      .map(([k2, v2]) =>
+        `<div class="ms-3"><span class="text-info">${k2}:</span> ${renderValor(v2)}</div>`
+      ).join("");
+  }
+
+  return v;
+}
+
+if (p.descripcion) {
+  try {
+    const json = JSON.parse(p.descripcion);
+
+    descHtml = Object.entries(json)
+      .map(([k, v]) => `
+        <div class="mb-1">
+          <span class="text-warning fw-semibold">${k}:</span>
+          <span class="text-light ms-1">${renderValor(v)}</span>
+        </div>
+      `).join('');
+
+  } catch {
+    descHtml = `<div class="text-light">${p.descripcion}</div>`;
+  }
+} else {
+  descHtml = '<em class="text-muted">Sin descripción</em>';
+}
+
+let ficha = "";
+
+// Modelo
+if (p.modelo) ficha += `<div><span class="text-warning">Modelo:</span> ${p.modelo}</div>`;
+
+// Categoría
+if (p.nombre_categoria) ficha += `<div><span class="text-warning">Categoría:</span> ${p.nombre_categoria}</div>`;
+
+// Peso en ML
+if (p.peso_ml) ficha += `<div><span class="text-warning">Contenido (ml):</span> ${p.peso_ml}</div>`;
+
+// Peso en GR
+if (p.peso_g) ficha += `<div><span class="text-warning">Peso (g):</span> ${p.peso_g}</div>`;
+
+// Ubicación física
+if (p.ubicacion_producto_idubicacion_producto)
+  ficha += `<div><span class="text-warning">Ubicación:</span> ${p.ubicacion_producto_idubicacion_producto}</div>`;
+
+// Precio costo (si lo querés mostrar)
+if (p.precio_costo)
+  ficha += `<div><span class="text-warning">Costo interno:</span> ₲ ${money(p.precio_costo)}</div>`;
+
+// Atributos de cubierta
+if (p.aro || p.ancho || p.perfil_cubierta || p.tipo) {
+  ficha += `<hr class="border-secondary">`;
+  ficha += `<div class="fw-bold text-info">Atributos de cubierta:</div>`;
+  
+  if (p.aro) ficha += `<div>Aro: ${p.aro}</div>`;
+  if (p.ancho) ficha += `<div>Ancho: ${p.ancho}</div>`;
+  if (p.perfil_cubierta) ficha += `<div>Perfil: ${p.perfil_cubierta}</div>`;
+  if (p.tipo) ficha += `<div>Tipo: ${p.tipo}</div>`;
+}
+
   document.getElementById('detDesc').innerHTML = `
-    <div class="bg-dark bg-opacity-25 rounded p-2 mb-2">
-      ${descHtml || '<em class="text-muted">Sin descripción</em>'}
-    </div>
-    <hr class="border-secondary">
-    <div>Stock actual:
-      <span class="fw-bold text-${
-        p.stock_estado === 'ok' ? 'success' : p.stock_estado === 'bajo_stock' ? 'warning' : 'danger'
-      }">${p.stock_actual}</span> / Mínimo ${p.stock_minimo || 0}
-    </div>`;
+  <div class="bg-dark bg-opacity-25 rounded p-2 mb-2">
+    ${descHtml || '<em class="text-muted">Sin descripción</em>'}
+  </div>
+
+  <hr class="border-secondary">
+
+  <div class="bg-dark bg-opacity-10 rounded p-2 mb-3">
+    <div class="fw-bold text-info mb-1">Ficha técnica</div>
+    ${ficha || '<em class="text-muted">Sin datos técnicos</em>'}
+  </div>
+
+  <hr class="border-secondary">
+
+  <div>Stock actual:
+    <span class="fw-bold text-${
+      p.stock_estado === 'ok'
+        ? 'success'
+        : p.stock_estado === 'bajo_stock'
+        ? 'warning'
+        : 'danger'
+    }">${p.stock_visible}</span>
+    / Mínimo ${p.stock_minimo || 0}
+  </div>`;
 }
 
 

@@ -80,6 +80,9 @@ $is_config_active = strpos($uri, "/motoshoppy/configuracion/") !== false;
             <a href="/motoshoppy/marcas/index.php"><i class="fa-solid fa-bookmark"></i> Marcas</a>
             <a href="/motoshoppy/productos/alta_productos.php"><i class="fa-solid fa-plus"></i> Crear Productos</a>
             <a href="/motoshoppy/productos/listar_productos.php"><i class="fa-solid fa-list"></i> Lista de Productos</a>
+            <a href="/motoshoppy/productos/#"><i class="fa-solid fa-boxes-stacked"></i> Reponer stock</a>
+            <a href="/motoshoppy/productos/#"><i class="fa-solid fa-right-left"></i> Movimiento Stock</a>
+
         </div>
     </div>
 

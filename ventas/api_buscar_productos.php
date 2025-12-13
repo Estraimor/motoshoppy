@@ -24,25 +24,33 @@ SELECT
   p.nombre,
   p.codigo,
   p.modelo,
+
+  -- CAMPOS QUE FALTABAN
   p.precio_expuesto,
+  p.precio_costo,
+  p.peso_ml,
+  p.peso_g,
+  p.ubicacion_producto_idubicacion_producto,
+
   p.imagen,
   p.descripcion,
+
   m.nombre_marca,
   c.nombre_categoria,
   c.idCategoria,
-  s.cantidad_actual AS stock_actual,
+
+  -- STOCK
+  s.cantidad_actual AS stock_deposito,
   s.stock_minimo,
   s.cantidad_exhibida,
-  CASE 
-    WHEN s.cantidad_actual <= 0 THEN 'sin_stock'
-    WHEN s.cantidad_actual <= s.stock_minimo THEN 'bajo_stock'
-    ELSE 'ok'
-  END AS stock_estado,
+
+  -- ATRIBUTOS DE CUBIERTAS
   ac.aro,
   ac.ancho,
   ac.perfil_cubierta,
   ac.tipo,
   ac.varias_aplicaciones
+
 FROM producto p
 LEFT JOIN marcas m ON m.idmarcas = p.marcas_idmarcas
 LEFT JOIN categoria c ON c.idCategoria = p.Categoria_idCategoria
@@ -50,9 +58,6 @@ LEFT JOIN stock_producto s ON s.producto_idProducto = p.idProducto
 LEFT JOIN atributos_cubiertas ac ON ac.producto_idProducto = p.idProducto
 WHERE 1=1
 ";
-
-
-
 
 $params = [];
 
@@ -64,18 +69,22 @@ if ($q !== '') {
   $params[] = "%$q%";
   $params[] = "%$q%";
 }
+
 if ($marca !== '') {
   $sql .= " AND p.marcas_idmarcas = ? ";
   $params[] = $marca;
 }
+
 if ($categoria !== '') {
   $sql .= " AND p.Categoria_idCategoria = ? ";
   $params[] = $categoria;
 }
+
 if ($pmin !== '' && is_numeric($pmin)) {
   $sql .= " AND p.precio_expuesto >= ? ";
   $params[] = $pmin;
 }
+
 if ($pmax !== '' && is_numeric($pmax)) {
   $sql .= " AND p.precio_expuesto <= ? ";
   $params[] = $pmax;
@@ -93,9 +102,9 @@ switch ($ordenar) {
 }
 
 /* ==========================
-   LÍMITE DE RESULTADOS
+   LÍMITE
 ========================== */
-$sql .= " LIMIT 100 ";
+$sql .= " LIMIT 200 ";
 
 $stmt = $conexion->prepare($sql);
 $stmt->execute($params);
@@ -105,51 +114,62 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
    PROCESAMIENTO DE RESULTADOS
 ========================== */
 $out = [];
+
 foreach ($rows as $r) {
-  // Generar mini descripción desde JSON
+
+  /* MINI DESCRIPCIÓN */
   $mini = '';
   if (!empty($r['descripcion'])) {
-    $j = json_decode($r['descripcion'], true);
-    if (is_array($j)) {
-      $pairs = array_slice($j, 0, 3, true);
+    $json = json_decode($r['descripcion'], true);
+
+    if (is_array($json)) {
+      $pairs = array_slice($json, 0, 3, true);
       $tmp = [];
+
       foreach ($pairs as $k => $v) {
         if (is_array($v)) $v = implode('/', $v);
         $tmp[] = "<span class='text-warning'>$k:</span> " . htmlspecialchars((string)$v);
       }
+
       $mini = implode(' · ', $tmp);
     }
   }
+
   $r['descripcion_res'] = $mini;
 
- $exhibida = (int)$r['cantidad_exhibida'];
-$general  = (int)$r['stock_actual']; // este es el stock en depósito
-$minimo   = (int)$r['stock_minimo'];
+  /* --- STOCK --- */
+  $exhibido = (int)$r['cantidad_exhibida'];
+  $deposito = (int)$r['stock_deposito'];
+  $minimo   = (int)$r['stock_minimo'];
 
-// Determinar stock visible (el que se usa en pantalla)
-if ($exhibida > 0) {
-    $visible = $exhibida;
-} elseif ($general > 0) {
-    $visible = $general;
+  // Stock visible
+  if ($exhibido > 0)       $visible = $exhibido;
+  elseif ($deposito > 0)  $visible = $deposito;
+  else                    $visible = 0;
+
+  // Estado de stock
+  if ($exhibido <= 0 && $deposito <= 0) {
+    $estado = "sin_stock";
+  } elseif ($visible <= $minimo) {
+    $estado = "bajo_stock";
+  } else {
+    $estado = "ok";
+  }
+
+  /* AGREGAR CAMPOS CALCULADOS */
+  $r['stock_visible']  = $visible;
+  $r['stock_general']  = $deposito;
+  $r['stock_exhibido'] = $exhibido;
+  $r['stock_estado']   = $estado;
+
+  /* JSON PROCESADO COMPLETO */
+  if (!empty($r['descripcion']) && $r['descripcion'] !== "null") {
+    $r['descripcion_json'] = json_decode($r['descripcion'], true);
 } else {
-    $visible = 0;
+    $r['descripcion_json'] = [];
 }
 
-// Estado de stock
-if ($exhibida <= 0 && $general <= 0) {
-    $r['stock_estado'] = 'sin_stock';
-} elseif ($visible <= $minimo) {
-    $r['stock_estado'] = 'bajo_stock';
-} else {
-    $r['stock_estado'] = 'ok';
-}
 
-// Enviar ambos valores al front (NO pisar nada)
-$r['stock_exhibido'] = $exhibida;
-$r['stock_general']  = $general;
-
-// Este es el stock que se ve en la tabla
-$r['stock_actual'] = $visible;
   $out[] = $r;
 }
 
