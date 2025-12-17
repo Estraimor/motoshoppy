@@ -10,25 +10,29 @@ $totalVentasHoy = $conexion->query("SELECT COUNT(*) FROM ventas WHERE DATE(fecha
 
 // === Detectar productos en alerta de stock ===
 $alertasStock = $conexion->query("
-  SELECT 
-    producto.nombre, 
-    producto.codigo, 
-    stock_producto.cantidad_actual AS stock_general,
-    stock_producto.cantidad_exhibida AS stock_exhibido,
-    stock_producto.stock_minimo
-  FROM stock_producto 
-  INNER JOIN producto 
-      ON producto.idProducto = stock_producto.producto_idProducto
-  WHERE stock_producto.cantidad_actual <= stock_producto.stock_minimo
-  ORDER BY stock_producto.cantidad_actual ASC
-  LIMIT 5
+ SELECT 
+  p.nombre,
+  p.codigo,
+  sp.cantidad_exhibida,
+  sp.cantidad_actual,
+  sp.stock_minimo
+FROM stock_producto sp
+JOIN producto p ON p.idProducto = sp.producto_idProducto
+WHERE 
+  sp.cantidad_exhibida <= sp.stock_minimo
+  OR sp.cantidad_exhibida = 0
+ORDER BY 
+  sp.cantidad_exhibida ASC,
+  sp.cantidad_actual ASC
+LIMIT 5
+
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
-
+<link rel="stylesheet" href="./stock.css">
 <div class="content-header d-flex justify-content-between align-items-center mb-3">
   <h2>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']); ?> 👋</h2>
-  <small class="text-muted">Hoy es <?= date('d/m/Y'); ?></small>
+  <small class="text-muted">Hoy es <?= date('d/m/Y'); ?></small>  
 </div>
 
 <div class="content-body">
@@ -141,7 +145,7 @@ $alertasStock = $conexion->query("
 </div>
 
 
-  <!-- === ALERTAS DE STOCK === -->
+ <!-- === ALERTAS DE STOCK === -->
 <div class="card bg-dark text-white shadow-sm mb-4 border-0 fade-in">
   <div class="card-body">
 
@@ -165,7 +169,7 @@ $alertasStock = $conexion->query("
               <th>Producto</th>
               <th>Código</th>
               <th class="text-center">Stock exhibido</th>
-              <th class="text-center">Stock general</th>
+              <th class="text-center">Stock depósito</th>
               <th class="text-center">Estado</th>
               <th class="text-center">Acciones</th>
             </tr>
@@ -174,35 +178,70 @@ $alertasStock = $conexion->query("
           <tbody>
             <?php foreach ($alertasStock as $p): ?>
 
-              <?php 
-                $estado = $p['stock_general'] == 0 
-                  ? '<span class="badge bg-danger px-3 py-2">Sin stock</span>' 
-                  : '<span class="badge bg-warning text-dark px-3 py-2">Bajo stock</span>';
+              <?php
+                $exhibido = (int)$p['cantidad_exhibida'];
+                $deposito = (int)$p['cantidad_actual'];
+                $minimo   = (int)$p['stock_minimo'];
+
+                // === DEFINIR ESTADO Y ACCIÓN ===
+                if ($exhibido === 0 && $deposito === 0) {
+                  $estado = '<span class="badge bg-danger px-3 py-2">Sin stock</span>';
+                  $accion = 'pedir';
+                  $btn    = 'btn-danger';
+                  $texto  = 'Pedir';
+                  $icono  = 'fa-truck';
+                }
+                elseif ($exhibido === 0 && $deposito > 0) {
+                  $estado = '<span class="badge bg-warning text-dark px-3 py-2">Sin stock exhibido</span>';
+                  $accion = 'mover';
+                  $btn    = 'btn-warning';
+                  $texto  = 'Mover a exhibición';
+                  $icono  = 'fa-arrows-rotate';
+                }
+                elseif ($exhibido <= $minimo && $deposito > 0) {
+                  $estado = '<span class="badge bg-warning text-dark px-3 py-2">Bajo stock</span>';
+                  $accion = 'mover';
+                  $btn    = 'btn-warning';
+                  $texto  = 'Reponer exhibición';
+                  $icono  = 'fa-arrows-rotate';
+                }
+                else {
+                  $estado = '<span class="badge bg-danger px-3 py-2">Sin stock en depósito</span>';
+                  $accion = 'pedir';
+                  $btn    = 'btn-danger';
+                  $texto  = 'Pedir';
+                  $icono  = 'fa-truck';
+                }
               ?>
 
               <tr>
                 <td><?= htmlspecialchars($p['nombre']) ?></td>
                 <td><?= htmlspecialchars($p['codigo']) ?></td>
 
-                <!-- Exhibido -->
-                <td class="text-center <?= $p['stock_exhibido'] == 0 ? 'text-danger' : 'text-warning' ?>">
-                  <?= $p['stock_exhibido'] ?>
+                <!-- Stock exhibido -->
+                <td class="text-center <?= $exhibido === 0 ? 'text-danger fw-bold' : 'text-warning' ?>">
+                  <?= $exhibido ?>
                 </td>
 
-                <!-- General -->
-                <td class="text-center <?= $p['stock_general'] == 0 ? 'text-danger fw-bold' : 'text-warning' ?>">
-                  <?= $p['stock_general'] ?>
+                <!-- Stock depósito -->
+                <td class="text-center <?= $deposito === 0 ? 'text-danger fw-bold' : 'text-info' ?>">
+                  <?= $deposito ?>
                 </td>
 
                 <td class="text-center"><?= $estado ?></td>
 
                 <td class="text-center">
-                  <a 
-                    href="reponer_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
-                    class="btn btn-reponer btn-sm fw-bold"
-                  >
-                    <i class="fa-solid fa-arrow-right"></i> Reponer
-                  </a>
+                  <?php if ($accion === 'mover'): ?>
+                    <a href="mover_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
+                       class="btn <?= $btn ?> btn-sm fw-bold">
+                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
+                    </a>
+                  <?php else: ?>
+                    <a href="reponer_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
+                       class="btn <?= $btn ?> btn-sm fw-bold">
+                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
+                    </a>
+                  <?php endif; ?>
                 </td>
               </tr>
 
@@ -216,6 +255,7 @@ $alertasStock = $conexion->query("
 
   </div>
 </div>
+
 
 
 

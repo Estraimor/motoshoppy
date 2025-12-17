@@ -1,0 +1,181 @@
+/* =========================================
+   🔥 TABLA DE ALERTAS DE STOCK · PRO
+   ========================================= */
+
+/* === TÍTULO === */
+.card-body h5.text-danger {
+  color: #ff3b3b;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-shadow: 
+    0 0 6px rgba(255, 50, 50, 0.6),
+    0 0 14px rgba(255, 0, 0, 0.35);
+}
+
+/* === CONTENEDOR TABLA === */
+.table-dark {
+  --bs-table-bg: rgba(18, 18, 18, 0.95);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 90, 0, 0.25);
+  box-shadow:
+    0 0 12px rgba(255, 80, 0, 0.15),
+    inset 0 0 0 1px rgba(255,255,255,0.02);
+  backdrop-filter: blur(4px);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.table-dark:hover {
+  border-color: rgba(255, 120, 0, 0.45);
+  box-shadow:
+    0 0 20px rgba(255, 120, 0, 0.35),
+    inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+/* === ENCABEZADO === */
+.table-dark thead tr {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 90, 0, 0.35),
+    rgba(255, 50, 0, 0.2)
+  );
+  border-bottom: 1px solid rgba(255, 120, 0, 0.45);
+}
+
+.table-dark th {
+  font-weight: 800;
+  color: #ffb26c !important;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  text-shadow: 0 0 6px rgba(255, 160, 60, 0.45);
+}
+
+/* === FILAS === */
+.table-dark tbody tr {
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.table-dark tbody tr:hover {
+  background: rgba(255, 90, 0, 0.14);
+  transform: scale(1.01);
+}
+
+/* === CELDAS === */
+.table-dark td,
+.table-dark th {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+/* =========================================
+   🎯 ESTADOS DE STOCK
+   ========================================= */
+
+/* 🔴 Sin stock total */
+.table-dark .text-danger {
+  color: #ff4c4c !important;
+  font-weight: 900;
+  text-shadow:
+    0 0 6px rgba(255, 0, 0, 0.6),
+    0 0 14px rgba(255, 0, 0, 0.35);
+}
+
+/* 🟡 Bajo stock / Sin exhibido */
+.table-dark .text-warning {
+  color: #ffe066 !important;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(255, 220, 100, 0.35);
+}
+
+/* 🔵 Stock depósito (info) */
+.table-dark .text-info {
+  color: #66d9ff !important;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(100, 200, 255, 0.3);
+}
+
+/* =========================================
+   🏷️ BADGES DE ESTADO
+   ========================================= */
+
+.badge {
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+
+/* 🔴 Sin stock */
+.badge.bg-danger {
+  background: linear-gradient(120deg, #b80000, #ff3b3b);
+  box-shadow:
+    0 0 10px rgba(255, 0, 0, 0.55),
+    inset 0 0 4px rgba(255,255,255,0.2);
+}
+
+/* 🟡 Bajo stock / Sin exhibido */
+.badge.bg-warning {
+  background: linear-gradient(120deg, #ffe066, #ffb703);
+  color: #2a1a00;
+  box-shadow:
+    0 0 10px rgba(255, 200, 0, 0.45),
+    inset 0 0 4px rgba(255,255,255,0.25);
+}
+
+/* =========================================
+   🚀 BOTONES DE ACCIÓN
+   ========================================= */
+
+/* 🔁 MOVER STOCK */
+.btn-warning {
+  background: linear-gradient(90deg, #ffb703, #ff8800);
+  color: #2a1a00 !important;
+  font-weight: 800;
+  border-radius: 10px;
+  border: none;
+  padding: 6px 14px;
+  transition: all 0.25s ease;
+}
+
+.btn-warning:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 0 16px rgba(255, 180, 0, 0.6);
+}
+
+/* 🚚 PEDIR / REPOSICIÓN */
+.btn-danger {
+  background: linear-gradient(90deg, #ff3b3b, #b80000);
+  color: #fff !important;
+  font-weight: 800;
+  border-radius: 10px;
+  border: none;
+  padding: 6px 14px;
+  transition: all 0.25s ease;
+}
+
+.btn-danger:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 0 16px rgba(255, 0, 0, 0.65);
+}
+
+/* =========================================
+   ✨ MICRO DETALLES
+   ========================================= */
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

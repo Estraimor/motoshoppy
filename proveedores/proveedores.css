@@ -1,189 +1,195 @@
+/* =====================================================
+   MODULO PROVEEDORES – ESTILO PROFESIONAL
+   ===================================================== */
+
 /* ===============================
-   VARIABLES (tema)
+   CONTENEDOR GENERAL
 ================================ */
-:root {
-  --primary: #0d6efd;
-  --success: #198754;
-  --danger: #dc3545;
-  --warning: #ffc107;
-  --gray-light: #f8f9fa;
-  --gray-border: #e5e7eb;
-  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.08);
-  --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
+.modulo-proveedores {
+    max-width: 1400px;
 }
 
 /* ===============================
-   CARDS
+   CARDS (aisladas del dashboard)
 ================================ */
-.card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  transition: box-shadow .3s ease, transform .2s ease;
+.modulo-proveedores .card {
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 18px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
 }
 
-.card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
-  border-bottom: 1px solid var(--gray-border);
-  font-weight: 600;
+.modulo-proveedores .card-header {
+    background: #f9fafb !important;
+    color: #374151 !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 18px 18px 0 0;
+    text-shadow: none !important;
 }
 
 /* ===============================
    FORMULARIO
 ================================ */
-.card-body label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #555;
+.modulo-proveedores label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 4px;
 }
 
-.form-control {
-  border-radius: 10px;
-  border: 1px solid var(--gray-border);
-  transition: border-color .2s ease, box-shadow .2s ease;
+.modulo-proveedores .form-control {
+    background: #ffffff;
+    color: #111827;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-control:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 .15rem rgba(13, 110, 253, .15);
+.modulo-proveedores .form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.15);
 }
 
-/* ===============================
-   BOTONES
-================================ */
-.btn {
-  border-radius: 10px;
-  transition: transform .15s ease, box-shadow .15s ease;
+/* Botón principal */
+.modulo-proveedores .btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 10px;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0,0,0,.15);
-}
-
-.btn-sm {
-  padding: .35rem .55rem;
-  font-size: .8rem;
+.modulo-proveedores .btn-primary:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
 }
 
 /* ===============================
    TABLA
 ================================ */
-.table {
-  margin-bottom: 0;
+.modulo-proveedores .table {
+    margin-bottom: 0;
+    background: #ffffff;
 }
 
-.table thead th {
-  font-size: .8rem;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-  color: #555;
+.modulo-proveedores thead th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.table tbody tr {
-  transition: background-color .2s ease;
+.modulo-proveedores tbody td {
+    font-size: 0.9rem;
+    color: #111827;
+    vertical-align: middle;
 }
 
-.table-hover tbody tr:hover {
-  background-color: rgba(13,110,253,.04);
+.modulo-proveedores .table-hover tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.04);
 }
 
-.table-success {
-  background-color: rgba(25,135,84,.05) !important;
+/* Estados suaves (sin gritar) */
+.modulo-proveedores .table-success {
+    background-color: #f0fdf4 !important;
 }
 
-.table-danger {
-  background-color: rgba(220,53,69,.05) !important;
+.modulo-proveedores .table-danger {
+    background-color: #fef2f2 !important;
 }
 
 /* ===============================
    BADGES
 ================================ */
-.badge {
-  border-radius: 999px;
-  padding: .35em .65em;
-  font-weight: 600;
+.modulo-proveedores .badge {
+    font-size: 0.72rem;
+    padding: 0.35em 0.7em;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: none !important;
+}
+
+.modulo-proveedores .badge.bg-success {
+    background-color: #16a34a;
+}
+
+.modulo-proveedores .badge.bg-danger {
+    background-color: #dc2626;
+}
+
+/* ===============================
+   ACCIONES
+================================ */
+.modulo-proveedores td .btn {
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    color: #374151;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.modulo-proveedores td .btn:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+}
+
+.modulo-proveedores td .btn + .btn {
+    margin-left: 4px;
 }
 
 /* ===============================
    TOAST
 ================================ */
-.toast {
-  border-radius: 14px;
-  box-shadow: var(--shadow-hover);
-  animation: slideIn .4s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.modulo-proveedores .toast {
+    border-radius: 14px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
 }
 
 /* ===============================
    MODAL
 ================================ */
-.modal-content {
-  border-radius: 16px;
-  border: none;
-  box-shadow: var(--shadow-hover);
+.modulo-proveedores .modal-content {
+    background: #ffffff;
+    border-radius: 18px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
-.modal-header {
-  border-bottom: none;
-}
-
-.modal-footer {
-  border-top: none;
-}
-
-.modal-body p {
-  font-size: 1rem;
-}
-
-/* ===============================
-   ACCIONES (iconos)
-================================ */
-td .btn + .btn {
-  margin-left: 4px;
+.modulo-proveedores .modal-header,
+.modulo-proveedores .modal-footer {
+    border: none;
 }
 
 /* ===============================
    RESPONSIVE
 ================================ */
 @media (max-width: 768px) {
-  .table thead {
-    display: none;
-  }
 
-  .table tbody tr {
-    display: block;
-    margin-bottom: 1rem;
-    border-radius: 12px;
-    box-shadow: var(--shadow-soft);
-    padding: .75rem;
-  }
+    .modulo-proveedores .table thead {
+        display: none;
+    }
 
-  .table tbody td {
-    display: flex;
-    justify-content: space-between;
-    padding: .35rem 0;
-    border: none;
-  }
+    .modulo-proveedores .table tbody tr {
+        display: block;
+        margin: 12px;
+        padding: 12px;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
 
-  .table tbody td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #555;
-  }
+    .modulo-proveedores .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        border: none;
+        padding: 6px 0;
+    }
 }
