@@ -10,21 +10,29 @@ $totalVentasHoy = $conexion->query("SELECT COUNT(*) FROM ventas WHERE DATE(fecha
 
 // === Detectar productos en alerta de stock ===
 $alertasStock = $conexion->query("
- SELECT 
+ SELECT
+  p.idProducto,
   p.nombre,
   p.codigo,
-  sp.cantidad_exhibida,
-  sp.cantidad_actual,
-  sp.stock_minimo
-FROM stock_producto sp
-JOIN producto p ON p.idProducto = sp.producto_idProducto
-WHERE 
-  sp.cantidad_exhibida <= sp.stock_minimo
-  OR sp.cantidad_exhibida = 0
-ORDER BY 
-  sp.cantidad_exhibida ASC,
-  sp.cantidad_actual ASC
-LIMIT 5
+
+  COALESCE(sp.cantidad_exhibida, 0) AS cantidad_exhibida,
+  COALESCE(sp.cantidad_actual, 0)   AS cantidad_actual,
+  COALESCE(sp.stock_minimo, 0)       AS stock_minimo
+
+FROM producto p
+LEFT JOIN stock_producto sp
+  ON sp.producto_idProducto = p.idProducto
+
+WHERE
+  COALESCE(sp.cantidad_exhibida, 0) <= COALESCE(sp.stock_minimo, 0)
+  OR sp.idstock_producto IS NULL   -- productos sin fila de stock
+
+ORDER BY
+  cantidad_exhibida ASC,
+  cantidad_actual ASC
+
+LIMIT 10;
+
 
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -163,13 +171,14 @@ LIMIT 5
     <?php else: ?>
 
       <div class="table-responsive">
-        <table class="table table-dark table-striped align-middle mb-0">
+        <table id="tablaStockAlertas" class="table table-dark table-striped align-middle mb-0">
           <thead class="text-warning">
             <tr>
               <th>Producto</th>
               <th>Código</th>
               <th class="text-center">Stock exhibido</th>
               <th class="text-center">Stock depósito</th>
+              <th class="text-center">Stock total</th>
               <th class="text-center">Estado</th>
               <th class="text-center">Acciones</th>
             </tr>
@@ -182,36 +191,68 @@ LIMIT 5
                 $exhibido = (int)$p['cantidad_exhibida'];
                 $deposito = (int)$p['cantidad_actual'];
                 $minimo   = (int)$p['stock_minimo'];
+                $total    = $exhibido + $deposito;
 
-                // === DEFINIR ESTADO Y ACCIÓN ===
-                if ($exhibido === 0 && $deposito === 0) {
-                  $estado = '<span class="badge bg-danger px-3 py-2">Sin stock</span>';
-                  $accion = 'pedir';
-                  $btn    = 'btn-danger';
-                  $texto  = 'Pedir';
-                  $icono  = 'fa-truck';
-                }
-                elseif ($exhibido === 0 && $deposito > 0) {
-                  $estado = '<span class="badge bg-warning text-dark px-3 py-2">Sin stock exhibido</span>';
-                  $accion = 'mover';
-                  $btn    = 'btn-warning';
-                  $texto  = 'Mover a exhibición';
-                  $icono  = 'fa-arrows-rotate';
-                }
-                elseif ($exhibido <= $minimo && $deposito > 0) {
-                  $estado = '<span class="badge bg-warning text-dark px-3 py-2">Bajo stock</span>';
-                  $accion = 'mover';
-                  $btn    = 'btn-warning';
-                  $texto  = 'Reponer exhibición';
-                  $icono  = 'fa-arrows-rotate';
-                }
-                else {
-                  $estado = '<span class="badge bg-danger px-3 py-2">Sin stock en depósito</span>';
-                  $accion = 'pedir';
-                  $btn    = 'btn-danger';
-                  $texto  = 'Pedir';
-                  $icono  = 'fa-truck';
-                }
+                /*
+                 ─────────────────────────────────────────
+                 DETERMINAR ESTADO (orden IMPORTANTE)
+                 ─────────────────────────────────────────
+                */
+
+                // ================================
+// 🧠 LÓGICA DE ESTADO DE STOCK
+// ================================
+
+// ⚫ Producto sin stock inicializado
+if ($minimo === 0 && $exhibido === 0 && $deposito === 0) {
+  $estado = '<span class="badge bg-secondary px-3 py-2">Stock no inicializado</span>';
+  $accion = 'configurar';
+  $btn    = 'btn-secondary';
+  $texto  = 'Configurar stock';
+  $icono  = 'fa-gear';
+}
+
+// 🔴 Sin stock total (no hay nada en ningún lado)
+elseif ($exhibido === 0 && $deposito === 0) {
+  $estado = '<span class="badge bg-danger px-3 py-2">Sin stock</span>';
+  $accion = 'pedir';
+  $btn    = 'btn-danger';
+  $texto  = 'Pedir';
+  $icono  = 'fa-truck';
+}
+
+// 🔴 Stock CRÍTICO (ambos por debajo del mínimo)
+elseif ($exhibido < $minimo && $deposito < $minimo) {
+  $estado = '<span class="badge badge-critical px-3 py-2">Stock crítico</span>';
+  $accion = 'pedir';
+  $btn    = 'btn-danger';
+  $texto  = 'Pedir';
+  $icono  = 'fa-truck';
+}
+
+// 🟠 Sin stock exhibido (hay depósito suficiente)
+elseif ($exhibido === 0 && $deposito > 0) {
+  $estado = '<span class="badge badge-move px-3 py-2">Sin stock exhibido</span>';
+  $accion = 'mover';
+  $btn    = 'btn-move';
+  $texto  = 'Mover a exhibición';
+  $icono  = 'fa-arrows-rotate';
+}
+
+// 🟡 Stock bajo (uno de los dos por debajo del mínimo, hay depósito)
+elseif (
+  ($exhibido < $minimo || $deposito < $minimo)
+  && $deposito > 0
+) {
+  $estado = '<span class="badge bg-warning text-dark px-3 py-2">Stock bajo</span>';
+  $accion = 'mover';
+  $btn    = 'btn-warning';
+  $texto  = 'Revisar / Reponer';
+  $icono  = 'fa-arrows-rotate';
+}
+
+
+
               ?>
 
               <tr>
@@ -228,6 +269,11 @@ LIMIT 5
                   <?= $deposito ?>
                 </td>
 
+                <!-- Stock total (informativo) -->
+                <td class="text-center text-info fw-bold opacity-75">
+                  <?= $total ?>
+                </td>
+
                 <td class="text-center"><?= $estado ?></td>
 
                 <td class="text-center">
@@ -236,6 +282,13 @@ LIMIT 5
                        class="btn <?= $btn ?> btn-sm fw-bold">
                       <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
                     </a>
+
+                  <?php elseif ($accion === 'configurar'): ?>
+                    <a href="configurar_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
+                       class="btn <?= $btn ?> btn-sm fw-bold">
+                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
+                    </a>
+
                   <?php else: ?>
                     <a href="reponer_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
                        class="btn <?= $btn ?> btn-sm fw-bold">
@@ -255,6 +308,7 @@ LIMIT 5
 
   </div>
 </div>
+
 
 
 
@@ -523,6 +577,26 @@ document.getElementById('modalVentasHoy').addEventListener('show.bs.modal', asyn
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${err.message}</td></tr>`;
   }
+});
+
+
+</script>
+
+<script>
+$(document).ready(function () {
+  $('#tablaStockAlertas').DataTable({
+    pageLength: 10,
+    lengthMenu: [5, 10, 25, 50],
+    ordering: true,
+    order: [[5, 'asc']], // ordenar por ESTADO
+    responsive: true,
+    language: {
+      url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
+    },
+    columnDefs: [
+      { orderable: false, targets: [6] } // desactiva orden en Acciones
+    ]
+  });
 });
 </script>
 
