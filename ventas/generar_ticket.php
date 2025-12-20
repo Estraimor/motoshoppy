@@ -18,8 +18,9 @@ if ($id <= 0) {
 $qVenta = $conexion->prepare("
   SELECT v.*, u.usuario, c.dni AS dni_cliente
   FROM ventas v
-  LEFT JOIN usuario u ON u.idusuario = v.usuario_id
-  LEFT JOIN clientes c ON c.idCliente = v.cliente_id
+  LEFT JOIN usuario u ON u.idusuario = v.usuario_idusuario
+  LEFT JOIN clientes c ON c.idCliente = v.clientes_idCliente
+
   WHERE v.idVenta = ?
 ");
 $qVenta->execute([$id]);

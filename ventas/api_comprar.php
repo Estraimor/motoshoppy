@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 session_start();
 require_once '../conexion/conexion.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
-
+define('CLIENTE_CONSUMIDOR_FINAL', 1); // ← el ID real
 try {
     if (empty($_SESSION['idusuario'])) {
         throw new Exception("Sesión expirada o no iniciada.");
@@ -27,34 +27,40 @@ try {
     // === Iniciar transacción ===
     $conexion->beginTransaction();
 
-    // === Verificar o crear cliente ===
-    $cliente_id = null;
+    // === Cliente por defecto ===
+$cliente_id = CLIENTE_CONSUMIDOR_FINAL;
 
-    if ($tipo_comprobante > 1 && $clienteData) {
-        $dni = trim($clienteData['dni']);
+// === Factura / comprobante con datos ===
+if ($tipo_comprobante > 1 && $clienteData) {
 
-        $buscar = $conexion->prepare("
-            SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1
+    $dni = trim($clienteData['dni']);
+
+    $buscar = $conexion->prepare("
+        SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1
+    ");
+    $buscar->execute([$dni]);
+    $cli = $buscar->fetch(PDO::FETCH_ASSOC);
+
+    if ($cli) {
+        $cliente_id = $cli['idCliente'];
+    } else {
+        $ins = $conexion->prepare("
+            INSERT INTO clientes (
+                apellido, nombre, dni, celular, email, fecha_alta, estado
+            )
+            VALUES (?, ?, ?, ?, NULL, NOW(), 1)
         ");
-        $buscar->execute([$dni]);
-        $cli = $buscar->fetch(PDO::FETCH_ASSOC);
+        $ins->execute([
+            $clienteData['apellido'] ?? '',
+            $clienteData['nombre'] ?? '',
+            $clienteData['dni'] ?? '',
+            $clienteData['celular'] ?? ''
+        ]);
 
-        if ($cli) {
-            $cliente_id = $cli['idCliente'];
-        } else {
-            $ins = $conexion->prepare("
-                INSERT INTO clientes (apellido, nombre, dni, celular, email, fecha_alta, estado)
-                VALUES (?, ?, ?, ?, NULL, NOW(), 1)
-            ");
-            $ins->execute([
-                $clienteData['apellido'] ?? '',
-                $clienteData['nombre'] ?? '',
-                $clienteData['dni'] ?? '',
-                $clienteData['celular'] ?? ''
-            ]);
-            $cliente_id = $conexion->lastInsertId();
-        }
+        $cliente_id = $conexion->lastInsertId();
     }
+}
+
 
     // === Insertar venta ===
     $stmtVenta = $conexion->prepare("

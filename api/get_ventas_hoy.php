@@ -6,7 +6,7 @@ try {
   $sql = "
     SELECT 
       v.idVenta,
-      v.fecha,
+      DATE_FORMAT(v.fecha, '%d/%m/%Y %H:%i') AS fecha,
       u.nombre AS vendedor,
       CONCAT(c.apellido, ' ', c.nombre) AS cliente,
       p.nombre AS producto,
@@ -14,10 +14,14 @@ try {
       d.precio_unitario,
       (d.cantidad * d.precio_unitario) AS subtotal
     FROM ventas v
-    LEFT JOIN usuario u ON u.idusuario = v.usuario_id
-    LEFT JOIN clientes c ON c.idCliente = v.cliente_id
-    INNER JOIN detalle_venta d ON d.venta_id = v.idVenta
-    INNER JOIN producto p ON p.idProducto = d.producto_id
+    LEFT JOIN usuario u 
+      ON u.idusuario = v.usuario_idusuario
+    LEFT JOIN clientes c 
+      ON c.idCliente = v.clientes_idCliente
+    INNER JOIN detalle_venta d 
+      ON d.ventas_idVenta = v.idVenta
+    INNER JOIN producto p 
+      ON p.idProducto = d.producto_idProducto
     WHERE DATE(v.fecha) = CURDATE()
     ORDER BY v.fecha DESC
   ";
@@ -31,5 +35,8 @@ try {
   ]);
 
 } catch (Exception $e) {
-  echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
+  echo json_encode([
+    'ok' => false,
+    'msg' => $e->getMessage()
+  ]);
 }

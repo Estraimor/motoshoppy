@@ -601,4 +601,74 @@ $(document).ready(function () {
 </script>
 
 
+<script>
+let tablaVentasHoyDT = null;
+
+document.getElementById('modalVentasHoy')
+  .addEventListener('shown.bs.modal', function () {
+
+  if (tablaVentasHoyDT) {
+    tablaVentasHoyDT.ajax.reload();
+    return;
+  }
+
+  tablaVentasHoyDT = $('#tablaVentasHoy').DataTable({
+    ajax: {
+      url: '/motoshoppy/api/get_ventas_hoy.php',
+      dataSrc: function (json) {
+        if (!json.ok) {
+          Swal.fire('Error', json.msg || 'No se pudieron cargar las ventas', 'error');
+          return [];
+        }
+
+        // === TOTAL DEL DÍA ===
+        let total = 0;
+        json.ventas.forEach(v => total += parseFloat(v.subtotal));
+        document.getElementById('totalDia').textContent =
+          `$ ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+
+        return json.ventas;
+      }
+    },
+
+    destroy: true,
+    processing: true,
+    responsive: true,
+    pageLength: 10,
+    lengthMenu: [5, 10, 25, 50],
+
+    order: [[1, 'desc']], // fecha
+
+    columns: [
+      { data: 'idVenta' },
+      { data: 'fecha' },
+      { data: 'vendedor', defaultContent: '-' },
+      { data: 'cliente', defaultContent: '-' },
+      { data: 'producto' },
+      { data: 'cantidad', className: 'text-end' },
+      {
+        data: 'precio_unitario',
+        className: 'text-end',
+        render: d => `$${Number(d).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+      },
+      {
+        data: 'subtotal',
+        className: 'text-end fw-bold text-warning',
+        render: d => `$${Number(d).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+      }
+    ],
+
+    language: {
+      url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
+    },
+
+    columnDefs: [
+      { orderable: false, targets: [] }
+    ]
+  });
+});
+</script>
+
+
+
 <?php include './dashboard/footer.php'; ?>
