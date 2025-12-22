@@ -9,28 +9,61 @@ $rol = $_SESSION['rol'] ?? 'Administrador';
 $uri = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
 /* =========================
-   FLAGS DE MÓDULOS
+   FLAGS PRINCIPALES
 ========================= */
-$is_dashboard_active    = ($uri === '/motoshoppy/index1.php');
+$is_dashboard_active = ($uri === '/motoshoppy/index1.php');
+$is_analisis_active  = str_starts_with($uri, '/motoshoppy/analisis_comercial');
 
-$is_productos_active   =
-    str_starts_with($uri, '/motoshoppy/productos') ||
-    str_starts_with($uri, '/motoshoppy/categorias') ||
-    str_starts_with($uri, '/motoshoppy/marcas');
+/* =========================
+   PRODUCTOS
+========================= */
+$is_categorias_active = str_starts_with($uri, '/motoshoppy/categorias');
+$is_marcas_active     = str_starts_with($uri, '/motoshoppy/marcas');
+$is_productos_alta    = str_starts_with($uri, '/motoshoppy/productos/alta');
+$is_productos_lista  = str_starts_with($uri, '/motoshoppy/productos/listar');
+
+$is_productos_active =
+    $is_categorias_active ||
+    $is_marcas_active ||
+    $is_productos_alta ||
+    $is_productos_lista;
+
+/* =========================
+   PROVEEDORES
+========================= */
+$is_proveedores_index = str_starts_with($uri, '/motoshoppy/proveedores');
+$is_reponer_stock     = str_starts_with($uri, '/motoshoppy/reponer_stock');
 
 $is_proveedores_active =
-    str_starts_with($uri, '/motoshoppy/proveedores') ||
-    str_starts_with($uri, '/motoshoppy/reponer_stock');
+    $is_proveedores_index ||
+    $is_reponer_stock;
 
-$is_ventas_active      =
-    str_starts_with($uri, '/motoshoppy/ventas') &&
-    !str_contains($uri, 'carrito.php');
+/* =========================
+   VENTAS
+========================= */
+$is_punto_venta_active = ($uri === '/motoshoppy/ventas/index.php');
+$is_historial_active   = str_starts_with($uri, '/motoshoppy/historial_ventas');
 
-$is_config_active      =
-    str_starts_with($uri, '/motoshoppy/configuracion');
+$is_ventas_active =
+    $is_punto_venta_active ||
+    $is_historial_active;
 
-$is_carrito_active     =
-    str_contains($uri, '/motoshoppy/ventas/carrito.php');
+/* =========================
+   CONFIGURACIÓN
+========================= */
+$is_config_index_active = ($uri === '/motoshoppy/configuracion/index.php');
+$is_config_users_active = str_starts_with($uri, '/motoshoppy/configuracion/usuarios');
+$is_config_roles_active = str_starts_with($uri, '/motoshoppy/configuracion/roles');
+
+$is_config_active =
+    $is_config_index_active ||
+    $is_config_users_active ||
+    $is_config_roles_active;
+
+/* =========================
+   CARRITO
+========================= */
+$is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -52,125 +85,126 @@ $is_carrito_active     =
 
 <!-- ===== PRELOADER ===== -->
 <div id="preloader">
-    <div class="loader-content">
-        <img src="/motoshoppy/imagenes/logo.png" class="loader-logo">
-        <div class="spinner"></div>
-        <p>Cargando...</p>
-    </div>
+  <div class="loader-content">
+    <img src="/motoshoppy/imagenes/logo.png" class="loader-logo">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
 </div>
 
 <div class="wrapper">
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar">
+
 <div class="sidebar-header">
-    <img src="/motoshoppy/imagenes/logo.png" class="logo">
-    <h3>MotoShopp</h3>
+  <img src="/motoshoppy/imagenes/logo.png" class="logo">
+  <h3>MotoShopp</h3>
 </div>
 
 <nav class="nav-links">
 
-<!-- DASHBOARD -->
 <a href="/motoshoppy/index1.php" class="<?= $is_dashboard_active ? 'active' : '' ?>">
-    <i class="fa-solid fa-gauge"></i> Dashboard
+  <i class="fa-solid fa-gauge"></i> Dashboard
+</a>
+
+<a href="/motoshoppy/analisis_comercial/index.php" class="<?= $is_analisis_active ? 'active' : '' ?>">
+  <i class="fa-solid fa-chart-line"></i> Análisis Comercial
 </a>
 
 <!-- PRODUCTOS -->
 <div class="nav-item has-submenu <?= $is_productos_active ? 'active' : '' ?>">
-    <button class="submenu-toggle">
-        <i class="fa-solid fa-box"></i> Productos
-        <i class="fa-solid fa-chevron-down chevron"></i>
-    </button>
+<button class="submenu-toggle">
+  <i class="fa-solid fa-box"></i> Productos
+  <i class="fa-solid fa-chevron-down chevron"></i>
+</button>
 
-    <div class="submenu">
-        <a href="/motoshoppy/categorias/index.php"><i class="fa-solid fa-tags"></i> Categorías</a>
-        <a href="/motoshoppy/marcas/index.php"><i class="fa-solid fa-bookmark"></i> Marcas</a>
-        <a href="/motoshoppy/productos/alta_productos.php"><i class="fa-solid fa-plus"></i> Crear Productos</a>
-        <a href="/motoshoppy/productos/listar_productos.php"><i class="fa-solid fa-list"></i> Lista de Productos</a>
-    </div>
+<div class="submenu" style="<?= $is_productos_active ? 'display:flex' : '' ?>">
+  <a href="/motoshoppy/categorias/index.php" class="<?= $is_categorias_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-tags"></i> Categorías
+  </a>
+  <a href="/motoshoppy/marcas/index.php" class="<?= $is_marcas_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-bookmark"></i> Marcas
+  </a>
+  <a href="/motoshoppy/productos/alta_productos.php" class="<?= $is_productos_alta ? 'active' : '' ?>">
+    <i class="fa-solid fa-plus"></i> Crear Productos
+  </a>
+  <a href="/motoshoppy/productos/listar_productos.php" class="<?= $is_productos_lista ? 'active' : '' ?>">
+    <i class="fa-solid fa-list"></i> Lista de Productos
+  </a>
+</div>
 </div>
 
 <!-- PROVEEDORES -->
 <div class="nav-item has-submenu <?= $is_proveedores_active ? 'active' : '' ?>">
-    <button class="submenu-toggle">
-        <i class="fa-solid fa-truck-field"></i> Proveedores
-        <i class="fa-solid fa-chevron-down chevron"></i>
-    </button>
+<button class="submenu-toggle">
+  <i class="fa-solid fa-truck-field"></i> Proveedores
+  <i class="fa-solid fa-chevron-down chevron"></i>
+</button>
 
-    <div class="submenu">
-        <a href="/motoshoppy/proveedores/index.php"><i class="fa-solid fa-address-book"></i> Ver Proveedores</a>
-        <a href="/motoshoppy/reponer_stock/index.php"><i class="fa-solid fa-boxes-stacked"></i> Reponer Stock</a>
-        <a href="#"><i class="fa-solid fa-right-left"></i> Movimiento Stock</a>
-    </div>
+<div class="submenu" style="<?= $is_proveedores_active ? 'display:flex' : '' ?>">
+  <a href="/motoshoppy/proveedores/index.php" class="<?= $is_proveedores_index ? 'active' : '' ?>">
+    <i class="fa-solid fa-address-book"></i> Ver Proveedores
+  </a>
+  <a href="/motoshoppy/reponer_stock/index.php" class="<?= $is_reponer_stock ? 'active' : '' ?>">
+    <i class="fa-solid fa-boxes-stacked"></i> Reponer Stock
+  </a>
+</div>
 </div>
 
-<!-- CLIENTES -->
 <a href="/motoshoppy/clientes/index.php">
-    <i class="fa-solid fa-users"></i> Clientes
+  <i class="fa-solid fa-users"></i> Clientes
 </a>
 
 <!-- VENTAS -->
 <div class="nav-item has-submenu <?= $is_ventas_active ? 'active' : '' ?>">
-    <button class="submenu-toggle">
-        <i class="fa-solid fa-receipt"></i> Ventas
-        <i class="fa-solid fa-chevron-down chevron"></i>
-    </button>
+<button class="submenu-toggle">
+  <i class="fa-solid fa-receipt"></i> Ventas
+  <i class="fa-solid fa-chevron-down chevron"></i>
+</button>
 
-    <div class="submenu">
-        <a href="/motoshoppy/ventas/index.php"><i class="fa-solid fa-cash-register"></i> Punto de Venta</a>
-        <a href="/motoshoppy/historial_ventas/index.php"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a>
-    </div>
+<div class="submenu" style="<?= $is_ventas_active ? 'display:flex' : '' ?>">
+  <a href="/motoshoppy/ventas/index.php" class="<?= $is_punto_venta_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-cash-register"></i> Punto de Venta
+  </a>
+  <a href="/motoshoppy/historial_ventas/index.php" class="<?= $is_historial_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-clock-rotate-left"></i> Historial
+  </a>
+</div>
 </div>
 
 <!-- CONFIGURACIÓN -->
 <div class="nav-item has-submenu <?= $is_config_active ? 'active' : '' ?>">
-    <button class="submenu-toggle">
-        <i class="fa-solid fa-gear"></i> Configuración
-        <i class="fa-solid fa-chevron-down chevron"></i>
-    </button>
+<button class="submenu-toggle">
+  <i class="fa-solid fa-gear"></i> Configuración
+  <i class="fa-solid fa-chevron-down chevron"></i>
+</button>
 
-    <div class="submenu">
-        <a href="/motoshoppy/configuracion/index.php"><i class="fa-solid fa-wrench"></i> Ajustes</a>
-        <a href="/motoshoppy/configuracion/usuarios.php"><i class="fa-solid fa-user-gear"></i> Usuarios</a>
-        <a href="/motoshoppy/configuracion/roles.php"><i class="fa-solid fa-id-card"></i> Roles</a>
-    </div>
+<div class="submenu" style="<?= $is_config_active ? 'display:flex' : '' ?>">
+  <a href="/motoshoppy/configuracion/index.php" class="<?= $is_config_index_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-wrench"></i> Ajustes
+  </a>
+  <a href="/motoshoppy/configuracion/usuarios.php" class="<?= $is_config_users_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-user-gear"></i> Usuarios
+  </a>
+  <a href="/motoshoppy/configuracion/roles.php" class="<?= $is_config_roles_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-id-card"></i> Roles
+  </a>
+</div>
 </div>
 
-<!-- CARRITO -->
 <a href="/motoshoppy/ventas/carrito.php" class="nav-cart <?= $is_carrito_active ? 'active' : '' ?>">
-    <i class="fa-solid fa-cart-shopping"></i>
-    <span>Carrito</span>
-    <span id="cartCountSide" class="cart-badge">0</span>
+  <i class="fa-solid fa-cart-shopping"></i>
+  <span>Carrito</span>
+  <span id="cartCountSide" class="cart-badge">0</span>
 </a>
 
 </nav>
 
-<!-- USUARIO -->
-<div class="sidebar-user">
-<button class="user-info toggle-profile">
-    <i class="fa-solid fa-circle-user"></i>
-    <div>
-        <strong><?= htmlspecialchars($_SESSION['nombre'].' '.$_SESSION['apellido']) ?></strong><br>
-        <small><?= htmlspecialchars($_SESSION['rol']) ?></small>
-    </div>
-    <i class="fa-solid fa-chevron-down chevron"></i>
-</button>
-
-<div class="user-panel">
-    <p><strong>Nombre:</strong> <?= htmlspecialchars($_SESSION['nombre'].' '.$_SESSION['apellido']) ?></p>
-    <p><strong>Rol:</strong> <?= htmlspecialchars($_SESSION['rol']) ?></p>
-    <hr>
-    <a href="#" class="btn-perfil"><i class="fa-solid fa-user-gear"></i> Editar Perfil</a>
-    <a href="/motoshoppy/login/cerrar_session.php?logout=1" class="btn-logout">
-        <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-    </a>
-</div>
-</div>
-
 </aside>
 
-<!-- ===== CONTENIDO ===== -->
 <main class="main-content">
+
 
 
 <script>
