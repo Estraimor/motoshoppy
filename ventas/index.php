@@ -692,11 +692,20 @@ document.getElementById('btnComprarAhora').addEventListener('click', async () =>
 
   const qty = parseInt(document.getElementById('detCantidad')?.value || 1);
 
-  const productoConPrecio = { 
-    ...p, 
-    precio_expuesto: precioSeleccionado, 
-    cantidad: qty 
-  };
+ const precioUnit = parseFloat(
+  document.querySelector('#selectPrecioLista')?.value || 0
+);
+
+
+// total por ítem
+const totalPYG = precioUnit * qty;
+
+const productoConPrecio = { 
+  ...p,
+  precio_unitario: precioUnit,
+  cantidad: qty,
+  total_item: totalPYG
+};
 
   // 🔥 ESTA ES LA LÍNEA QUE FALTABA
   await seleccionarComprobanteYConfirmarVenta(productoConPrecio);
@@ -818,7 +827,7 @@ METADATA.monedas.forEach(m => {
         html: `
             <div class="text-start">
                 <p><strong>Producto:</strong> ${productoConPrecio.nombre}</p>
-                <p><strong>Total:</strong> ₲ ${money(productoConPrecio.precio_expuesto)}</p>
+                <p><strong>Total:</strong> ₲ ${money(productoConPrecio.total_item)}</p>
                 <p><strong>Comprobante:</strong> ${comprobanteNombre.toUpperCase()}</p>
                 ${htmlPago}
             </div>
@@ -950,7 +959,7 @@ if (!confirmar) return;
         metodo_pago: confirmar.metodo_desc,
         moneda: confirmar.moneda,
         productos: [productoConPrecio],
-        total: productoConPrecio.precio_expuesto,
+        total: productoConPrecio.total_item,
         cliente: confirmar.cliente
     };
 

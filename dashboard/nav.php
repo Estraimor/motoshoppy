@@ -199,6 +199,10 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
   <span id="cartCountSide" class="cart-badge">0</span>
 </a>
 
+
+<a href="/motoshoppy/login/cerrar_session.php" class="logout-link">
+  <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+</a>
 </nav>
 
 </aside>
@@ -208,13 +212,20 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 
 
 <script>
-document.querySelector('.toggle-profile').addEventListener('click', function() {
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.querySelector('.toggle-profile');
+  if (!toggle) return;
+
+  toggle.addEventListener('click', function () {
     const panel = document.querySelector('.user-panel');
     const chevron = this.querySelector('.chevron');
+
     panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     this.classList.toggle('active');
+  });
 });
 </script>
+
 
 <!-- submenu script -->
 <script>

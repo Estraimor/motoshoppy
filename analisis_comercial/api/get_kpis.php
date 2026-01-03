@@ -1,6 +1,16 @@
 <?php
+session_start();
 require_once '../../conexion/conexion.php';
+
 header('Content-Type: application/json; charset=utf-8');
+
+if (!isset($_SESSION['idusuario'])) {
+  echo json_encode([
+    'ok' => false,
+    'msg' => 'Sesión expirada'
+  ]);
+  exit;
+}
 
 try {
 
