@@ -308,7 +308,7 @@ document.getElementById('btnGenCierre')
 document.getElementById('btnGenLibro')
   .addEventListener('click', () => {
     window.open(
-      '/motoshoppy/analisis_comercial/pdf/libro_diario.php?' + buildQueryFromCaja(),
+      '/motoshoppy/analisis_comercial/api/libro_diario.php?' + buildQueryFromCaja(),
       '_blank'
     );
   });

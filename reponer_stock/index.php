@@ -107,7 +107,7 @@ require_once '../conexion/conexion.php';
 
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-striped">
+                <table id="tablaReposiciones" class="table table-hover table-striped">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -149,12 +149,21 @@ require_once '../conexion/conexion.php';
                                 </td>
 
                                 <td>
-                                    <span class="badge bg-<?=
-                                        $r['estado'] === 'pedido'      ? 'warning' :
-                                        ($r['estado'] === 'impactado'  ? 'success' : 'danger')
-                                    ?>">
-                                        <?= strtoupper($r['estado']) ?>
-                                    </span>
+                                    <?php
+$estado = $r['estado'];
+
+$clase = match ($estado) {
+    'pedido'    => 'warning',
+    'impactado' => 'success',
+    'cancelado' => 'danger',
+    default     => 'secondary'
+};
+?>
+
+<span class="badge bg-<?= $clase ?>">
+    <?= strtoupper($estado) ?>
+</span>
+
                                 </td>
 
                                 <td>
@@ -213,7 +222,24 @@ require_once '../conexion/conexion.php';
                 <div class="modal-body">
                     <input type="hidden" name="idreposicion" id="idreposicion">
 
+                    <!-- Productos del pedido -->
                     <div id="productosPedido" class="mb-3"></div>
+
+                    <!-- ✅ COSTO TOTAL -->
+                    <div class="mb-3">
+                        <label class="form-label">Costo total del pedido</label>
+                        <input type="number"
+                               step="0.01"
+                               min="0"
+                               name="costo_total"
+                               id="costo_total"
+                               class="form-control"
+                               placeholder="Ej: 125000.00"
+                               required>
+                        <small class="text-muted">
+                            Monto total según remito / factura.
+                        </small>
+                    </div>
 
                     <label class="form-label">Remito / Factura</label>
                     <input type="file" name="remito" class="form-control" required>
@@ -223,12 +249,15 @@ require_once '../conexion/conexion.php';
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-success" type="submit">Confirmar impacto</button>
+                    <button class="btn btn-success" type="submit">
+                        Confirmar impacto
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 
 <script>
 let pedidos = {};
@@ -351,13 +380,14 @@ document.getElementById('btnGuardar').addEventListener('click', () => {
 });
 
 /* =========================
-   ABRIR MODAL IMPACTO (SOLO LEE)
+   ABRIR MODAL IMPACTO
 ========================= */
 function abrirImpacto(id) {
     document.getElementById('idreposicion').value = id;
     document.getElementById('productosPedido').innerHTML = 'Cargando...';
+    document.getElementById('costo_total').value = ''; // ✅ reset costo
 
-    // Abrimos el modal SIEMPRE
+    // Abrimos el modal
     const modal = new bootstrap.Modal(
         document.getElementById('modalImpacto')
     );
@@ -373,19 +403,34 @@ function abrirImpacto(id) {
                 return;
             }
 
-            document.getElementById('productosPedido').innerHTML =
-                r.productos.map(p => `
+            const totalUnidades = r.productos.reduce(
+                (acc, p) => acc + parseInt(p.cantidad || 0), 0
+            );
+
+            document.getElementById('productosPedido').innerHTML = `
+                <div class="mb-2">
+                    <span class="badge bg-primary">
+                        Ítems: ${r.productos.length}
+                    </span>
+                    <span class="badge bg-secondary ms-2">
+                        Unidades totales: ${totalUnidades}
+                    </span>
+                </div>
+                ${r.productos.map(p => `
                     <div class="mb-2 border-bottom pb-2">
                         <strong>${p.nombre}</strong><br>
-                        Cantidad: <span class="badge bg-secondary">${p.cantidad}</span>
+                        Cantidad:
+                        <span class="badge bg-secondary">${p.cantidad}</span>
                     </div>
-                `).join('');
+                `).join('')}
+            `;
         })
         .catch(() => {
-            document.getElementById('productosPedido').show =
+            document.getElementById('productosPedido').innerHTML =
                 '<div class="text-danger">Error de conexión</div>';
         });
 }
+
 
 
 /* =========================
@@ -428,6 +473,9 @@ function cancelarPedido(id) {
 /* =========================
    VER DETALLE
 ========================= */
+/* =========================
+   VER DETALLE
+========================= */
 function verDetalle(id) {
     fetch('api_ver_detalle_pedido.php?id=' + encodeURIComponent(id))
         .then(r => r.json())
@@ -444,33 +492,44 @@ function verDetalle(id) {
             `;
 
             /* =========================
-               REMITO / FACTURA (SI EXISTE)
+               COSTO TOTAL
+            ========================= */
+            if (r.costo_total !== null) {
+                html += `
+                    <p>
+                        <strong>Costo total:</strong>
+                        $${parseFloat(r.costo_total).toFixed(2)}
+                    </p>
+                `;
+            }
+
+            /* =========================
+               REMITO / FACTURA
             ========================= */
             if (r.remito) {
+                const url = 'remitos/' + r.remito;
                 const ext = r.remito.split('.').pop().toLowerCase();
+
+                html += `<p><strong>Remito / Factura:</strong><br>`;
 
                 if (ext === 'pdf') {
                     html += `
-                        <p>
-                            <strong>Remito / Factura:</strong><br>
-                            <a href="${r.remito}" target="_blank"
-                               class="btn btn-outline-primary btn-sm">
-                                📄 Ver PDF
-                            </a>
-                        </p>
+                        <a href="${url}" target="_blank"
+                           class="btn btn-outline-primary btn-sm">
+                            📄 Ver PDF
+                        </a>
                     `;
                 } else {
                     html += `
-                        <p>
-                            <strong>Remito / Factura:</strong><br>
-                            <a href="${r.remito}" target="_blank">
-                                <img src="${r.remito}"
-                                     class="img-fluid rounded border"
-                                     style="max-height:300px">
-                            </a>
-                        </p>
+                        <a href="${url}" target="_blank">
+                            <img src="${url}"
+                                 class="img-fluid rounded border"
+                                 style="max-height:300px">
+                        </a>
                     `;
                 }
+
+                html += `</p>`;
             }
 
             /* =========================
@@ -502,13 +561,29 @@ function verDetalle(id) {
             `;
 
             document.getElementById('detallePedido').innerHTML = html;
+
             new bootstrap.Modal(
                 document.getElementById('modalDetalle')
             ).show();
+        })
+        .catch(() => {
+            alert('Error de conexión');
         });
 }
 
+
 </script>
 
+
+<script>
+$(document).ready(function () {
+    $('#tablaReposiciones').DataTable({
+        order: [[0, 'desc']],
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        }
+    });
+});
+</script>
 
 <?php include '../dashboard/footer.php'; ?>

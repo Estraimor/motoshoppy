@@ -3,11 +3,17 @@ require_once '../conexion/conexion.php';
 
 header('Content-Type: application/json');
 
-$id = $_POST['idreposicion'] ?? null;
+$id          = $_POST['idreposicion'] ?? null;
 $observacion = $_POST['observacion'] ?? null;
+$costo_total = $_POST['costo_total'] ?? null;
 
 if (!$id) {
     echo json_encode(['ok' => false, 'error' => 'ID inválido']);
+    exit;
+}
+
+if ($costo_total !== null && !is_numeric($costo_total)) {
+    echo json_encode(['ok' => false, 'error' => 'Costo inválido']);
     exit;
 }
 
@@ -68,11 +74,17 @@ $sql = "
     SET estado = 'impactado',
         fecha_llegada = NOW(),
         imagen_remito = ?,
-        observacion = ?
+        observacion = ?,
+        costo_total = ?
     WHERE idreposicion = ?
 ";
 $stmt = $conexion->prepare($sql);
-$stmt->execute([$archivoNombre, $observacion, $id]);
+$stmt->execute([
+    $archivoNombre,
+    $observacion,
+    $costo_total,
+    $id
+]);
 
 /* ===============================
    IMPACTAR STOCK

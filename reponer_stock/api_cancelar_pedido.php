@@ -1,12 +1,12 @@
 <?php
 require_once '../conexion/conexion.php';
 
-$id = $_POST['id'];
+$id = $_POST['id'] ?? null;
 
-$conexion->prepare("
-    UPDATE reposicion
-    SET estado = 'cancelado'
-    WHERE idreposicion = ?
-")->execute([$id]);
+if (!$id) {
+    exit;
+}
 
-echo json_encode(['ok' => true]);
+$sql = "UPDATE reposicion SET estado = 'cancelado' WHERE idreposicion = ?";
+$stmt = $conexion->prepare($sql);
+$stmt->execute([$id]);
