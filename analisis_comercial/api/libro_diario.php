@@ -8,7 +8,9 @@ $hasta = $_GET['hasta'] ?? null;
 if(!$desde || !$hasta){
     die('Fechas inválidas');
 }
-
+function txt($str){
+    return iconv('UTF-8','ISO-8859-1//TRANSLIT',$str);
+}
 class PDF extends FPDF {
 
     function Header(){
@@ -26,8 +28,9 @@ class PDF extends FPDF {
         $this->Cell(0,5,'Periodo: '.$_GET['desde'].' al '.$_GET['hasta'],0,1,'C');
 
         $this->Ln(4);
-        $this->Line(10,50,200,50);
-        $this->Ln(20);
+        $this->Line(50,50,150,50);
+
+        $this->Ln(25);
     }
 
     function Footer(){
@@ -45,13 +48,13 @@ $pdf->SetFont('Arial','',9);
 /* ============================
    CABECERA TABLA
 ============================ */
-$pdf->SetFillColor(230,230,230);
+$pdf->SetFillColor(235,235,235);
 $pdf->SetFont('Arial','B',9);
 
-$pdf->Cell(30,7,'Fecha',1,0,'C',true);
-$pdf->Cell(90,7,'Concepto',1,0,'C',true);
-$pdf->Cell(35,7,'Debe',1,0,'C',true);
-$pdf->Cell(35,7,'Haber',1,1,'C',true);
+$pdf->Cell(30,8,txt('Fecha'),1,0,'C',true);
+$pdf->Cell(90,8,txt('Concepto'),1,0,'C',true);
+$pdf->Cell(35,8,txt('Debe'),1,0,'C',true);
+$pdf->Cell(35,8,txt('Haber'),1,1,'C',true);
 
 $pdf->SetFont('Arial','',9);
 
@@ -82,14 +85,13 @@ $stmt->execute([
 while ($v = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $movimientos[] = [
         'fecha'    => $v['fecha'],
-        'concepto' => 'Venta - '.$v['metodo'].' '.$v['moneda'],
-        'debe'     => $v['total'],
+        'concepto' => txt('Venta – '.$v['metodo'].' '.$v['moneda']),
+        'debe'     => (float)$v['total'],
         'haber'    => 0
     ];
 }
 
-
-/* ---------- REPOSICIONES IMPACTADAS ---------- */
+/* ---------- REPOSICIONES ---------- */
 $sqlRepo = "
     SELECT 
         r.fecha_llegada AS fecha,
@@ -97,9 +99,8 @@ $sqlRepo = "
         p.empresa AS proveedor
     FROM reposicion r
     JOIN proveedores p ON p.idproveedores = r.proveedores_idproveedores
-    WHERE 
-        r.estado = 'impactado'
-        AND r.fecha_llegada BETWEEN :desde AND :hasta
+    WHERE r.estado = 'impactado'
+    AND r.fecha_llegada BETWEEN :desde AND :hasta
 ";
 
 $stmt = $conexion->prepare($sqlRepo);
@@ -111,23 +112,19 @@ $stmt->execute([
 while($r = $stmt->fetch(PDO::FETCH_ASSOC)){
     $movimientos[] = [
         'fecha' => $r['fecha'],
-        'concepto' => 'Reposición proveedor '.$r['proveedor'],
+        'concepto' => txt('Reposición proveedor '.$r['proveedor']),
         'debe' => 0,
-        'haber' => $r['costo_total']
+        'haber' => (float)$r['costo_total']
     ];
 }
 
-
-/* ---------- ORDEN CRONOLÓGICO ---------- */
-usort($movimientos, function($a,$b){
-    return strtotime($a['fecha']) <=> strtotime($b['fecha']);
-});
+/* ---------- ORDEN ---------- */
+usort($movimientos, fn($a,$b)=>strtotime($a['fecha']) <=> strtotime($b['fecha']));
 
 /* ============================
-   IMPRIMIR FILAS
+   FILAS
 ============================ */
-$totalDebe  = 0;
-$totalHaber = 0;
+$totalDebe = $totalHaber = 0;
 
 foreach($movimientos as $m){
 
@@ -135,15 +132,14 @@ foreach($movimientos as $m){
     $pdf->Cell(90,7,$m['concepto'],1);
 
     if($m['debe'] > 0){
-        $pdf->Cell(35,7,'$ '.number_format((float)$m['debe'],2,',','.'),1,0,'R');
+        $pdf->Cell(35,7,'$ '.number_format($m['debe'],2,',','.'),1,0,'R');
         $pdf->Cell(35,7,'',1);
         $totalDebe += $m['debe'];
     } else {
         $pdf->Cell(35,7,'',1);
-        $pdf->Cell(35,7,'$ '.number_format((float)$m['haber'],2,',','.'),1,0,'R');
+        $pdf->Cell(35,7,'$ '.number_format($m['haber'],2,',','.'),1,0,'R');
         $totalHaber += $m['haber'];
     }
-
     $pdf->Ln();
 }
 
@@ -151,8 +147,8 @@ foreach($movimientos as $m){
    TOTALES
 ============================ */
 $pdf->SetFont('Arial','B',9);
-$pdf->Cell(120,7,'TOTALES',1);
-$pdf->Cell(35,7,'$ '.number_format($totalDebe,2,',','.'),1,0,'R');
-$pdf->Cell(35,7,'$ '.number_format($totalHaber,2,',','.'),1,1,'R');
+$pdf->Cell(120,8,txt('TOTALES'),1);
+$pdf->Cell(35,8,'$ '.number_format($totalDebe,2,',','.'),1,0,'R');
+$pdf->Cell(35,8,'$ '.number_format($totalHaber,2,',','.'),1,1,'R');
 
 $pdf->Output('I','Libro_Diario.pdf');
