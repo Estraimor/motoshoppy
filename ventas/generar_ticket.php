@@ -16,11 +16,10 @@ if ($id <= 0) {
 // Consultas a BD
 // ======================
 $qVenta = $conexion->prepare("
-  SELECT v.*, u.usuario, c.dni AS dni_cliente
+  SELECT v.*, u.usuario, c.dni AS dni_cliente, u.nombre
   FROM ventas v
   LEFT JOIN usuario u ON u.idusuario = v.usuario_idusuario
   LEFT JOIN clientes c ON c.idCliente = v.clientes_idCliente
-
   WHERE v.idVenta = ?
 ");
 $qVenta->execute([$id]);
@@ -33,31 +32,30 @@ if (!$venta) {
 $qDetalle = $conexion->prepare("
   SELECT 
       d.*, 
-      p.nombre AS producto
+      p.nombre AS producto,
+      m.nombre_marca AS marca
   FROM detalle_venta d
-  JOIN producto p 
-        ON p.idProducto = d.producto_idProducto
+  JOIN producto p ON p.idProducto = d.producto_idProducto
+  LEFT JOIN marcas m ON m.idmarcas = p.marcas_idmarcas
   WHERE d.ventas_idVenta = ?
 ");
 $qDetalle->execute([$id]);
 $items = $qDetalle->fetchAll(PDO::FETCH_ASSOC);
-
 
 // ======================
 // DNI final a imprimir
 // ======================
 $dni_final = '-';
 if (!empty($venta['dni_cliente'])) {
-    $dni_final = $venta['dni_cliente'];        // si hay cliente asociado a la venta
+    $dni_final = $venta['dni_cliente'];
 } elseif (!empty($dni_get)) {
-    $dni_final = $dni_get;                      // si vino por GET desde el modal (ticket)
+    $dni_final = $dni_get;
 }
 
 // ======================
 // Helpers
 // ======================
 function conv($txt) {
-    // Pasar a ISO-8859-1 para FPDF estándar
     return iconv('UTF-8', 'ISO-8859-1//TRANSLIT', (string)$txt);
 }
 function money($n) {
@@ -68,6 +66,7 @@ function money($n) {
 // Render de cada bloque
 // ======================
 function renderTicketBloque(FPDF $pdf, array $venta, array $items, string $dni_final, bool $esDuplicado = false): void {
+
     // Encabezado
     $pdf->SetFont('Arial', 'B', 13);
     $pdf->Cell(0, 6, conv('MOTOSHOPPY'), 0, 1, 'C');
@@ -87,28 +86,45 @@ function renderTicketBloque(FPDF $pdf, array $venta, array $items, string $dni_f
     $pdf->SetFont('Arial', '', 8);
     $pdf->Cell(0, 5, conv('Fecha: ' . $venta['fecha']), 0, 1);
     $pdf->Cell(0, 5, conv('DNI Cliente: ' . $dni_final), 0, 1);
-    $pdf->Cell(0, 5, conv('Vendedor: ' . $venta['usuario']), 0, 1);
+    $pdf->Cell(0, 5, conv('Vendedor: ' . $venta['nombre']), 0, 1);
     $pdf->Ln(3);
 
-    // Tabla de ítems
+    // Encabezado tabla
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->Cell(40, 5, conv('Producto'), 0, 0);
     $pdf->Cell(10, 5, conv('Cant'), 0, 0, 'C');
-    $pdf->Cell(25, 5, conv('Subtotal Gs.'), 0, 1, 'R');
+    $pdf->Cell(20, 5, conv('Subtotal Gs.'), 0, 1, 'R');
     $pdf->Line(5, $pdf->GetY(), 75, $pdf->GetY());
 
     $pdf->SetFont('Arial', '', 8);
     $total = 0;
+
     foreach ($items as $it) {
+
         $sub = (float)$it['cantidad'] * (float)$it['precio_unitario'];
         $total += $sub;
 
-        // Producto
-        $pdf->Cell(40, 5, conv($it['producto']), 0, 0);
+        $y_inicio = $pdf->GetY();
+
+        // Texto producto + marca
+        $textoProducto = $it['producto'];
+        if (!empty($it['marca'])) {
+            $textoProducto .= ' (' . $it['marca'] . ')';
+        }
+
+        // Producto (con salto automático)
+        $pdf->MultiCell(40, 5, conv($textoProducto), 0);
+
+        $y_fin = $pdf->GetY();
+        $alto = $y_fin - $y_inicio;
+
         // Cantidad
-        $pdf->Cell(10, 5, conv((string)$it['cantidad']), 0, 0, 'C');
+        $pdf->SetXY(45, $y_inicio);
+        $pdf->Cell(10, $alto, conv($it['cantidad']), 0, 0, 'C');
+
         // Subtotal
-        $pdf->Cell(25, 5, conv(money($sub)), 0, 1, 'R');
+        $pdf->SetXY(55, $y_inicio);
+        $pdf->Cell(20, $alto, conv(money($sub)), 0, 1, 'R');
     }
 
     // Total
@@ -131,14 +147,14 @@ function renderTicketBloque(FPDF $pdf, array $venta, array $items, string $dni_f
 // ======================
 // Generar PDF
 // ======================
-$pdf = new FPDF('P', 'mm', [80, 297]); // ancho ticket 80mm, alto suficiente para original+duplicado
+$pdf = new FPDF('P', 'mm', [80, 297]);
 $pdf->SetMargins(5, 5, 5);
 $pdf->AddPage();
 
 // Original
 renderTicketBloque($pdf, $venta, $items, $dni_final, false);
 
-// Separador de corte
+// Separador
 $pdf->Ln(5);
 $pdf->SetFont('Arial', '', 8);
 $pdf->Cell(0, 5, conv(str_repeat('.', 50)), 0, 1, 'C');
@@ -148,7 +164,7 @@ $pdf->Ln(5);
 // Duplicado
 renderTicketBloque($pdf, $venta, $items, $dni_final, true);
 
-// Limpieza de buffers por si hubo espacio/blancos previos
+// Limpieza
 if (ob_get_length()) { ob_end_clean(); }
 $pdf->Output('I', "ticket_$id.pdf");
 exit;

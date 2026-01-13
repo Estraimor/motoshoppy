@@ -134,14 +134,16 @@ require_once '../conexion/conexion.php';
 <div class="card bg-dark text-white shadow-sm border-secondary mb-4">
   <div class="card-body">
 
-    <div class="d-flex align-items-center gap-3 mb-2">
+    <!-- TÍTULO -->
+    <div class="d-flex align-items-center gap-3 mb-3">
       <h5 class="text-warning fw-bold mb-0">
         <i class="fa-solid fa-arrows-spin me-2"></i>
         Rotación de productos
       </h5>
     </div>
 
-    <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+    <!-- FILTROS -->
+    <div class="d-flex flex-wrap align-items-end gap-3 mb-4">
 
       <div>
         <label class="form-label small mb-1">Período</label>
@@ -171,13 +173,20 @@ require_once '../conexion/conexion.php';
 
     </div>
 
+    <!-- GRÁFICO -->
+    <div class="mb-4">
+      <canvas id="graficoRotacion" style="max-height:220px;"></canvas>
+
+    </div>
+
+    <!-- TABLA DETALLE -->
     <div class="table-responsive">
-      <table id="tablaRotacion" class="table table-dark table-striped align-middle w-100">
+      <table id="tablaRotacion" class="table table-dark table-hover align-middle w-100">
         <thead class="text-info">
           <tr>
             <th>Producto</th>
-            <th class="text-center">Unidades</th>
-            <th class="text-center">Rotación</th>
+            <th class="text-end">Unidades vendidas</th>
+            <th class="text-center">% De Ventas</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -186,6 +195,7 @@ require_once '../conexion/conexion.php';
 
   </div>
 </div>
+
 
 <script>
 /* ------------------ FILTRO REUTILIZABLE POR SECCIÓN ------------------ */
@@ -315,55 +325,117 @@ document.getElementById('btnGenLibro')
 
 
 /* ------------------ ROTACIÓN ------------------ */
+/* ------------------ ROTACIÓN ------------------ */
 let tablaRotacion = null;
+let graficoRotacion = null;
 
 async function cargarRotacion(){
 
   const p = new URLSearchParams(getRotParams());
-  const r = await fetch('/motoshoppy/analisis_comercial/api/get_rotacion_productos.php?'+p);
+  const r = await fetch('/motoshoppy/analisis_comercial/api/get_rotacion_productos.php?' + p);
   const text = await r.text();
 
-  let data;
-  try { data = JSON.parse(text); }
-  catch(e){
+  let resp;
+  try {
+    resp = JSON.parse(text);
+  } catch(e){
     console.error('Respuesta NO JSON en rotación:', text);
     return;
   }
 
-  if(!data.ok) return;
+  if(!resp.ok) return;
 
+  const data  = resp.data || [];
+  const total = resp.total || 0;
+
+  /* ---------- GRÁFICO TORTA (PARTICIPACIÓN %) ---------- */
+  const labels  = data.map(x => x.label);
+  const valores = data.map(x => x.unidades);
+
+  if(graficoRotacion) graficoRotacion.destroy();
+
+  graficoRotacion = new Chart(
+    document.getElementById('graficoRotacion'),
+    {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          data: valores,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#ccc',
+              boxWidth: 14
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const value = ctx.raw;
+                const pct = total
+                  ? ((value / total) * 100).toFixed(1)
+                  : 0;
+                return ` ${value} unidades (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    }
+  );
+
+  /* ---------- TABLA (NO SE TOCA) ---------- */
   if(!tablaRotacion){
     tablaRotacion = $('#tablaRotacion').DataTable({
-      data: data.data,
+      data,
+      order: [[1,'desc']],
       columns:[
-        {data:'producto'},
-        {data:'unidades', className:'text-center'},
         {
-          data:'rotacion',
+          data:'label'
+        },
+        {
+          data:'unidades',
+          className:'text-end fw-bold'
+        },
+        {
+          data:null,
           className:'text-center',
           render:r=>{
-            const map = {Alta:'success', Baja:'danger', Media:'warning'};
-            return `<span class="badge bg-${map[r]||'secondary'}">${r}</span>`;
+            if(!total) return '0%';
+            const pct = ((r.unidades / total) * 100).toFixed(1);
+            return pct + '%';
           }
         }
       ],
-      info:false,
-      language:{ emptyTable:'No hay datos para el período seleccionado' }
+      paging: true,
+      pageLength: 10,
+      info: false,
+      language: {
+        emptyTable: 'No hay ventas en el período seleccionado'
+      }
     });
-
   } else {
-    tablaRotacion.clear().rows.add(data.data).draw();
+    tablaRotacion.clear().rows.add(data).draw();
   }
 }
 
-document.getElementById("btnRotFiltro")
+document
+  .getElementById("btnRotFiltro")
   .addEventListener('click', cargarRotacion);
-
 
 /* ------------------ INIT LOAD ------------------ */
 cargarKPIs();
 cargarRotacion();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <?php include '../dashboard/footer.php'; ?>

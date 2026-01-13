@@ -45,13 +45,19 @@ try {
 
   $sql = "
     SELECT 
+      p.idProducto,
       p.nombre AS producto,
+      m.nombre_marca AS marca,
       SUM(d.cantidad) AS unidades
     FROM ventas v
-    INNER JOIN detalle_venta d ON d.ventas_idVenta = v.idVenta
-    INNER JOIN producto p ON p.idProducto = d.producto_idProducto
+    INNER JOIN detalle_venta d 
+      ON d.ventas_idVenta = v.idVenta
+    INNER JOIN producto p 
+      ON p.idProducto = d.producto_idProducto
+    INNER JOIN marcas m 
+      ON m.idmarcas = p.marcas_idmarcas
     WHERE $where
-    GROUP BY p.idProducto
+    GROUP BY p.idProducto, p.nombre, m.nombre_marca
     ORDER BY unidades DESC
   ";
 
@@ -66,20 +72,28 @@ try {
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
   if (!$rows) {
-    echo json_encode(['ok' => true, 'data' => []]);
+    echo json_encode([
+      'ok' => true,
+      'total' => 0,
+      'data' => []
+    ]);
     exit;
   }
 
   $total = array_sum(array_column($rows, 'unidades'));
-  $promedio = $total / count($rows);
 
   $data = array_map(fn($r) => [
     'producto' => $r['producto'],
-    'unidades' => (int)$r['unidades'],
-    'rotacion' => $r['unidades'] >= $promedio ? 'Alta' : 'Baja'
+    'marca'    => $r['marca'],
+    'label'    => $r['producto'].' - '.$r['marca'],
+    'unidades' => (int)$r['unidades']
   ], $rows);
 
-  echo json_encode(['ok' => true, 'data' => $data]);
+  echo json_encode([
+    'ok'    => true,
+    'total' => (int)$total,
+    'data'  => $data
+  ]);
 
 } catch (Throwable $e) {
   http_response_code(500);
