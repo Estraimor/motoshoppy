@@ -15,20 +15,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     $ubicacion = trim($_POST['ubicacion']);
     $telefono  = trim($_POST['telefono']);
     $email     = trim($_POST['email']);
+    $vendedor        = trim($_POST['vendedor']);
+    $numero_vendedor = trim($_POST['numero_vendedor']); 
 
-    // Actualizamos la información del proveedor
     $sql = "UPDATE proveedores 
-            SET empresa = :empresa, ubicacion = :ubicacion, telefono = :telefono, email = :email
-            WHERE idproveedores = :id";
-    
-    $stmt = $conexion->prepare($sql);
-    $stmt->execute([
-        ':empresa'   => $empresa,
-        ':ubicacion' => $ubicacion,
-        ':telefono'  => $telefono,
-        ':email'     => $email,
-        ':id'        => $id
-    ]);
+        SET empresa = :empresa,
+            ubicacion = :ubicacion,
+            telefono = :telefono,
+            email = :email,
+            vendedor = :vendedor,
+            numero_vendedor = :numero_vendedor
+        WHERE idproveedores = :id";
+
+$stmt = $conexion->prepare($sql);
+$stmt->execute([
+    ':empresa'         => $empresa,
+    ':ubicacion'       => $ubicacion,
+    ':telefono'        => $telefono,
+    ':email'           => $email,
+    ':vendedor'        => $vendedor,
+    ':numero_vendedor' => $numero_vendedor,
+    ':id'              => $id
+]);
 
     // Redirigimos con un mensaje de éxito
     header('Location: index.php?msg=actualizado');

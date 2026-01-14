@@ -82,7 +82,7 @@ $proveedores = $conexion
                         </div>
 
                         <div class="mb-2">
-                            <label>Teléfono</label>
+                            <label>Teléfono Empresa</label>
                             <input
                                 type="text"
                                 name="telefono"
@@ -98,7 +98,24 @@ $proveedores = $conexion
                                 class="form-control"
                                 value="<?= htmlspecialchars($edit['email'] ?? '') ?>">
                         </div>
+                            
+                        <div class="mb-2">
+                        <label>Vendedor</label>
+                        <input
+                            type="text"
+                            name="vendedor"
+                            class="form-control"
+                            value="<?= htmlspecialchars($edit['vendedor'] ?? '') ?>">
+                    </div>
 
+                    <div class="mb-2">
+                        <label>telefono Vendedor</label>
+                        <input
+                            type="text"
+                            name="numero_vendedor"
+                            class="form-control"
+                            value="<?= htmlspecialchars($edit['numero_vendedor'] ?? '') ?>">
+                    </div>
                         <button
                             class="btn btn-primary w-100 mt-2"
                             name="guardar">
@@ -124,6 +141,8 @@ $proveedores = $conexion
                                 <th>Ubicación</th>
                                 <th>Teléfono</th>
                                 <th>Email</th>
+                                <th>Vendedor</th>
+                                <th>Telefono Vendedor</th>
                                 <th>Estado</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -144,6 +163,15 @@ $proveedores = $conexion
                                         <?= $p['email']
                                             ?: '<span class="text-muted">No se agregó</span>' ?>
                                     </td>
+                                    <td>
+                                    <?= $p['vendedor']
+                                        ?: '<span class="text-muted">No asignado</span>' ?>
+                                </td>
+
+                                <td>
+                                    <?= $p['numero_vendedor']
+                                        ?: '<span class="text-muted">No asignado</span>' ?>
+                                </td>
                                     <td>
                                         <?= $p['activo']
                                             ? '<span class="badge bg-success">Activo</span>'
