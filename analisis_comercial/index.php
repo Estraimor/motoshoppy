@@ -50,6 +50,28 @@ require_once '../conexion/conexion.php';
 
 <div class="row g-3 mb-4" id="kpisComerciales"></div>
 
+<div class="modal fade" id="modalVentasMetodo" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-secondary">
+
+      <div class="modal-header">
+        <h5 class="modal-title text-info">
+          <i class="fa-solid fa-credit-card me-2"></i>
+          Ventas por método de pago
+        </h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="bodyVentasMetodo"></div>
+        <small class="text-white-50 d-block mt-2" id="footerVentasMetodo"></small>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 <!-- ⭐⭐⭐ CIERRE DE CAJA + FILTRO ⭐⭐⭐ -->
 <div class="card bg-dark text-white shadow-sm border-secondary mb-4">
@@ -276,17 +298,26 @@ async function cargarKPIs(){
     </div>
 
     <div class="col-md-3 col-6">
-      <div class="card bg-dark text-info text-center">
+      <!-- 👇 solo esto es nuevo -->
+      <div class="card bg-dark text-info text-center kpi-ventas" style="cursor:pointer;">
         <div class="card-body">
           <small>Ventas</small>
           <h5>${d.ventas || 0}</h5>
+          <small class="text-white-50">Ver métodos</small>
         </div>
       </div>
     </div>`;
+    
+  // 👇 engancho el click
+  const ventasCard = cont.querySelector('.kpi-ventas');
+  if (ventasCard) {
+    ventasCard.addEventListener('click', mostrarVentasPorMetodo);
+  }
 }
 
 document.getElementById("btnKpiFiltro")
   .addEventListener('click', cargarKPIs);
+
 
 
 /* ---------- MODAL PDF ---------- */
@@ -434,6 +465,75 @@ document
 /* ------------------ INIT LOAD ------------------ */
 cargarKPIs();
 cargarRotacion();
+
+
+/* ------------------ MODAL VENTAS POR MÉTODO ------------------ */
+const modalVentasMetodo = new bootstrap.Modal(
+  document.getElementById('modalVentasMetodo')
+);
+
+async function mostrarVentasPorMetodo(){
+
+  const p = new URLSearchParams(getKpiParams());
+  p.append('modo', 'metodo');
+
+  const r = await fetch('/motoshoppy/analisis_comercial/api/get_kpis.php?' + p);
+
+  let j;
+  try {
+    j = await r.json();
+  } catch (e) {
+    console.error('Respuesta inválida en métodos de pago');
+    return;
+  }
+
+  if (!j.ok) return;
+
+  const data = j.data || [];
+
+  const totalFacturado = data.reduce(
+    (acc, x) => acc + Number(x.facturacion || 0),
+    0
+  );
+
+  let html = '';
+
+  data.forEach(x => {
+    const total = Number(x.facturacion || 0);
+    const porcentaje = totalFacturado
+      ? total / totalFacturado
+      : 0;
+
+    // 👇 REGLA DE RELEVANCIA
+    const esRelevante = porcentaje >= 0.30 && total > 0;
+
+    const clase = esRelevante
+      ? 'bg-success text-dark fw-bold'
+      : (total === 0 ? 'bg-secondary text-white-50' : 'bg-secondary text-white');
+
+    html += `
+      <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded ${clase}">
+        <div>
+          <div>${x.metodo}</div>
+          <small class="text-white-50">
+            ${(porcentaje * 100).toFixed(1)}%
+          </small>
+        </div>
+        <span>$${total.toLocaleString('es-AR')}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById('bodyVentasMetodo').innerHTML =
+    html || `<div class="text-white-50">Sin ventas en el período</div>`;
+
+  const rango = getKpiParams();
+  document.getElementById('footerVentasMetodo').textContent =
+    `Período: ${rango.desde} → ${rango.hasta}`;
+
+  modalVentasMetodo.show();
+}
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
