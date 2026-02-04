@@ -2,43 +2,68 @@
 session_start();
 require_once '../conexion/conexion.php';
 
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $usuario = trim($_POST['usuario'] ?? '');
     $clave   = trim($_POST['clave'] ?? '');
-    $error   = '';
 
-    if ($usuario !== '' && $clave !== '') {
+    if ($usuario === '' || $clave === '') {
+        $error = "Por favor completa todos los campos";
+    } else {
+
         $stmt = $conexion->prepare("
-            SELECT u.idusuario, u.usuario, u.pass, u.nombre, u.apellido, r.nombre_rol
+            SELECT 
+                u.idusuario,
+                u.nombre,
+                u.apellido,
+                u.dni,
+                u.celular,
+                u.usuario,
+                u.pass,
+                u.roles_idroles,
+                r.nombre_rol
             FROM usuario u
-            INNER JOIN roles r ON u.roles_idroles = r.idroles
+            INNER JOIN roles r ON r.idroles = u.roles_idroles
             WHERE u.usuario = :usuario
-              AND u.pass = :clave
             LIMIT 1
         ");
-        $stmt->execute([':usuario' => $usuario, ':clave' => $clave]);
+
+        $stmt->execute([':usuario' => $usuario]);
+
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        /* ========= LOGIN SIMPLE (SIN HASH POR AHORA) ========= */
+
         if ($row && $row['pass'] === $clave) {
+
             session_regenerate_id(true);
+
             $_SESSION['idusuario'] = $row['idusuario'];
             $_SESSION['usuario']   = $row['usuario'];
             $_SESSION['nombre']    = $row['nombre'];
             $_SESSION['apellido']  = $row['apellido'];
+            $_SESSION['dni']       = $row['dni'];
+            $_SESSION['celular']   = $row['celular'];
+
+            $_SESSION['rol_id']    = $row['roles_idroles'];
             $_SESSION['rol']       = $row['nombre_rol'];
+
             $_SESSION['LAST_ACTIVITY'] = time();
             $_SESSION['CREATED']       = time();
 
             header("Location: ../index1.php");
             exit;
+
         } else {
             $error = "Usuario o contraseña incorrectos";
         }
-    } else {
-        $error = "Por favor completa todos los campos";
     }
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="es">

@@ -3,10 +3,17 @@ require_once '../conexion/conexion.php';
 
 header('Content-Type: application/json');
 
-$id          = $_POST['idreposicion'] ?? null;
-$observacion = $_POST['observacion'] ?? null;
-$costo_total = $_POST['costo_total'] ?? null;
+/* ===============================
+   DATOS POST
+=============================== */
+$id             = $_POST['idreposicion'] ?? null;
+$observacion    = $_POST['observacion'] ?? null;
+$costo_total    = $_POST['costo_total'] ?? null;
+$numero_factura = $_POST['numero_factura'] ?? null;
 
+/* ===============================
+   VALIDACIONES BÁSICAS
+=============================== */
 if (!$id) {
     echo json_encode(['ok' => false, 'error' => 'ID inválido']);
     exit;
@@ -17,8 +24,28 @@ if ($costo_total !== null && !is_numeric($costo_total)) {
     exit;
 }
 
+if (!$numero_factura) {
+    echo json_encode(['ok' => false, 'error' => 'Falta número de factura']);
+    exit;
+}
+
 /* ===============================
-   CARPETA ÚNICA DE REMITOS
+   VERIFICAR ESTADO ACTUAL
+=============================== */
+$estadoActual = $conexion->prepare("
+    SELECT estado
+    FROM reposicion
+    WHERE idreposicion = ?
+");
+$estadoActual->execute([$id]);
+
+if ($estadoActual->fetchColumn() !== 'pedido') {
+    echo json_encode(['ok' => false, 'error' => 'El pedido no puede impactarse']);
+    exit;
+}
+
+/* ===============================
+   CARPETA DE REMITOS
 =============================== */
 $carpeta = __DIR__ . "/remitos";
 if (!is_dir($carpeta)) {
@@ -57,7 +84,6 @@ if (!empty($_FILES['remito']['name'])) {
 
     $ext = $permitidos[$mime];
 
-    // Nombre único + referencia al pedido
     $archivoNombre = 'remito_' . $id . '_' . date('Ymd_His') . '.' . $ext;
 
     if (!move_uploaded_file($tmp, $carpeta . '/' . $archivoNombre)) {
@@ -69,20 +95,23 @@ if (!empty($_FILES['remito']['name'])) {
 /* ===============================
    ACTUALIZAR REPOSICIÓN
 =============================== */
-$sql = "
+$updRepo = $conexion->prepare("
     UPDATE reposicion
-    SET estado = 'impactado',
+    SET
+        estado = 'impactado',
         fecha_llegada = NOW(),
         imagen_remito = ?,
         observacion = ?,
-        costo_total = ?
+        costo_total = ?,
+        numero_factura = ?
     WHERE idreposicion = ?
-";
-$stmt = $conexion->prepare($sql);
-$stmt->execute([
+");
+
+$updRepo->execute([
     $archivoNombre,
     $observacion,
     $costo_total,
+    $numero_factura,
     $id
 ]);
 
@@ -97,12 +126,12 @@ $detalles = $conexion->prepare("
 $detalles->execute([$id]);
 
 foreach ($detalles as $d) {
-    $upd = $conexion->prepare("
+    $updStock = $conexion->prepare("
         UPDATE stock_producto
         SET cantidad_actual = cantidad_actual + ?
         WHERE producto_idProducto = ?
     ");
-    $upd->execute([
+    $updStock->execute([
         $d['cantidad'],
         $d['producto_idProducto']
     ]);

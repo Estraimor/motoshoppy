@@ -509,3 +509,110 @@ body {
     border-left: 3px solid #ff3c00;
     color: #fff;
 }
+/* ===== SIDEBAR USER PANEL (PREMIUM) ===== */
+.sidebar-user {
+  margin-top: auto;
+  padding: 18px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(255,140,0,0.12), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6));
+  backdrop-filter: blur(6px);
+}
+
+/* ---------- USER INFO ---------- */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+/* ---------- AVATAR ---------- */
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff7a00, #ff9c2a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  font-size: 20px;
+  box-shadow:
+    0 0 0 2px rgba(255, 156, 42, 0.25),
+    0 8px 18px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sidebar-user:hover .user-avatar {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 0 3px rgba(255, 156, 42, 0.45),
+    0 10px 22px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- TEXT DATA ---------- */
+.user-data {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.user-role {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #ff9c2a;
+  background: rgba(255, 156, 42, 0.15);
+  padding: 3px 8px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+/* ---------- PROFILE LINK ---------- */
+.user-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #eaeaea;
+  text-decoration: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 140, 0, 0.18),
+    rgba(255, 140, 0, 0.05)
+  );
+  border: 1px solid rgba(255, 140, 0, 0.25);
+  transition: all 0.25s ease;
+}
+
+.user-profile-link i {
+  font-size: 14px;
+  color: #ff9c2a;
+}
+
+.user-profile-link:hover {
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 140, 0, 0.35),
+    rgba(255, 140, 0, 0.15)
+  );
+  border-color: rgba(255, 156, 42, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
+}
+

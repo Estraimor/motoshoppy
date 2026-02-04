@@ -1,7 +1,10 @@
 <?php
 require_once __DIR__ . '/../login/session_bootstrap.php';
 
-$rol = $_SESSION['rol'] ?? 'Administrador';
+$nombreUsuario   = $_SESSION['nombre']   ?? 'Usuario';
+$apellidoUsuario = $_SESSION['apellido'] ?? '';
+$rol             = $_SESSION['rol']      ?? 'Sin rol';
+
 
 /* =========================
    NORMALIZAR URI
@@ -204,6 +207,30 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
   <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
 </a>
 </nav>
+
+<div class="sidebar-user">
+
+  <div class="user-info">
+    <div class="user-avatar">
+      <i class="fa-solid fa-user"></i>
+    </div>
+
+    <div class="user-data">
+      <span class="user-name">
+        <?= htmlspecialchars($nombreUsuario . ' ' . $apellidoUsuario) ?>
+      </span>
+      <span class="user-role">
+        <?= htmlspecialchars($rol) ?>
+      </span>
+    </div>
+  </div>
+
+  <a href="/motoshoppy/perfil/index.php" class="user-profile-link">
+    <i class="fa-solid fa-id-badge"></i> Ver perfil
+  </a>
+
+</div>
+
 
 </aside>
 

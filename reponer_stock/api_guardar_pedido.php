@@ -1,10 +1,16 @@
 <?php
 require_once '../conexion/conexion.php';
 
+header('Content-Type: application/json');
+
+// Leer JSON enviado desde frontend
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data || !is_array($data)) {
-    echo json_encode(['ok' => false, 'error' => 'Datos inválidos']);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Datos inválidos'
+    ]);
     exit;
 }
 
@@ -15,13 +21,13 @@ try {
     foreach ($data as $idProveedor => $info) {
 
         // Validar proveedor e items
-        if (empty($idProveedor) || empty($info['items'])) {
+        if (empty($idProveedor) || empty($info['items']) || !is_array($info['items'])) {
             continue;
         }
 
-        // ================================
-        // INSERT REPOSICION (PEDIDO)
-        // ================================
+        /* ===================================
+           INSERT REPOSICION (CABECERA)
+        =================================== */
         $stmt = $conexion->prepare("
             INSERT INTO reposicion (
                 proveedores_idproveedores,
@@ -33,15 +39,16 @@ try {
 
         $idReposicion = $conexion->lastInsertId();
 
-        // ================================
-        // INSERT DETALLE
-        // ================================
+        /* ===================================
+           INSERT DETALLE
+        =================================== */
         $stmtDetalle = $conexion->prepare("
             INSERT INTO reposicion_detalle (
                 reposicion_idreposicion,
                 producto_idProducto,
-                cantidad
-            ) VALUES (?, ?, ?)
+                cantidad,
+                codigo_proveedor
+            ) VALUES (?, ?, ?, ?)
         ");
 
         foreach ($info['items'] as $item) {
@@ -54,10 +61,14 @@ try {
                 continue;
             }
 
+            // Código del proveedor (puede venir vacío)
+            $codigoProveedor = $item['codigo_proveedor'] ?? null;
+
             $stmtDetalle->execute([
                 $idReposicion,
                 $item['id'],
-                $item['cantidad']
+                $item['cantidad'],
+                $codigoProveedor
             ]);
         }
     }

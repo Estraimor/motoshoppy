@@ -82,6 +82,7 @@ require_once '../conexion/conexion.php';
       Cierre de caja
     </h5>
 
+    <!-- FILTROS -->
     <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
 
       <div>
@@ -112,43 +113,60 @@ require_once '../conexion/conexion.php';
 
     </div>
 
+    <!-- MODAL PDF -->
     <div class="modal fade" id="modalPDF" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
 
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="fa-solid fa-file-pdf me-2 text-warning"></i>
-          Generar documento
-        </h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fa-solid fa-file-pdf me-2 text-warning"></i>
+              Generar documento
+            </h5>
+            <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
 
-      <div class="modal-body">
+          <div class="modal-body">
 
-        <p class="mb-2 text-white-50">
-          Período seleccionado:<br>
-          <strong id="rangoTexto"></strong>
-        </p>
+            <p class="mb-2 text-white-50">
+              Período seleccionado:<br>
+              <strong id="rangoTexto"></strong>
+            </p>
 
-        <div class="d-flex flex-column gap-2">
+            <!-- 👇 EFECTIVO INICIAL -->
+            <div class="mb-3">
+              <label class="form-label small mb-1 text-white-50">
+                Efectivo inicial (apertura de caja)
+              </label>
+              <input
+                type="number"
+                id="cajaInicial"
+                class="form-control form-control-sm bg-dark text-white border-secondary"
+                placeholder="Ej: 50000"
+                min="0"
+              >
+            </div>
 
-          <button class="btn btn-outline-success w-100" id="btnGenCierre">
-            <i class="fa-solid fa-cash-register me-1"></i>
-            Cierre de caja
-          </button>
+            <div class="d-flex flex-column gap-2">
 
-          <button class="btn btn-outline-info w-100" id="btnGenLibro">
-            <i class="fa-solid fa-book me-1"></i>
-            Libro diario
-          </button>
+              <button class="btn btn-outline-success w-100" id="btnGenCierre">
+                <i class="fa-solid fa-cash-register me-1"></i>
+                Arqueo de caja
+              </button>
+
+              <button class="btn btn-outline-info w-100" id="btnGenLibro">
+                <i class="fa-solid fa-book me-1"></i>
+                Libro diario
+              </button>
+
+            </div>
+          </div>
 
         </div>
       </div>
-
     </div>
+
   </div>
-</div>
 </div>
 
 
@@ -336,14 +354,32 @@ document.getElementById("btnCajaFiltro")
     modalPDF.show();
   });
 
-/* Botón — generar Cierre de Caja */
+/* Botón — generar Cierre de Caja (ARQUEO) */
 document.getElementById('btnGenCierre')
   .addEventListener('click', () => {
+
+    const inputInicial = document.getElementById('cajaInicial');
+    const inicial = Number(inputInicial.value);
+
+    // ❌ VALIDACIÓN OBLIGATORIA
+    if (!inputInicial.value || inicial <= 0) {
+      inputInicial.classList.add('is-invalid');
+      inputInicial.focus();
+      return;
+    }
+
+    inputInicial.classList.remove('is-invalid');
+
+    // ✅ Armar parámetros (incluye efectivo inicial)
+    const params = new URLSearchParams(getCajaParams());
+    params.append('inicial', inicial);
+
     window.open(
-      '/motoshoppy/analisis_comercial/api/get_cierre_caja.php?' + buildQueryFromCaja(),
+      '/motoshoppy/analisis_comercial/api/get_cierre_caja.php?' + params.toString(),
       '_blank'
     );
   });
+
 
 /* Botón — generar Libro Diario */
 document.getElementById('btnGenLibro')

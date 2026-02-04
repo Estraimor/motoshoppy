@@ -1,0 +1,169 @@
+/* ================= PERFIL SAAS – FORZADO ================= */
+#perfil-saas {
+  background: #f3f4f6 !important; /* gris claro total */
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ---------- RESET de mierdas del dashboard ---------- */
+#perfil-saas *,
+#perfil-saas *::before,
+#perfil-saas *::after {
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+/* ---------- HEADER ---------- */
+#perfil-saas .perfil-header h1 {
+  font-size: 30px;
+  font-weight: 700;
+  color: #111827 !important;
+}
+
+#perfil-saas .perfil-header p {
+  color: #374151 !important;
+  font-size: 14px;
+}
+
+/* ---------- CARDS ---------- */
+#perfil-saas .perfil-card,
+#perfil-saas .perfil-section {
+  background: #ffffff !important; /* BLANCO REAL */
+  border: 1px solid #d1d5db !important;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ---------- AVATAR ---------- */
+#perfil-saas .perfil-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #f59e0b !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  color: #111827 !important;
+  margin: 0 auto 18px;
+}
+
+/* ---------- TEXTO PRINCIPAL ---------- */
+#perfil-saas h3 {
+  color: #111827 !important;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ---------- ROL ---------- */
+#perfil-saas .perfil-rol {
+  background: #fff7ed !important;
+  color: #b45309 !important;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 auto 22px;
+}
+
+/* ---------- FILAS ---------- */
+#perfil-saas .perfil-row {
+  margin-top: 22px;
+}
+
+#perfil-saas .perfil-row label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937 !important;
+  margin-bottom: 8px;
+}
+
+/* ---------- CAMPOS ---------- */
+#perfil-saas .perfil-edit,
+#perfil-saas .perfil-value {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 16px;
+  color: #111827 !important;
+}
+
+/* ---------- INPUT ---------- */
+#perfil-saas .perfil-edit input {
+  background: #ffffff !important;
+  border: 1px solid #94a3b8 !important;
+  color: #111827 !important;
+  font-size: 16px;
+}
+
+/* ---------- LÁPIZ ---------- */
+#perfil-saas .edit-btn {
+  color: #f59e0b !important;
+  font-size: 16px;
+}
+
+#perfil-saas .edit-btn:hover {
+  color: #fbbf24 !important;
+  transform: scale(1.15);
+}
+
+/* ---------- SOLO LECTURA ---------- */
+#perfil-saas .readonly {
+  background: #f9fafb !important;
+  color: #475569 !important;
+}
+
+/* ---------- SEGURIDAD ---------- */
+#perfil-saas .seguridad-item {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+#perfil-saas .seguridad-item strong {
+  color: #111827 !important;
+}
+
+#perfil-saas .seguridad-item p {
+  color: #374151 !important;
+}
+
+/* ---------- BOTÓN ---------- */
+#perfil-saas .btn-warning {
+  background: #f59e0b !important;
+  border: none !important;
+  color: #111827 !important;
+  font-weight: 700;
+}
+
+#perfil-saas .btn-warning:hover {
+  background: #fbbf24 !important;
+}
+
+
+#perfil-saas .perfil-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;            /* 🔑 CLAVE */
+  margin: 0 auto 16px;
+}
+
+#perfil-saas .perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;           /* 🔑 CLAVE */
+  border-radius: 50%;
+}
+
+#perfil-saas .perfil-avatar i {
+  font-size: 42px;
+  color: #111;
+}
