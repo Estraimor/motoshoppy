@@ -3,7 +3,10 @@ require_once __DIR__ . '/../login/session_bootstrap.php';
 
 $nombreUsuario   = $_SESSION['nombre']   ?? 'Usuario';
 $apellidoUsuario = $_SESSION['apellido'] ?? '';
-$rol             = $_SESSION['rol']      ?? 'Sin rol';
+$rol = isset($_SESSION['roles'])
+        ? implode(', ', $_SESSION['roles'])
+        : 'Sin rol';
+
 
 
 /* =========================
@@ -54,9 +57,9 @@ $is_ventas_active =
 /* =========================
    CONFIGURACIÓN
 ========================= */
-$is_config_index_active = ($uri === '/motoshoppy/configuracion/index.php');
-$is_config_users_active = str_starts_with($uri, '/motoshoppy/configuracion/usuarios');
-$is_config_roles_active = str_starts_with($uri, '/motoshoppy/configuracion/roles');
+$is_config_index_active = ($uri === '/motoshoppy/settings/index.php');
+$is_config_users_active = str_starts_with($uri, '/motoshoppy/settings/usuarios');
+$is_config_roles_active = str_starts_with($uri, '/motoshoppy/settings/roles');
 
 $is_config_active =
     $is_config_index_active ||
@@ -184,7 +187,7 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </button>
 
 <div class="submenu" style="<?= $is_config_active ? 'display:flex' : '' ?>">
-  <a href="/motoshoppy/configuracion/index.php" class="<?= $is_config_index_active ? 'active' : '' ?>">
+  <a href="/motoshoppy/settings/index.php" class="<?= $is_config_index_active ? 'active' : '' ?>">
     <i class="fa-solid fa-wrench"></i> Ajustes
   </a>
   <a href="/motoshoppy/configuracion/usuarios.php" class="<?= $is_config_users_active ? 'active' : '' ?>">

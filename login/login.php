@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 $error = '';
 
@@ -13,26 +14,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Por favor completa todos los campos";
     } else {
 
+        /* =========================
+           1) BUSCAR USUARIO
+        ========================= */
         $stmt = $conexion->prepare("
             SELECT 
-                u.idusuario,
-                u.nombre,
-                u.apellido,
-                u.dni,
-                u.celular,
-                u.usuario,
-                u.pass,
-                u.roles_idroles,
-                r.nombre_rol
-            FROM usuario u
-            INNER JOIN roles r ON r.idroles = u.roles_idroles
-            WHERE u.usuario = :usuario
+                idusuario,
+                nombre,
+                apellido,
+                dni,
+                celular,
+                usuario,
+                pass
+            FROM usuario
+            WHERE usuario = :usuario
             LIMIT 1
         ");
 
         $stmt->execute([':usuario' => $usuario]);
-
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
 
         /* ========= LOGIN SIMPLE (SIN HASH POR AHORA) ========= */
 
@@ -40,6 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             session_regenerate_id(true);
 
+
+            /* =========================
+               2) CARGAR ROLES (N:N)
+            ========================= */
+            $rolesStmt = $conexion->prepare("
+                SELECT r.idroles, r.nombre_rol
+                FROM usuario_roles ur
+                INNER JOIN roles r ON r.idroles = ur.rol_id
+                WHERE ur.usuario_id = ?
+            ");
+            $rolesStmt->execute([$row['idusuario']]);
+
+            $roles = $rolesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $rolesNombres = array_column($roles, 'nombre_rol');
+            $rolesIds     = array_column($roles, 'idroles');
+
+
+            /* =========================
+               3) SESIÓN
+            ========================= */
             $_SESSION['idusuario'] = $row['idusuario'];
             $_SESSION['usuario']   = $row['usuario'];
             $_SESSION['nombre']    = $row['nombre'];
@@ -47,11 +69,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['dni']       = $row['dni'];
             $_SESSION['celular']   = $row['celular'];
 
-            $_SESSION['rol_id']    = $row['roles_idroles'];
-            $_SESSION['rol']       = $row['nombre_rol'];
+            // 👇 NUEVO SISTEMA
+            $_SESSION['roles']     = $rolesNombres; // ['Administrador','Ventas']
+            $_SESSION['roles_id']  = $rolesIds;
 
             $_SESSION['LAST_ACTIVITY'] = time();
             $_SESSION['CREATED']       = time();
+
+
+            /* =========================
+               AUDITORÍA
+            ========================= */
+            auditoria(
+                $conexion,
+                "LOGIN",
+                "auth",
+                null,
+                null,
+                "Inicio de sesión del usuario " . $row['usuario']
+            );
+
 
             header("Location: ../index1.php");
             exit;
@@ -62,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 
 
 
