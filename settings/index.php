@@ -36,7 +36,7 @@ include '../dashboard/nav.php';
 
         <!-- Usuarios -->
         <div class="col-md-4">
-            <a href="../usuarios/" class="text-decoration-none">
+            <a href="./usuarios/index.php" class="text-decoration-none">
                 <div class="settings-card text-center">
                     <div class="icon">👤</div>
                     <h5>Usuarios</h5>
