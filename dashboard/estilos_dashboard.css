@@ -242,6 +242,8 @@ body {
     padding: 20px;
     color: #fff;
     overflow-y: auto;
+    min-width: 0;       /* 🔥 CLAVE ABSOLUTA */
+  overflow-x: hidden;
 }
 
 .content-header h2 {

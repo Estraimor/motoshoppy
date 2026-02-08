@@ -3,8 +3,7 @@ include '../dashboard/nav.php';
 require_once '../conexion/conexion.php';
 ?>
 <link rel="stylesheet" href="ventas.css">
-<link rel="stylesheet" href="carrito.css">
-
+<div class="carrito-page">
 <div class="content-header d-flex justify-content-between align-items-center">
   <h2><i class="fa-solid fa-cart-shopping text-warning"></i> Carrito de Venta</h2>
   <button class="btn btn-outline-warning btn-sm" id="btnVaciar">
@@ -49,7 +48,7 @@ require_once '../conexion/conexion.php';
     </div>
   </div>
 </div>
-
+</div>
 <script>
 
 

@@ -58,7 +58,7 @@ include '../dashboard/nav.php';
 
         <!-- Auditoría -->
         <div class="col-md-4">
-            <a href="./ver_auditoria.php" class="text-decoration-none">
+            <a href="./auditoria/ver_auditoria.php" class="text-decoration-none">
                 <div class="settings-card text-center">
                     <div class="icon">📜</div>
                     <h5>Auditoría</h5>

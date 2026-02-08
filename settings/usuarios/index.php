@@ -221,8 +221,13 @@ include '../../dashboard/nav.php';
 </form>
 
 <script>
+/* =========================================================
+   ROLES (modal)
+========================================================= */
+
 let rolesAsignados = [];
 
+/* Abrir modal y cargar roles actuales */
 function asignarRol(u){
     document.getElementById('rol_usuario_id').value = u.idusuario;
 
@@ -233,25 +238,33 @@ function asignarRol(u){
     renderRoles();
 }
 
-function agregarRolAuto(){
+/* Agregar rol automáticamente al seleccionar */
+document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('rol_select_simple');
-    const rolId = select.value;
 
-    if (!rolId || rolesAsignados.includes(rolId)) {
+    if (!select) return;
+
+    select.addEventListener('change', () => {
+        const rolId = select.value;
+
+        if (!rolId || rolesAsignados.includes(rolId)) {
+            select.value = '';
+            return;
+        }
+
+        rolesAsignados.push(rolId);
         select.value = '';
-        return;
-    }
+        renderRoles();
+    });
+});
 
-    rolesAsignados.push(rolId);
-    select.value = '';
-    renderRoles();
-}
-
+/* Quitar rol */
 function quitarRol(rolId){
     rolesAsignados = rolesAsignados.filter(r => r !== rolId);
     renderRoles();
 }
 
+/* Render badges */
 function renderRoles(){
     const cont = document.getElementById('roles_container');
     cont.innerHTML = '';
@@ -263,11 +276,13 @@ function renderRoles(){
         const nombre = option ? option.textContent : id;
 
         const badge = document.createElement('span');
-        badge.className = 'badge bg-info text-dark d-flex align-items-center gap-1 px-2 py-1';
+        badge.className =
+            'badge bg-info text-dark d-flex align-items-center gap-2 px-3 py-2';
+
         badge.innerHTML = `
             ${nombre}
             <button type="button"
-                class="btn-close btn-close-white btn-sm ms-1"
+                class="btn-close btn-close-dark btn-sm"
                 onclick="quitarRol('${id}')">
             </button>
         `;
@@ -275,8 +290,13 @@ function renderRoles(){
         cont.appendChild(badge);
     });
 
-    document.getElementById('roles_json').value = JSON.stringify(rolesAsignados);
+    document.getElementById('roles_json').value =
+        JSON.stringify(rolesAsignados);
 }
+
+/* =========================================================
+   ELIMINAR USUARIO (SweetAlert confirm)
+========================================================= */
 
 function eliminarUsuario(id){
     Swal.fire({
@@ -286,7 +306,8 @@ function eliminarUsuario(id){
         showCancelButton: true,
         confirmButtonColor: '#ffc107',
         cancelButtonColor: '#444',
-        confirmButtonText: 'Sí, eliminar'
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
     }).then(r => {
         if (r.isConfirmed) {
             document.getElementById('delete_usuario_id').value = id;
@@ -294,6 +315,65 @@ function eliminarUsuario(id){
         }
     });
 }
+
+/* =========================================================
+   SWEET ALERT AUTOMÁTICO POR MSG
+========================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('msg');
+
+    if (!msg) return;
+
+    /* USUARIO */
+    if (msg === 'usuario_creado') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Usuario creado',
+            text: 'La cuenta fue creada correctamente',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    }
+
+    if (msg === 'usuario_eliminado') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Usuario eliminado',
+            text: 'El usuario y sus roles fueron eliminados',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    }
+
+    /* ROLES */
+    if (msg === 'roles_actualizados') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Roles guardados',
+            text: 'Los roles se actualizaron correctamente',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    }
+
+    /* ERROR */
+    if (msg === 'error') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un problema inesperado'
+        });
+    }
+
+    /* Limpia la URL (opcional pero pro) */
+    window.history.replaceState({}, document.title, window.location.pathname);
+});
 </script>
+
+
+
 
 <?php include '../../dashboard/footer.php'; ?>

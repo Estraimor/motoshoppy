@@ -1,0 +1,265 @@
+/* =========================
+   CONTENEDOR GENERAL
+========================= */
+.audit-wrapper {
+    background: transparent;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.audit-wrapper h2 {
+    color: #f1f3f5;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 18px;
+}
+
+/* =========================
+   CARD AUDITORÍA
+========================= */
+.audit-wrapper .card {
+    background: #1e2227;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    overflow: hidden;
+}
+
+/* =========================
+   TABLA
+========================= */
+.audit-wrapper table {
+    font-size: 13px;
+    color: #dee2e6;
+}
+
+.audit-wrapper thead {
+    background: #252a30;
+}
+
+.audit-wrapper thead th {
+    color: #adb5bd;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    border: none;
+    padding: 16px 14px;
+}
+
+.audit-wrapper tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.audit-wrapper tbody tr:hover {
+    background-color: rgba(255,255,255,0.03);
+}
+
+.audit-wrapper td {
+    padding: 15px 14px;
+    vertical-align: middle;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* =========================
+   FECHA
+========================= */
+.audit-fecha {
+    min-width: 120px;
+    font-size: 12px;
+}
+
+.audit-fecha div {
+    font-weight: 600;
+    color: #f8f9fa;
+}
+
+.audit-fecha small {
+    color: #868e96;
+}
+
+/* =========================
+   USUARIO
+========================= */
+.audit-usuario .nombre {
+    font-weight: 600;
+    color: #f1f3f5;
+}
+
+.audit-usuario .username {
+    color: #74c0fc;
+    font-size: 12px;
+}
+
+/* =========================
+   BADGES ACCIÓN
+========================= */
+.badge {
+    padding: 6px 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.badge.bg-success {
+    background-color: rgba(46, 204, 113, 0.15) !important;
+    color: #2ecc71 !important;
+}
+
+.badge.bg-warning {
+    background-color: rgba(241, 196, 15, 0.15) !important;
+    color: #f1c40f !important;
+}
+
+.badge.bg-danger {
+    background-color: rgba(231, 76, 60, 0.15) !important;
+    color: #e74c3c !important;
+}
+
+.badge.bg-info {
+    background-color: rgba(23, 162, 184, 0.15) !important;
+    color: #17a2b8 !important;
+}
+
+.badge.bg-secondary {
+    background-color: rgba(108, 117, 125, 0.15) !important;
+    color: #adb5bd !important;
+}
+
+/* =========================
+   BOTÓN VER
+========================= */
+.audit-wrapper .btn-outline-info {
+    border: 1px solid rgba(23,162,184,0.5);
+    color: #74c0fc;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: transparent;
+    transition: all 0.15s ease;
+}
+
+.audit-wrapper .btn-outline-info:hover {
+    background: rgba(23,162,184,0.15);
+    color: #e3fafc;
+    border-color: #17a2b8;
+}
+
+/* =========================
+   MODAL DETALLE
+========================= */
+#modalDetalle .modal-content {
+    background: #1e2227;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+#modalDetalle h6 {
+    font-weight: 600;
+    color: #f1f3f5;
+}
+
+#modalDetalle pre {
+    background: #111418;
+    color: #e9ecef;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 12px;
+    max-height: 360px;
+    overflow: auto;
+}
+
+/* =========================
+   SCROLLBAR (detalle)
+========================= */
+#modalDetalle pre::-webkit-scrollbar {
+    width: 6px;
+}
+
+#modalDetalle pre::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.25);
+    border-radius: 6px;
+}
+
+#modalDetalle pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+/* =========================
+   DATATABLES DARK FIX
+========================= */
+
+.dataTables_wrapper {
+    color: #dee2e6;
+}
+
+.dataTables_filter input,
+.dataTables_length select {
+    background: #111418;
+    color: #e9ecef;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.dataTables_info {
+    color: #868e96;
+    font-size: 12px;
+}
+
+.dataTables_paginate .page-link {
+    background: #111418;
+    color: #adb5bd;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.dataTables_paginate .page-item.active .page-link {
+    background: #ffc107;
+    color: #000;
+    border-color: #ffc107;
+}
+
+.dataTables_paginate .page-link:hover {
+    background: rgba(255,193,7,0.15);
+    color: #ffc107;
+}
+
+
+/* =========================
+   BLOQUE USUARIO AFECTADO
+========================= */
+#afectado,
+#detalle_afectado {
+    margin: 10px 0 18px 0;
+}
+
+.afectado-box {
+    background: linear-gradient(
+        135deg,
+        rgba(13,110,253,0.25),
+        rgba(13,110,253,0.08)
+    );
+    border: 1px solid rgba(13,110,253,0.35);
+    border-left: 5px solid #0d6efd;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.afectado-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #9ec5fe;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.afectado-nombre {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8f9fa;
+}
+

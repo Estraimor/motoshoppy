@@ -4,6 +4,9 @@ session_start();
 require_once __DIR__ . '/../../conexion/conexion.php';
 require_once __DIR__ . '/../../settings/auditoria.php';
 
+/* =========================
+   VALIDACIÓN MÉTODO
+========================= */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: index.php");
     exit;
@@ -33,13 +36,21 @@ if ($accion === 'crear_usuario') {
 
     auditoria(
         $conexion,
-        "INSERT",
-        "usuarios",
-        "usuario",
+        'INSERT',
+        'usuarios',
+        'usuario',
         $usuarioId,
-        "Creó usuario",
+        'Creó usuario',
         null,
-        $_POST
+        [
+            'nombre'   => $_POST['nombre'],
+            'apellido' => $_POST['apellido'],
+            'dni'      => $_POST['dni'],
+            'celular'  => $_POST['celular'],
+            'usuario'  => $_POST['usuario']
+        ],
+        'usuario',          // 🔥 afectado_tabla
+        $usuarioId          // 🔥 afectado_id
     );
 
     header("Location: index.php?msg=usuario_creado");
@@ -83,13 +94,15 @@ if ($accion === 'asignar_roles') {
 
     auditoria(
         $conexion,
-        "UPDATE",
-        "usuarios",
-        "usuario_roles",
+        'UPDATE',
+        'usuarios',
+        'usuario_roles',
         $usuarioId,
-        "Actualizó roles del usuario",
+        'Actualizó roles del usuario',
         ['roles' => $antesRoles],
-        ['roles' => $roles]
+        ['roles' => $roles],
+        'usuario',          // 🔥 afectado_tabla
+        $usuarioId          // 🔥 afectado_id
     );
 
     header("Location: index.php?msg=roles_actualizados");
@@ -108,17 +121,17 @@ if ($accion === 'eliminar_usuario') {
         exit;
     }
 
-    /* 🔹 datos antes */
-    $antes = $conexion->prepare("SELECT * FROM usuario WHERE idusuario=?");
-    $antes->execute([$usuarioId]);
-    $antesData = $antes->fetch(PDO::FETCH_ASSOC);
+    /* 🔹 datos usuario antes */
+    $stmt = $conexion->prepare("SELECT * FROM usuario WHERE idusuario=?");
+    $stmt->execute([$usuarioId]);
+    $antesUsuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
     /* 🔹 roles antes */
-    $rolesAntes = $conexion->prepare("
+    $stmt = $conexion->prepare("
         SELECT rol_id FROM usuario_roles WHERE usuario_id = ?
     ");
-    $rolesAntes->execute([$usuarioId]);
-    $rolesData = $rolesAntes->fetchAll(PDO::FETCH_COLUMN);
+    $stmt->execute([$usuarioId]);
+    $rolesAntes = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     /* 🔹 borrar roles */
     $conexion->prepare("
@@ -132,16 +145,18 @@ if ($accion === 'eliminar_usuario') {
 
     auditoria(
         $conexion,
-        "DELETE",
-        "usuarios",
-        "usuario / usuario_roles",
+        'DELETE',
+        'usuarios',
+        'usuario / usuario_roles',
         $usuarioId,
-        "Eliminó usuario y sus roles",
+        'Eliminó usuario y sus roles',
         [
-            'usuario' => $antesData,
-            'roles'   => $rolesData
+            'usuario' => $antesUsuario,
+            'roles'   => $rolesAntes
         ],
-        null
+        null,
+        'usuario',          // 🔥 afectado_tabla
+        $usuarioId          // 🔥 afectado_id
     );
 
     header("Location: index.php?msg=usuario_eliminado");
