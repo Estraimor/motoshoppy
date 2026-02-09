@@ -214,6 +214,13 @@ return [
                 'impactado' => 'Impactado',
                 'cancelado' => 'Cancelado'
             ]
+        ],
+        'especial' => [
+            'proveedores_idproveedores' => [
+                'tabla' => 'proveedores',
+                'pk'    => 'idproveedores',
+                'campo' => 'empresa'
+            ]
         ]
     ],
 
@@ -227,8 +234,21 @@ return [
             'cantidad'                => 'Cantidad',
             'costo'                   => 'Costo',
             'codigo_proveedor'        => 'Código proveedor'
+        ],
+        'especial' => [
+            'producto_idProducto' => [
+                'tabla' => 'producto',
+                'pk'    => 'idProducto',
+                'campo' => 'nombre'
+            ],
+            'reposicion_idreposicion' => [
+                'tabla' => 'reposicion',
+                'pk'    => 'idreposicion',
+                'campo' => 'idreposicion'
+            ]
         ]
     ],
+
 
 /* =========================
    USUARIO_ROLES

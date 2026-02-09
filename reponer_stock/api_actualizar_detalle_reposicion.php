@@ -1,6 +1,5 @@
 <?php
-require_once '../conexion/conexion.php';
-
+require_once '../settings/bootstrap.php';
 header('Content-Type: application/json');
 
 $idDetalle       = $_POST['id_detalle'] ?? null;
@@ -41,6 +40,28 @@ if ($estado !== 'pedido') {
 }
 
 /* =========================
+   OBTENER ESTADO ANTES (AUDITORÍA)
+========================= */
+$antesStmt = $conexion->prepare("
+    SELECT 
+        rd.idreposicion_detalle,
+        rd.cantidad,
+        rd.codigo_proveedor,
+        r.idreposicion
+    FROM reposicion_detalle rd
+    JOIN reposicion r 
+        ON r.idreposicion = rd.reposicion_idreposicion
+    WHERE rd.idreposicion_detalle = ?
+");
+$antesStmt->execute([$idDetalle]);
+$antes = $antesStmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$antes) {
+    echo json_encode(['ok' => false, 'error' => 'Detalle no encontrado']);
+    exit;
+}
+
+/* =========================
    ACTUALIZAR DETALLE
 ========================= */
 $upd = $conexion->prepare("
@@ -57,4 +78,28 @@ $upd->execute([
     $idDetalle
 ]);
 
+/* =========================
+   AUDITORÍA
+========================= */
+$despues = [
+    'cantidad' => (int)$cantidad,
+    'codigo_proveedor' => $codigoProveedor !== '' ? trim($codigoProveedor) : null
+];
+
+auditoria(
+    $conexion,
+    'UPDATE',
+    'reposiciones',
+    'reposicion_detalle',
+    $idDetalle,
+    'Modificó cantidad / código de proveedor en reposición',
+    $antes,
+    $despues,
+    $antes['idreposicion'],   // 👈 A QUIÉN AFECTÓ
+    'reposicion'              // 👈 TABLA AFECTADA
+);
+
+/* =========================
+   RESPUESTA
+========================= */
 echo json_encode(['ok' => true]);

@@ -1,5 +1,5 @@
 <?php
-require_once '../conexion/conexion.php';
+require_once '../settings/bootstrap.php'; // auditoria + helpers
 
 header('Content-Type: application/json');
 
@@ -21,7 +21,11 @@ try {
     foreach ($data as $idProveedor => $info) {
 
         // Validar proveedor e items
-        if (empty($idProveedor) || empty($info['items']) || !is_array($info['items'])) {
+        if (
+            empty($idProveedor) ||
+            empty($info['items']) ||
+            !is_array($info['items'])
+        ) {
             continue;
         }
 
@@ -38,6 +42,23 @@ try {
         $stmt->execute([$idProveedor]);
 
         $idReposicion = $conexion->lastInsertId();
+
+        /* ===== AUDITORÍA CABECERA ===== */
+        auditoria(
+            $conexion,
+            'INSERT',
+            'reposiciones',
+            'reposicion',
+            $idReposicion,
+            'Creó reposición',
+            null,
+            [
+                'proveedores_idproveedores' => $idProveedor,
+                'estado' => 'pedido'
+            ],
+            $idReposicion,
+            'reposicion'
+        );
 
         /* ===================================
            INSERT DETALLE
@@ -61,7 +82,6 @@ try {
                 continue;
             }
 
-            // Código del proveedor (puede venir vacío)
             $codigoProveedor = $item['codigo_proveedor'] ?? null;
 
             $stmtDetalle->execute([
@@ -70,6 +90,27 @@ try {
                 $item['cantidad'],
                 $codigoProveedor
             ]);
+
+            $idDetalle = $conexion->lastInsertId();
+
+            /* ===== AUDITORÍA DETALLE ===== */
+            auditoria(
+                $conexion,
+                'INSERT',
+                'reposiciones',
+                'reposicion_detalle',
+                $idDetalle,
+                'Agregó ítem a reposición',
+                null,
+                [
+                    'reposicion_idreposicion' => $idReposicion,
+                    'producto_idProducto'     => $item['id'],
+                    'cantidad'                => $item['cantidad'],
+                    'codigo_proveedor'        => $codigoProveedor
+                ],
+                $idReposicion,
+                'reposicion'
+            );
         }
     }
 
