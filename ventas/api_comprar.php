@@ -6,10 +6,9 @@ require_once '../conexion/conexion.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 /* =========================
-   CONSTANTES DEL SISTEMA
+   CONSTANTES
 ========================= */
 define('CLIENTE_CONSUMIDOR_FINAL', 1);
-
 define('METODO_EFECTIVO', 1);
 define('METODO_TARJETA', 2);
 
@@ -23,7 +22,7 @@ try {
         throw new Exception("Sesión expirada o no iniciada.");
     }
 
-    $usuario_id = intval($_SESSION['idusuario']);
+    $usuario_id = (int)$_SESSION['idusuario'];
 
     /* =========================
        LEER JSON
@@ -34,26 +33,19 @@ try {
         throw new Exception("Datos de venta inválidos.");
     }
 
-    /* =========================
-       DATOS PRINCIPALES
-    ========================= */
-    $tipo_comprobante = intval($data['tipo_comprobante'] ?? 0);
-    $metodo_pago = intval($data['metodo_pago'] ?? METODO_EFECTIVO);
-    $moneda = intval($data['moneda'] ?? MONEDA_GUARANI);
-    $productos = $data['productos'];
-    $total = floatval($data['total'] ?? 0);
-    $clienteData = $data['cliente'] ?? null;
+    $tipo_comprobante = (int)($data['tipo_comprobante'] ?? 0);
+    $metodo_pago      = (int)($data['metodo_pago'] ?? METODO_EFECTIVO);
+    $moneda           = (int)($data['moneda'] ?? MONEDA_GUARANI);
+    $productos        = $data['productos'];
+    $clienteData      = $data['cliente'] ?? null;
 
     /* =========================
-       REGLA CLAVE: TARJETA → GUARANÍ
+       TARJETA → GUARANÍ
     ========================= */
     if ($metodo_pago === METODO_TARJETA) {
         $moneda = MONEDA_GUARANI;
     }
 
-    /* =========================
-       INICIAR TRANSACCIÓN
-    ========================= */
     $conexion->beginTransaction();
 
     /* =========================
@@ -66,10 +58,7 @@ try {
         $dni = trim($clienteData['dni']);
 
         $buscar = $conexion->prepare("
-            SELECT idCliente 
-            FROM clientes 
-            WHERE dni = ? 
-            LIMIT 1
+            SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1
         ");
         $buscar->execute([$dni]);
         $cli = $buscar->fetch(PDO::FETCH_ASSOC);
@@ -78,9 +67,7 @@ try {
             $cliente_id = $cli['idCliente'];
         } else {
             $ins = $conexion->prepare("
-                INSERT INTO clientes (
-                    apellido, nombre, dni, celular, email, fecha_alta, estado
-                )
+                INSERT INTO clientes (apellido, nombre, dni, celular, email, fecha_alta, estado)
                 VALUES (?, ?, ?, ?, NULL, NOW(), 1)
             ");
             $ins->execute([
@@ -95,7 +82,7 @@ try {
     }
 
     /* =========================
-       INSERTAR VENTA
+       INSERTAR VENTA (TOTAL SE CALCULA LUEGO)
     ========================= */
     $stmtVenta = $conexion->prepare("
         INSERT INTO ventas (
@@ -108,11 +95,10 @@ try {
             usuario_idusuario,
             moneda_idmoneda
         )
-        VALUES (NOW(), ?, NULL, ?, ?, ?, ?, ?)
+        VALUES (NOW(), 0, NULL, ?, ?, ?, ?, ?)
     ");
 
     $stmtVenta->execute([
-        $total,
         $metodo_pago,
         $tipo_comprobante,
         $cliente_id,
@@ -127,19 +113,33 @@ try {
     ========================= */
     $stmtDetalle = $conexion->prepare("
         INSERT INTO detalle_venta (
-            ventas_idVenta,
-            producto_idProducto,
-            cantidad,
-            precio_unitario
-        )
-        VALUES (?, ?, ?, ?)
+    ventas_idVenta,
+    producto_idProducto,
+    cantidad,
+    precio_base,
+    porcentaje_descuento,
+    precio_unitario,
+    devuelto
+)
+VALUES (?, ?, ?, ?, ?, ?, 0)
     ");
+
+    $totalVenta = 0;
 
     foreach ($productos as $p) {
 
-        $idProd = intval($p['idProducto']);
-        $cantidad = intval($p['cantidad']);
-        $precio = floatval($p['precio_expuesto']);
+        $idProd   = (int)$p['idProducto'];
+        $cantidad = (int)$p['cantidad'];
+
+        $precioBase = (float)$p['precio_base'];          // 13.00
+        $precioUnit = (float)$p['precio_unitario'];      // 12.35
+        $descuento  = (float)$p['porcentaje_descuento']; // 5.00
+
+        if ($precioUnit <= 0 || $cantidad <= 0) {
+            throw new Exception("Precio o cantidad inválidos.");
+        }
+
+        $subtotal = round($precioUnit * $cantidad, 2);
 
         /* ===== CONTROL DE STOCK ===== */
         $check = $conexion->prepare("
@@ -164,7 +164,7 @@ try {
 
         if ($ex > 0) {
             $nuevoEx = max(0, $ex - $cantidad);
-            $resto = max(0, $cantidad - $ex);
+            $resto   = max(0, $cantidad - $ex);
             $nuevoGr = max(0, $gr - $resto);
         } else {
             $nuevoEx = 0;
@@ -172,7 +172,7 @@ try {
         }
 
         if ($nuevoEx < 0 || $nuevoGr < 0) {
-            throw new Exception("Stock negativo no permitido. Producto ID: $idProd");
+            throw new Exception("Stock negativo no permitido.");
         }
 
         $upd = $conexion->prepare("
@@ -182,13 +182,25 @@ try {
         ");
         $upd->execute([$nuevoEx, $nuevoGr, $idProd]);
 
+        /* ===== INSERT DETALLE ===== */
         $stmtDetalle->execute([
-            $venta_id,
-            $idProd,
-            $cantidad,
-            $precio
-        ]);
+    $venta_id,
+    $idProd,
+    $cantidad,
+    $precioBase,
+    $descuento,
+    $precioUnit
+]);
+
+
+        $totalVenta += $subtotal;
     }
+
+    /* =========================
+       ACTUALIZAR TOTAL REAL
+    ========================= */
+    $updTotal = $conexion->prepare("UPDATE ventas SET total = ? WHERE idVenta = ?");
+    $updTotal->execute([$totalVenta, $venta_id]);
 
     $conexion->commit();
 

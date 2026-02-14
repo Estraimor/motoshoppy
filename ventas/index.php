@@ -640,35 +640,80 @@ function abrirZoom(src) {
   overlay.addEventListener('click', () => overlay.remove());
 }
 
-/* ==== Carrito ==== */
+/* ============================================================
+   ==== Carrito ====
+============================================================ */
 function agregarAlCarrito(prod, cantidad = 1) {
+
+  // 🔒 Normalización de precios
+  const precioBase = Number(prod.precio_lista ?? prod.precio_expuesto ?? 0);
+  const precioUnit = Number(prod.precio_expuesto ?? 0);
+
+  // 🧮 Cálculo de descuento real
+  const porcentajeDesc = precioBase > 0
+    ? ((precioBase - precioUnit) / precioBase) * 100
+    : 0;
+
   const key = 'carrito';
   const carrito = JSON.parse(localStorage.getItem(key) || '[]');
+
+  // 🔎 Buscar si ya existe en carrito
   const idx = carrito.findIndex(it => it.idProducto == prod.idProducto);
-  if (idx >= 0) carrito[idx].cantidad += cantidad;
-  else carrito.push({
-    idProducto: prod.idProducto,
-    nombre: prod.nombre,
-    precio_expuesto: prod.precio_expuesto,
-    imagen: prod.imagen,
-    cantidad,
-    // Detalles adicionales para mostrar en el carrito
-    codigo: prod.codigo,
-    nombre_marca: prod.nombre_marca,
-    modelo: prod.modelo,
-    nombre_categoria: prod.nombre_categoria,
-    stock_actual: prod.stock_actual,
-    stock_estado: prod.stock_estado
-  });
+
+  if (idx >= 0) {
+    // ➕ Sumar cantidad si ya existe
+    carrito[idx].cantidad += Number(cantidad);
+  } else {
+    // ➕ Agregar nuevo producto
+    carrito.push({
+      idProducto: prod.idProducto,
+      nombre: prod.nombre,
+
+      // 💰 PRECIOS DEFINITIVOS (contrato del sistema)
+      precio_base: Number(precioBase.toFixed(2)),
+      precio_unitario: Number(precioUnit.toFixed(2)),
+      porcentaje_descuento: Number(porcentajeDesc.toFixed(2)),
+
+      cantidad: Number(cantidad),
+
+      // 🖼️ Datos UI / informativos
+      imagen: prod.imagen ?? null,
+      codigo: prod.codigo ?? null,
+      nombre_marca: prod.nombre_marca ?? null,
+      modelo: prod.modelo ?? null,
+      nombre_categoria: prod.nombre_categoria ?? null,
+      stock_actual: prod.stock_actual ?? null,
+      stock_estado: prod.stock_estado ?? null
+    });
+  }
+
+  // 💾 Persistir carrito
   localStorage.setItem(key, JSON.stringify(carrito));
 
-  if (window.Swal) Swal.fire({ toast: true, position: 'top-end', timer: 1200, showConfirmButton: false, icon: 'success', title: `Agregado: ${prod.nombre}` });
+  // 🔔 Toast visual
+  if (window.Swal) {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      timer: 1200,
+      showConfirmButton: false,
+      icon: 'success',
+      title: `Agregado: ${prod.nombre}`
+    });
+  }
 
+  // 🔢 Actualizar contadores
   ['cartCountTop', 'cartCountSide', 'cartCount'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.textContent = carrito.reduce((a, b) => a + (b.cantidad || 1), 0);
+    if (el) {
+      el.textContent = carrito.reduce(
+        (a, b) => a + (Number(b.cantidad) || 1),
+        0
+      );
+    }
   });
 }
+
 
 /* ==== Compra directa con modal completo ==== */
 document.getElementById('btnComprarAhora').addEventListener('click', async () => {
@@ -700,9 +745,18 @@ document.getElementById('btnComprarAhora').addEventListener('click', async () =>
 // total por ítem
 const totalPYG = precioUnit * qty;
 
+const precioBase = Number(p.precio_expuesto || 0);
+const precioFinal = Number(precioUnit);
+
+const porcentajeDesc = precioBase > 0
+  ? ((precioBase - precioFinal) / precioBase) * 100
+  : 0;
+
 const productoConPrecio = { 
   ...p,
-  precio_unitario: precioUnit,
+  precio_base: precioBase,
+  precio_unitario: precioFinal,
+  porcentaje_descuento: Number(porcentajeDesc.toFixed(2)),
   cantidad: qty,
   total_item: totalPYG
 };

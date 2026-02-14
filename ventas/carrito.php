@@ -119,7 +119,7 @@ function renderCarrito() {
        PRIMERO SUMAMOS EL TOTAL
     ======================================================= */
     carrito.forEach((p, i) => {
-        const subtotal = p.precio_expuesto * p.cantidad;
+        const subtotal = p.precio_unitario * p.cantidad;
         total += subtotal;
 
         const imgSrc = p.imagen
@@ -158,7 +158,7 @@ function renderCarrito() {
                     data-index="${i}">
             </td>
 
-            <td class="text-end">₲ ${money(p.precio_expuesto)}</td>
+            <td class="text-end">₲ ${money(p.precio_unitario)}</td>
             <td class="text-end fw-bold text-warning">₲ ${money(subtotal)}</td>
 
             <td class="text-center">
@@ -236,7 +236,10 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
         return;
     }
 
-    const total = carrito.reduce((a, b) => a + b.precio_expuesto * b.cantidad, 0);
+    const total = carrito.reduce(
+  (a, b) => a + b.precio_unitario * b.cantidad,
+  0
+);
 
     /* ----------------------------
        Paso 1: Tipo comprobante
@@ -379,6 +382,31 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
 
     if (!confirmar) return;
 
+
+
+    const productosNormalizados = carrito.map(p => {
+
+    const precioUnit = Number(p.precio_unitario ?? p.precio_expuesto ?? 0);
+
+    const precioBase = Number(
+        p.precio_base ??
+        p.precio_original ??
+        p.precio ??
+        precioUnit
+    );
+
+    const porcentajeDesc = precioBase > 0
+        ? ((precioBase - precioUnit) / precioBase) * 100
+        : 0;
+
+    return {
+        idProducto: p.idProducto,
+        cantidad: Number(p.cantidad),
+        precio_unitario: precioUnit,
+        precio_base: precioBase,
+        porcentaje_descuento: Number(porcentajeDesc.toFixed(2))
+    };
+});
     /* ----------------------------
        Enviar al backend
     ---------------------------- */
@@ -386,7 +414,7 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
         tipo_comprobante: comprobanteID,
         metodo_pago: confirmar.metodo_pago,
         moneda: confirmar.moneda || null,
-        productos: carrito,
+        productos: productosNormalizados,
         total,
         cliente: confirmar.cliente
     };

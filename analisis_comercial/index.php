@@ -159,6 +159,11 @@ require_once '../conexion/conexion.php';
                 Libro diario
               </button>
 
+              <button class="btn btn-outline-light w-100" id="btnGenDetalle">
+                <i class="fa-solid fa-list me-1"></i>
+                Detalle de operaciones
+              </button>
+
             </div>
           </div>
 
@@ -390,8 +395,16 @@ document.getElementById('btnGenLibro')
     );
   });
 
+  document.getElementById('btnGenDetalle')
+  .addEventListener('click', () => {
+    window.open(
+      '/motoshoppy/analisis_comercial/api/detalle_operaciones.php?' + buildQueryFromCaja(),
+      '_blank'
+    );
+  });
 
-/* ------------------ ROTACIÓN ------------------ */
+
+
 /* ------------------ ROTACIÓN ------------------ */
 let tablaRotacion = null;
 let graficoRotacion = null;
@@ -399,23 +412,35 @@ let graficoRotacion = null;
 async function cargarRotacion(){
 
   const p = new URLSearchParams(getRotParams());
-  const r = await fetch('/motoshoppy/analisis_comercial/api/get_rotacion_productos.php?' + p);
-  const text = await r.text();
 
-  let resp;
-  try {
-    resp = JSON.parse(text);
-  } catch(e){
-    console.error('Respuesta NO JSON en rotación:', text);
-    return;
-  }
+  const r = await fetch('/motoshoppy/analisis_comercial/api/get_rotacion_productos.php?' + p);
+  const resp = await r.json();
 
   if(!resp.ok) return;
 
-  const data  = resp.data || [];
-  const total = resp.total || 0;
+  let data = resp.data || [];
 
-  /* ---------- GRÁFICO TORTA (PARTICIPACIÓN %) ---------- */
+  /* -------------------------------------------------
+     CALCULAR TOTAL REAL (NO depender del backend)
+  --------------------------------------------------*/
+  const totalReal = data.reduce(
+    (acc, x) => acc + Number(x.unidades),
+    0
+  );
+
+  /* -------------------------------------------------
+     AGREGAR PORCENTAJE A CADA FILA
+  --------------------------------------------------*/
+  data = data.map(x => ({
+    ...x,
+    porcentaje: totalReal
+      ? ((Number(x.unidades) / totalReal) * 100).toFixed(1)
+      : 0
+  }));
+
+  /* -------------------------------------------------
+     GRÁFICO TORTA
+  --------------------------------------------------*/
   const labels  = data.map(x => x.label);
   const valores = data.map(x => x.unidades);
 
@@ -446,10 +471,12 @@ async function cargarRotacion(){
           tooltip: {
             callbacks: {
               label: ctx => {
-                const value = ctx.raw;
-                const pct = total
-                  ? ((value / total) * 100).toFixed(1)
+
+                const value = Number(ctx.raw);
+                const pct = totalReal
+                  ? ((value / totalReal) * 100).toFixed(1)
                   : 0;
+
                 return ` ${value} unidades (${pct}%)`;
               }
             }
@@ -459,8 +486,11 @@ async function cargarRotacion(){
     }
   );
 
-  /* ---------- TABLA (NO SE TOCA) ---------- */
+  /* -------------------------------------------------
+     TABLA
+  --------------------------------------------------*/
   if(!tablaRotacion){
+
     tablaRotacion = $('#tablaRotacion').DataTable({
       data,
       order: [[1,'desc']],
@@ -473,13 +503,9 @@ async function cargarRotacion(){
           className:'text-end fw-bold'
         },
         {
-          data:null,
+          data:'porcentaje',
           className:'text-center',
-          render:r=>{
-            if(!total) return '0%';
-            const pct = ((r.unidades / total) * 100).toFixed(1);
-            return pct + '%';
-          }
+          render: d => d + '%'
         }
       ],
       paging: true,
@@ -489,6 +515,7 @@ async function cargarRotacion(){
         emptyTable: 'No hay ventas en el período seleccionado'
       }
     });
+
   } else {
     tablaRotacion.clear().rows.add(data).draw();
   }
@@ -501,6 +528,7 @@ document
 /* ------------------ INIT LOAD ------------------ */
 cargarKPIs();
 cargarRotacion();
+
 
 
 /* ------------------ MODAL VENTAS POR MÉTODO ------------------ */

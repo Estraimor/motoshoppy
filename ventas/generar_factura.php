@@ -251,12 +251,15 @@ class FacturaParaguayaPDF extends FPDF
     $this->Cell($wCat,$hFila,$this->conv($it['categoria']),1,0,'L');
     $this->Cell($wMarca,$hFila,$this->conv($it['marca']),1,0,'L');
     $this->Cell($wModelo,$hFila,$this->conv($it['modelo']),1,0,'L');
-    $this->Cell($wPU,$hFila,number_format($it['pu'],0,',','.'),1,0,'R');
+    $this->Cell($wPU,$hFila,number_format($it['pu'],2,',','.'),1,0,'R');
+
     $this->Cell($wEx,$hFila,'0',1,0,'R');
     $this->Cell($w5,$hFila,'',1,0,'C');
     $this->Cell($w10,$hFila,'',1,1,'C');
 
-    $total10 += $it['pu'];
+    $total10 += ($it['pu'] * $it['cant']);
+
+
 }
 
 
@@ -265,10 +268,10 @@ class FacturaParaguayaPDF extends FPDF
 
         $valorParcial = round($total10 - ($total10/11));
         $this->Cell(30,6,$this->conv('VALOR PARCIAL'),1,0,'L');
-        $this->Cell(160,6,number_format($valorParcial,0,',','.'),1,1,'R');
+        $this->Cell(160,6,number_format($valorParcial,2,',','.'),1,1,'R');
 
         $this->Cell(40,6,$this->conv('TOTAL A PAGAR Gs.'),1,0,'L');
-        $this->Cell(150,6,number_format($total10,0,',','.'),1,1,'R');
+        $this->Cell(150,6,number_format($total10,2,',','.'),1,1,'R');
 
         $iva10 = $total10/11;
 
@@ -348,14 +351,15 @@ foreach ($rows as $r) {
     $marca      = str_replace(['–','—'],'-',$r['nombre_marca']);
     $modelo     = str_replace(['–','—'],'-',$r['modelo']);
 
-    $items[] = [
-    'cant'      => intval($r['cantidad']),
-    'nombre'    => $nombre,
-    'categoria' => $categoria,
-    'marca'     => $marca,
-    'modelo'    => $modelo,
-    'pu'        => intval($r['precio_unitario']) * intval($r['cantidad'])
+ $items[] = [
+  'cant'      => (int)$r['cantidad'],
+  'nombre'    => $nombre,
+  'categoria' => $categoria,
+  'marca'     => $marca,
+  'modelo'    => $modelo,
+  'pu'        => (float)$r['precio_unitario'], // UNITARIO REAL (con descuento)
 ];
+
 
 }
 

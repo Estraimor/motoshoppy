@@ -260,38 +260,7 @@ $pdf->Cell(150,8,'Caja en Pesos Argentinos (ARS)',1,1);
 $pdf->SetFont('Arial','',10);
 $pdf->Cell(110,8,'Ingresos en efectivo',1,0,'R');
 $pdf->Cell(40,8,number_format($efectivoArs,2,',','.'),1,1,'R');
-
-/* ============================================
-   DETALLE
-============================================ */
-$pdf->CheckPageBreak(40);
-$pdf->detalleHeader = true;
-
-$pdf->SectionTitle('DETALLE DE OPERACIONES');
-
-$pdf->TableHeader([
-    33=>'Fecha/Hora',
-    50=>'Producto',
-    15=>'Cant',
-    28=>'Precio Pagado',
-    25=>'Metodo',
-    20=>'Moneda'
-]);
-
-while ($d = $stmtDetalle->fetch(PDO::FETCH_ASSOC)) {
-    $pdf->CheckPageBreak(8);
-    $precio = convertir_desde_pyg($d['precio_unitario'], $d['moneda'], $usd_pyg, $ars_pyg);
-
-    $pdf->ZebraRow([
-        33=>$d['fecha'],
-        50=>substr($d['producto'],0,28),
-        15=>$d['cantidad'],
-        28=>number_format($precio,2,',','.'),
-        25=>$d['metodo'],
-        20=>$d['moneda']
-    ]);
-}
-
+$pdf->Ln(3);
 /* ============================================
    TOTAL GENERAL
 ============================================ */
