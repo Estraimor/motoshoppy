@@ -23,13 +23,14 @@ if ($accion === 'crear_usuario') {
         INSERT INTO usuario (nombre, apellido, dni, celular, usuario, pass)
         VALUES (?, ?, ?, ?, ?, ?)
     ");
+
     $stmt->execute([
         $_POST['nombre'],
         $_POST['apellido'],
         $_POST['dni'],
         $_POST['celular'],
         $_POST['usuario'],
-        password_hash($_POST['pass'], PASSWORD_DEFAULT)
+        $_POST['pass'] // 🔥 SIN HASH
     ]);
 
     $usuarioId = $conexion->lastInsertId();
@@ -49,8 +50,8 @@ if ($accion === 'crear_usuario') {
             'celular'  => $_POST['celular'],
             'usuario'  => $_POST['usuario']
         ],
-        'usuario',          // 🔥 afectado_tabla
-        $usuarioId          // 🔥 afectado_id
+        'usuario',
+        $usuarioId
     );
 
     header("Location: index.php?msg=usuario_creado");
@@ -70,19 +71,16 @@ if ($accion === 'asignar_roles') {
         exit;
     }
 
-    /* 🔹 roles anteriores */
     $antes = $conexion->prepare("
         SELECT rol_id FROM usuario_roles WHERE usuario_id = ?
     ");
     $antes->execute([$usuarioId]);
     $antesRoles = $antes->fetchAll(PDO::FETCH_COLUMN);
 
-    /* 🔹 borrar todos */
     $conexion->prepare("
         DELETE FROM usuario_roles WHERE usuario_id = ?
     ")->execute([$usuarioId]);
 
-    /* 🔹 insertar nuevos */
     $stmt = $conexion->prepare("
         INSERT INTO usuario_roles (usuario_id, rol_id)
         VALUES (?, ?)
@@ -101,8 +99,8 @@ if ($accion === 'asignar_roles') {
         'Actualizó roles del usuario',
         ['roles' => $antesRoles],
         ['roles' => $roles],
-        'usuario',          // 🔥 afectado_tabla
-        $usuarioId          // 🔥 afectado_id
+        'usuario',
+        $usuarioId
     );
 
     header("Location: index.php?msg=roles_actualizados");
@@ -121,24 +119,20 @@ if ($accion === 'eliminar_usuario') {
         exit;
     }
 
-    /* 🔹 datos usuario antes */
     $stmt = $conexion->prepare("SELECT * FROM usuario WHERE idusuario=?");
     $stmt->execute([$usuarioId]);
     $antesUsuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    /* 🔹 roles antes */
     $stmt = $conexion->prepare("
         SELECT rol_id FROM usuario_roles WHERE usuario_id = ?
     ");
     $stmt->execute([$usuarioId]);
     $rolesAntes = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    /* 🔹 borrar roles */
     $conexion->prepare("
         DELETE FROM usuario_roles WHERE usuario_id = ?
     ")->execute([$usuarioId]);
 
-    /* 🔹 borrar usuario */
     $conexion->prepare("
         DELETE FROM usuario WHERE idusuario = ?
     ")->execute([$usuarioId]);
@@ -155,8 +149,8 @@ if ($accion === 'eliminar_usuario') {
             'roles'   => $rolesAntes
         ],
         null,
-        'usuario',          // 🔥 afectado_tabla
-        $usuarioId          // 🔥 afectado_id
+        'usuario',
+        $usuarioId
     );
 
     header("Location: index.php?msg=usuario_eliminado");
