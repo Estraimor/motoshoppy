@@ -436,19 +436,24 @@ function mostrarDetalle(p) {
         <div class="p-2">
           <!-- Precio base -->
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-semibold text-success fs-5">
+            <span class="fw-semibold fs-5 moneda-py-label">
               <i class="fa-solid fa-sack-dollar me-1"></i>Precio base:
             </span>
-            <span id="precioBase" class="text-success fw-bold fs-5">₲ ${money(basePYG)}</span>
+            <span id="precioBase" class="fw-bold fs-5 moneda-pyg">
+              ₲ ${money(basePYG)}
+            </span>
           </div>
+
 
           <!-- Conversión base -->
           <div class="bg-dark bg-opacity-25 p-2 rounded small text-light mb-3">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center moneda-usd">
+
               <div><i class="fa-solid fa-dollar-sign text-warning me-1"></i><span class="fw-semibold">USD:</span></div>
               <div id="usdBase" class="fw-semibold">-</div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
+            <div class="d-flex justify-content-between align-items-center moneda-ars mt-1">
+
               <div><i class="fa-solid fa-money-bill-wave text-info me-1"></i><span class="fw-semibold">ARS:</span></div>
               <div id="arsBase" class="fw-semibold">-</div>
             </div>
@@ -860,13 +865,13 @@ METADATA.monedas.forEach(m => {
 
                     <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
                     <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
-                    <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
+                    <input id="cliDniFactura" class="form-control mb-2" placeholder="CI/RUC">
                     <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
                 `
                 : `
                     <hr class="my-3">
-                    <label class="form-label fw-bold">DNI del cliente (Ticket)</label>
-                    <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">
+                    <label class="form-label fw-bold">CI/RUC del cliente (Ticket)</label>
+                    <input id="cliDniTicket" class="form-control mb-2" placeholder="CI/RUC">
                 `
             }
 
@@ -979,7 +984,7 @@ METADATA.monedas.forEach(m => {
 
         // Validaciones de factura
         if (!dni) {
-            Swal.showValidationMessage("Ingresá el DNI del cliente");
+            Swal.showValidationMessage("Ingresá el CI/RUC del cliente");
             return false;
         }
         if (!nombre || !apellido) {
@@ -992,7 +997,7 @@ METADATA.monedas.forEach(m => {
     } else {
         const dni = document.getElementById('cliDniTicket').value.trim();
         if (!dni) {
-            Swal.showValidationMessage("Debés ingresar el DNI del cliente");
+            Swal.showValidationMessage("Debés ingresar el CI/RUC del cliente");
             return false;
         }
         cliente = { dni };

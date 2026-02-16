@@ -28,13 +28,13 @@ require_once '../conexion/conexion.php';
       <tfoot>
   <tr>
     <th colspan="4" class="text-end">Total:</th>
-    <th id="totalCarrito" class="text-glow text-end"></th>
+    <th id="totalCarrito" class="text-end moneda-pyg fw-bold"></th>
   </tr>
 
   <tr>
     <td colspan="5" class="text-end">
-      <span id="totalUSD" class="text-info fw-bold me-3"></span>
-      <span id="totalARS" class="text-warning fw-bold"></span>
+      <span id="totalUSD" class="fw-bold moneda-usd me-3"></span>
+      <span id="totalARS" class="fw-bold moneda-ars"></span>
     </td>
   </tr>
 </tfoot>
@@ -292,11 +292,11 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
             <label class="fw-bold">Datos del Cliente (Factura)</label>
             <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
             <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
-            <input id="cliDniFactura" class="form-control mb-2" placeholder="DNI">
+            <input id="cliDniFactura" class="form-control mb-2" placeholder="CI/RUC">
             <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
         ` : `
-            <label class="fw-bold">DNI Cliente (Ticket)</label>
-            <input id="cliDniTicket" class="form-control mb-2" placeholder="DNI">
+            <label class="fw-bold">CI/RUC Cliente (Ticket)</label>
+            <input id="cliDniTicket" class="form-control mb-2" placeholder="CI/RUC">
         `}
     `;
 
@@ -372,7 +372,7 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
                 cliente = { nombre: n, apellido: a, dni };
             } else {
                 const dni = document.getElementById("cliDniTicket").value.trim();
-                if (!dni) return Swal.showValidationMessage("Ingresá DNI del cliente");
+                if (!dni) return Swal.showValidationMessage("Ingresá CI/RUC del cliente");
                 cliente = { dni };
             }
 

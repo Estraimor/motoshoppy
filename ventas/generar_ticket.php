@@ -85,7 +85,7 @@ function renderTicketBloque(FPDF $pdf, array $venta, array $items, string $dni_f
     // Datos generales
     $pdf->SetFont('Arial', '', 8);
     $pdf->Cell(0, 5, conv('Fecha: ' . $venta['fecha']), 0, 1);
-    $pdf->Cell(0, 5, conv('DNI Cliente: ' . $dni_final), 0, 1);
+    $pdf->Cell(0, 5, conv('CI/RUC Cliente: ' . $dni_final), 0, 1);
     $pdf->Cell(0, 5, conv('Vendedor: ' . $venta['nombre']), 0, 1);
     $pdf->Ln(3);
 

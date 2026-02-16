@@ -179,4 +179,96 @@ $pdf->MultiCell(
     "El presente documento detalla todas las ventas registradas en el periodo seleccionado, incluyendo metodo de pago y moneda utilizada."
 );
 
+/* ================= PEDIDOS A PROVEEDORES ================= */
+
+$stmtProv = $conexion->prepare("
+    SELECT 
+        r.fecha_llegada,
+        pr.empresa AS proveedor,
+        p.nombre AS producto,
+        rd.cantidad,
+        rd.costo,
+        r.estado,
+        r.numero_factura
+    FROM reposicion_detalle rd
+    JOIN reposicion r 
+        ON r.idreposicion = rd.reposicion_idreposicion
+    JOIN producto p 
+        ON p.idProducto = rd.producto_idProducto
+    JOIN proveedores pr 
+        ON pr.idproveedores = r.proveedores_idproveedores
+    WHERE DATE(r.fecha_llegada) BETWEEN :d AND :h
+      AND r.estado = 'impactado'
+    ORDER BY r.fecha_llegada ASC
+");
+
+$stmtProv->execute([
+    ':d' => $desde,
+    ':h' => $hasta
+]);
+
+$pdf->AddPage();
+$pdf->SectionTitle('REGISTRO DE PEDIDOS A PROVEEDORES');
+
+/* ===== HEADER TABLA ===== */
+
+$pdf->SetFont('Arial','B',9);
+$pdf->SetFillColor(240,240,240);
+
+$pdf->Cell(25,8,'Fecha',1,0,'C',true);
+$pdf->Cell(35,8,'Proveedor',1,0,'C',true);
+$pdf->Cell(40,8,'Producto',1,0,'C',true);
+$pdf->Cell(12,8,'Cant',1,0,'C',true);
+$pdf->Cell(28,8,'Costo Unit.',1,0,'C',true);
+$pdf->Cell(30,8,'Total',1,0,'C',true);
+$pdf->Cell(20,8,'Factura',1,1,'C',true);
+
+/* ===== CUERPO TABLA ===== */
+
+$pdf->SetFont('Arial','',9);
+
+$totalCompras = 0;
+$fill = false;
+
+while ($r = $stmtProv->fetch(PDO::FETCH_ASSOC)) {
+
+    $costoUnit = (float)($r['costo'] ?? 0);
+    $cantidad  = (int)($r['cantidad'] ?? 0);
+
+    $total = $cantidad * $costoUnit;
+    $totalCompras += $total;
+
+    $pdf->Cell(25,7,date('d/m/Y', strtotime($r['fecha_llegada'])),1,0,'L',$fill);
+    $pdf->Cell(35,7,substr($r['proveedor'],0,18),1,0,'L',$fill);
+    $pdf->Cell(40,7,substr($r['producto'],0,22),1,0,'L',$fill);
+    $pdf->Cell(12,7,$cantidad,1,0,'C',$fill);
+    $pdf->Cell(28,7,number_format($costoUnit,2,',','.'),1,0,'R',$fill);
+    $pdf->Cell(30,7,number_format($total,2,',','.'),1,0,'R',$fill);
+    $pdf->Cell(20,7,$r['numero_factura'] ?? '-',1,1,'C',$fill);
+
+    $fill = !$fill;
+}
+
+
+/* ================= RESULTADO OPERATIVO ================= */
+
+$pdf->Ln(6);
+$pdf->SectionTitle('RESULTADO OPERATIVO');
+
+$gananciaBruta = $totalGeneral - $totalCompras;
+
+$pdf->SetFont('Arial','',10);
+
+$pdf->Cell(120,8,'Total Ventas',1,0,'R');
+$pdf->Cell(40,8,number_format($totalGeneral,2,',','.'),1,1,'R');
+
+$pdf->Cell(120,8,'Total Compras Proveedores',1,0,'R');
+$pdf->Cell(40,8,number_format($totalCompras,2,',','.'),1,1,'R');
+
+$pdf->SetFont('Arial','B',11);
+$pdf->Cell(120,9,'RESULTADO BRUTO',1,0,'R');
+$pdf->Cell(40,9,number_format($gananciaBruta,2,',','.'),1,1,'R');
+
+
+
 $pdf->Output('I','detalle_operaciones.pdf');

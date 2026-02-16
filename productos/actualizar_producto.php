@@ -9,53 +9,49 @@ if (!isset($_POST['id'])) {
 
 $id = intval($_POST['id']);
 
-// ==============================
-//   DATOS PRINCIPALES
-// ==============================
+/* ==============================
+   DATOS PRINCIPALES
+============================== */
+
 $codigo  = $_POST['codigo'] ?? '';
 $nombre  = $_POST['nombre'] ?? '';
 $modelo  = $_POST['modelo'] ?? '';
-$marca   = $_POST['marca'] ?: null;
+$marca   = $_POST['marca'] !== '' ? $_POST['marca'] : null;
 $precio_expuesto = floatval($_POST['precio'] ?? 0);
-$peso_ml = $_POST['peso_ml'] ?: null;
-$peso_g  = $_POST['peso_g'] ?: null;
+$peso_ml = $_POST['peso_ml'] !== '' ? $_POST['peso_ml'] : null;
+$peso_g  = $_POST['peso_g'] !== '' ? $_POST['peso_g'] : null;
 
-// ==============================
-//   PRECIO COSTO (solo admin = rol 1)
-// ==============================
+/* ==============================
+   PRECIO COSTO (solo admin)
+============================== */
+
 $extraCostoSQL = "";
+$precio_costo = null;
+
 if (isset($_SESSION['rol']) && $_SESSION['rol'] == 1) {
-    $precio_costo = $_POST['precio_costo'] ?? null;
+    $precio_costo = $_POST['precio_costo'] !== '' ? $_POST['precio_costo'] : null;
     $extraCostoSQL = ", precio_costo = :precio_costo";
 }
 
-// ==============================
-//  JSON de atributos normales
-// ==============================
-$descripcion = "{}";
+/* ==============================
+   JSON ATRIBUTOS ADICIONALES
+============================== */
 
-if (isset($_POST['atributos_clave']) && isset($_POST['atributos_valor'])) {
+$descripcion = null;
 
-    $jsonFinal = [];
+if (isset($_POST['atributos_json'])) {
 
-    foreach ($_POST['atributos_clave'] as $i => $clave) {
+    $jsonRecibido = json_decode($_POST['atributos_json'], true);
 
-        $clave = trim($clave);
-        $valor = trim($_POST['atributos_valor'][$i]);
-
-        if ($clave !== "" && $valor !== "") {
-            $jsonFinal[$clave] = $valor;
-        }
-    }
-
-    if (!empty($jsonFinal)) {
-        $descripcion = json_encode($jsonFinal, JSON_UNESCAPED_UNICODE);
+    if (is_array($jsonRecibido)) {
+        $descripcion = json_encode($jsonRecibido, JSON_UNESCAPED_UNICODE);
     }
 }
 
-// ==============================
-//   UPDATE PRODUCTO
-// ==============================
+/* ==============================
+   UPDATE PRODUCTO
+============================== */
+
 $sql = $conexion->prepare("
     UPDATE producto
     SET codigo = :codigo,
@@ -66,29 +62,31 @@ $sql = $conexion->prepare("
         $extraCostoSQL,
         peso_ml = :peso_ml,
         peso_g = :peso_g,
-        descripcion = :descripcion
+        descripcion = COALESCE(:descripcion, descripcion)
     WHERE idproducto = :id
 ");
 
-$sql->bindParam(':codigo', $codigo);
-$sql->bindParam(':nombre', $nombre);
-$sql->bindParam(':modelo', $modelo);
-$sql->bindParam(':marca', $marca);
-$sql->bindParam(':precio_expuesto', $precio_expuesto);
-$sql->bindParam(':peso_ml', $peso_ml);
-$sql->bindParam(':peso_g', $peso_g);
-$sql->bindParam(':descripcion', $descripcion);
+$sql->bindValue(':codigo', $codigo);
+$sql->bindValue(':nombre', $nombre);
+$sql->bindValue(':modelo', $modelo);
+$sql->bindValue(':marca', $marca);
+$sql->bindValue(':precio_expuesto', $precio_expuesto);
+$sql->bindValue(':peso_ml', $peso_ml);
+$sql->bindValue(':peso_g', $peso_g);
+$sql->bindValue(':descripcion', $descripcion);
 
-if (isset($precio_costo)) {
-    $sql->bindParam(':precio_costo', $precio_costo);
+if ($precio_costo !== null) {
+    $sql->bindValue(':precio_costo', $precio_costo);
 }
 
-$sql->bindParam(':id', $id);
+$sql->bindValue(':id', $id);
+
 $sql->execute();
 
-// ==============================
-//   ATRIBUTOS DE CUBIERTA
-// ==============================
+/* ==============================
+   ATRIBUTOS DE CUBIERTA
+============================== */
+
 if (isset($_POST['aro'])) {
 
     $aro    = $_POST['aro'] ?? null;
@@ -97,7 +95,6 @@ if (isset($_POST['aro'])) {
     $tipo   = $_POST['tipo'] ?? null;
     $aplic  = $_POST['varias'] ?? null;
 
-    // ¿Existe?
     $check = $conexion->prepare("SELECT idatributos_cubiertas FROM atributos_cubiertas WHERE producto_idProducto = ?");
     $check->execute([$id]);
 
@@ -121,9 +118,10 @@ if (isset($_POST['aro'])) {
     }
 }
 
-// ==============================
-//   UPDATE STOCK
-// ==============================
+/* ==============================
+   UPDATE STOCK
+============================== */
+
 if (isset($_POST['stock_minimo'])) {
 
     $stock_minimo      = intval($_POST['stock_minimo']);
@@ -145,16 +143,18 @@ if (isset($_POST['stock_minimo'])) {
     } else {
 
         $ins = $conexion->prepare("
-            INSERT INTO stock_producto (producto_idProducto, stock_minimo, cantidad_actual, cantidad_exhibida)
+            INSERT INTO stock_producto 
+            (producto_idProducto, stock_minimo, cantidad_actual, cantidad_exhibida)
             VALUES (?,?,?,?)
         ");
         $ins->execute([$id, $stock_minimo, $cantidad_actual, $cantidad_exhibida]);
     }
 }
 
-// ==============================
-//   NUEVA IMAGEN (uploads/productos/...)
-// ==============================
+/* ==============================
+   NUEVA IMAGEN
+============================== */
+
 if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
 
     $directorio = "../uploads/productos/";

@@ -1,5 +1,5 @@
 <?php
-require_once '../settings/bootstrap.php'; // auditoria + helpers
+require_once '../settings/bootstrap.php'; // conexión + auditoría
 
 header('Content-Type: application/json');
 
@@ -68,9 +68,12 @@ try {
                 reposicion_idreposicion,
                 producto_idProducto,
                 cantidad,
+                precio_unitario,
                 codigo_proveedor
-            ) VALUES (?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?)
         ");
+
+        $totalPedido = 0; // por si luego querés usarlo
 
         foreach ($info['items'] as $item) {
 
@@ -82,16 +85,24 @@ try {
                 continue;
             }
 
+            $precioUnitario = isset($item['precio_unitario'])
+                ? floatval($item['precio_unitario'])
+                : 0;
+
             $codigoProveedor = $item['codigo_proveedor'] ?? null;
 
             $stmtDetalle->execute([
                 $idReposicion,
                 $item['id'],
-                $item['cantidad'],
+                intval($item['cantidad']),
+                $precioUnitario,
                 $codigoProveedor
             ]);
 
             $idDetalle = $conexion->lastInsertId();
+
+            // acumular total por si lo querés usar luego
+            $totalPedido += ($precioUnitario * intval($item['cantidad']));
 
             /* ===== AUDITORÍA DETALLE ===== */
             auditoria(
@@ -105,13 +116,28 @@ try {
                 [
                     'reposicion_idreposicion' => $idReposicion,
                     'producto_idProducto'     => $item['id'],
-                    'cantidad'                => $item['cantidad'],
+                    'cantidad'                => intval($item['cantidad']),
+                    'precio_unitario'         => $precioUnitario,
                     'codigo_proveedor'        => $codigoProveedor
                 ],
                 $idReposicion,
                 'reposicion'
             );
         }
+
+        /* ==================================================
+           OPCIONAL (NO ACTIVO AHORA):
+           GUARDAR TOTAL AUTOMÁTICO EN CABECERA
+           (Yo recomiendo hacerlo al impactar)
+        ================================================== */
+        /*
+        $stmtUpdate = $conexion->prepare("
+            UPDATE reposicion
+            SET costo_total = ?
+            WHERE idreposicion = ?
+        ");
+        $stmtUpdate->execute([$totalPedido, $idReposicion]);
+        */
     }
 
     $conexion->commit();

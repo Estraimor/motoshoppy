@@ -256,26 +256,155 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 
-
+<script>
+const USER_ROLE = <?= json_encode($_SESSION['rol'] ?? '') ?>;
+</script>
 <script>
 $(document).ready(function () {
 
-    // === Inicializar DataTable ===
-    $('#tablaProductos').DataTable({
+    let tabla = $('#tablaProductos').DataTable({
+        processing: true,
+        serverSide: true,
         pageLength: 5,
-        lengthChange: false,
-        language: {
-            search: "Buscar:",
-            zeroRecords: "No se encontraron resultados",
-            info: "Mostrando _START_ a _END_ de _TOTAL_ productos",
-            paginate: {
-                first: "Primero",
-                last: "Último",
-                next: "Siguiente",
-                previous: "Anterior"
+        lengthMenu: [5,10,25,50,100],
+        ajax: {
+            url: 'buscar_productos.php',
+            type: 'POST',
+            data: function(d) {
+
+                d.busqueda  = $('#filtroBusqueda').val();
+                d.marca     = $('#filtroMarca').val();
+                d.categoria = $('#filtroCategoria').val();
+                d.min       = $('#precioMin').val();
+                d.max       = $('#precioMax').val();
+                d.proveedor = $('#filtroProveedor').val();
+                d.orden     = $('#ordenarPor').val();
             }
+        },
+        columns: [
+            { data: 'codigo' },
+            { data: 'nombre' },
+            { data: 'nombre_marca' },
+            { data: 'nombre_categoria' },
+            { 
+                data: 'precio_expuesto',
+                render: function(data){
+                    return "$" + parseFloat(data).toLocaleString('es-AR',{
+                        minimumFractionDigits:2
+                    });
+                }
+            },
+            { 
+                data: null,
+                orderable: false,
+                render: function(data){
+
+                    // 🔥 Botón dinámico según estado
+                    let botonEstado = data.estado == 1
+                        ? `<button class="btn btn-danger btn-sm toggle-estado"
+                                data-id="${data.idproducto}"
+                                data-estado="0">
+                                <i class="fa-solid fa-trash"></i> Desactivar
+                           </button>`
+                        : `<button class="btn btn-success btn-sm toggle-estado"
+                                data-id="${data.idproducto}"
+                                data-estado="1">
+                                <i class="fa-solid fa-rotate-left"></i> Activar
+                           </button>`;
+
+                    return `
+                        <button class="btn btn-info btn-sm ver-detalle"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDetalle"
+                            data-producto='${JSON.stringify(data)}'>
+                            <i class="fa-solid fa-circle-info"></i> Detalle
+                        </button>
+                        ${botonEstado}
+                    `;
+                }
+            }
+        ],
+        language: {
+            lengthMenu: "Mostrar _MENU_ productos",
+            search: "Buscar:",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ productos",
+            processing: "Cargando..."
         }
     });
+
+    /* ===============================
+       BOTÓN APLICAR FILTROS
+    ================================ */
+
+    $('#btnAplicarFiltros').click(function(){
+        tabla.ajax.reload(null, false);
+    });
+
+    $('#btnLimpiarFiltros').click(function(){
+        $('#panelSettings input, #panelSettings select').val('');
+        tabla.ajax.reload();
+    });
+
+    /* ===============================
+       ACTIVAR / DESACTIVAR
+    ================================ */
+
+    $(document).on('click', '.toggle-estado', function(){
+
+    let id = $(this).data('id');
+    let estado = $(this).data('estado');
+
+    let esDesactivar = (estado == 0);
+
+    Swal.fire({
+        title: esDesactivar 
+            ? '¿Desactivar producto?' 
+            : '¿Activar producto?',
+        text: esDesactivar 
+            ? 'El producto dejará de mostrarse en el sistema.' 
+            : 'El producto volverá a estar disponible.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: esDesactivar ? '#d33' : '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: esDesactivar 
+            ? 'Sí, desactivar' 
+            : 'Sí, activar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            $.post('toggle_estado.php', {id:id, estado:estado}, function(){
+
+                Swal.fire({
+                    icon: 'success',
+                    title: esDesactivar 
+                        ? 'Producto desactivado' 
+                        : 'Producto activado',
+                    showConfirmButton: false,
+                    timer: 1300
+                });
+
+                tabla.ajax.reload(null,false);
+
+            }).fail(function(){
+                Swal.fire(
+                    'Error',
+                    'No se pudo actualizar el estado.',
+                    'error'
+                );
+            });
+
+        }
+
+    });
+
+});
+
+
+
+
 
     // === Abrir panel lateral (offcanvas) ===
     $(document).on('click', '#btnSettings', function () {
@@ -290,8 +419,18 @@ $(document).ready(function () {
 
     // === Mostrar detalles del producto ===
     $(document).on('click', '.ver-detalle', function () {
-        productoActual = $(this).data('producto'); // ✅ guardamos el producto actual
-        const data = $(this).data('producto');
+        const raw = $(this).attr('data-producto');
+
+if (!raw) {
+    console.log("No hay data-producto");
+    return;
+}
+
+const data = JSON.parse(raw);
+productoActual = data;
+
+console.log(data); // 🔍 debug
+
         let atributosHTML = "";
 
         try {
@@ -380,13 +519,16 @@ $(document).on('click', '#btnEditar', function () {
             <input type="number" id="edit_precio" class="form-control form-control-sm" value="${data.precio_expuesto ?? 0}">
             
             ${
-                ("<?= $_SESSION['rol'] ?>") === "Administrador"
-                ? `
-                <label class="mt-2"><strong>Precio Costo:</strong></label>
-                <input type="number" id="edit_precio_costo" class="form-control form-control-sm" value="${data.precio_costo ?? 0}">
-                `
-                : ""
-            }
+    USER_ROLE === "Administrador"
+    ? `
+        <label class="mt-2"><strong>Precio Costo:</strong></label>
+        <input type="number" id="edit_precio_costo" 
+        class="form-control form-control-sm" 
+        value="${Number(data.precio_costo) || 0}">
+      `
+    : ""
+}
+
 
             <label class="mt-2"><strong>Peso (ml):</strong></label>
             <input type="number" id="edit_pesoml" class="form-control form-control-sm" value="${data.peso_ml ?? ''}">
@@ -561,7 +703,7 @@ $(document).on('click', '#btnGuardar', function () {
     formData.append('peso_g', $('#edit_pesog').val());
 
     // Si es admin → guardar precio costo
-    if ("<?= $_SESSION['rol'] ?>" === "Administrador") {
+    if (USER_ROLE === "Administrador") {
         formData.append('precio_costo', $('#edit_precio_costo').val());
     }
 
@@ -616,45 +758,28 @@ $(document).on('click', '#btnGuardar', function () {
 
 
 
-    // === Aplicar filtros (con precio mínimo y máximo funcionando) ===
-    $(document).on('click', '#btnAplicarFiltros', function() {
-        const filtros = {
-            busqueda: $('#filtroBusqueda').val(),
-            marca: $('#filtroMarca').val(),
-            categoria: $('#filtroCategoria').val(),
-            min: $('#precioMin').val(),
-            max: $('#precioMax').val(),
-            proveedor: $('#filtroProveedor').val(),
-            orden: $('#ordenarPor').val()
-        };
-
-        $.ajax({
-            url: 'buscar_productos.php',
-            method: 'POST',
-            data: filtros,
-            beforeSend: function() {
-                $('#tablaProductos tbody').html('<tr><td colspan="6" class="text-center text-warning">Buscando...</td></tr>');
-            },
-            success: function(data) {
-                $('#tablaProductos tbody').html(data);
-
-                // Cerrar panel automáticamente
-                const offcanvas = bootstrap.Offcanvas.getInstance($('#panelSettings')[0]);
-                if (offcanvas) offcanvas.hide();
-
-                // Desplazar la vista hacia la tabla
-                $('html, body').animate({
-                    scrollTop: $('#tablaProductos').offset().top - 100
-                }, 500);
-            }
-        });
-    });
 
     // === Limpiar filtros ===
     $(document).on('click', '#btnLimpiarFiltros', function() {
-        $('#panelSettings input, #panelSettings select').val('');
-        $('#tablaProductos tbody').load(location.href + ' #tablaProductos tbody>*', '');
-    });
+
+    $('#panelSettings input, #panelSettings select').val('');
+
+    if ($.fn.DataTable.isDataTable('#tablaProductos')) {
+        $('#tablaProductos').DataTable().destroy();
+    }
+
+    $('#tablaProductos tbody')
+        .load(location.href + ' #tablaProductos tbody>*', '', function(){
+
+            $('#tablaProductos').DataTable({
+                pageLength: 5,
+                lengthChange: true,
+                lengthMenu: [5,10,25,50,100]
+            });
+
+        });
+});
+
 
 
     // === Zoom imagen ===

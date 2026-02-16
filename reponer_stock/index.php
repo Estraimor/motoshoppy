@@ -441,52 +441,67 @@ $clase = match ($estado) {
 <div class="modal fade" id="modalImpacto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+
             <form id="formImpacto" enctype="multipart/form-data">
+
                 <div class="modal-header">
                     <h5 class="modal-title">Impactar pedido</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
+
                     <input type="hidden" name="idreposicion" id="idreposicion">
 
                     <!-- Productos del pedido -->
                     <div id="productosPedido" class="mb-3"></div>
 
-                    <!-- ✅ COSTO TOTAL -->
+                    <!-- 💰 TOTAL CALCULADO AUTOMÁTICO -->
                     <div class="mb-3">
-                        <label class="form-label">Costo total del pedido</label>
-                        <input type="number"
-                               step="0.01"
-                               min="0"
-                               name="costo_total"
-                               id="costo_total"
-                               class="form-control"
-                               placeholder="Ej: 125000.00"
-                               required>
+                        <label class="form-label">Total calculado del pedido</label>
+
+                        <div id="totalCalculado"
+                             class="form-control bg-dark text-warning fw-bold"
+                             style="pointer-events:none;">
+                             $ 0.00
+                        </div>
+
                         <small class="text-muted">
-                            Monto total según remito / factura.
+                            Total calculado automáticamente según precios unitarios.
                         </small>
                     </div>
-                    
+
                     <!-- NÚMERO DE FACTURA -->
                     <div class="mb-3">
                         <label class="form-label">Número de factura</label>
                         <input type="text"
-                            name="numero_factura"
-                            class="form-control"
-                            placeholder="Ej: A-0001-00001234"
-                            required>
+                               name="numero_factura"
+                               class="form-control"
+                               placeholder="Ej: A-0001-00001234"
+                               required>
                         <small class="text-muted">
                             Número que figura en la factura del proveedor.
                         </small>
                     </div>
 
-                    <label class="form-label">Remito / Factura</label>
-                    <input type="file" name="remito" class="form-control" required>
+                    <!-- REMITO -->
+                    <div class="mb-3">
+                        <label class="form-label">Remito / Factura</label>
+                        <input type="file"
+                               name="remito"
+                               class="form-control"
+                               required>
+                    </div>
 
-                    <label class="form-label mt-2">Observación</label>
-                    <textarea name="observacion" class="form-control"></textarea>
+                    <!-- OBSERVACIÓN -->
+                    <div class="mb-3">
+                        <label class="form-label">Observación</label>
+                        <textarea name="observacion"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Opcional"></textarea>
+                    </div>
+
                 </div>
 
                 <div class="modal-footer">
@@ -494,10 +509,13 @@ $clase = match ($estado) {
                         Confirmar impacto
                     </button>
                 </div>
+
             </form>
+
         </div>
     </div>
 </div>
+
 
 
 <script>
@@ -704,20 +722,19 @@ document.getElementById('btnGuardar').addEventListener('click', () => {
    ABRIR MODAL IMPACTO
 ========================= */
 function abrirImpacto(id) {
+
     document.getElementById('idreposicion').value = id;
     document.getElementById('productosPedido').innerHTML = 'Cargando...';
-    document.getElementById('costo_total').value = ''; // reset costo
 
-    // Abrimos el modal
     const modal = new bootstrap.Modal(
         document.getElementById('modalImpacto')
     );
     modal.show();
 
-    // Cargamos los productos del pedido
     fetch('./api_ver_detalle_pedido.php?id=' + encodeURIComponent(id))
         .then(r => r.json())
         .then(r => {
+
             if (!r.ok) {
                 document.getElementById('productosPedido').innerHTML =
                     '<div class="text-danger">Error al cargar productos</div>';
@@ -727,6 +744,10 @@ function abrirImpacto(id) {
             const totalUnidades = r.productos.reduce(
                 (acc, p) => acc + parseInt(p.cantidad || 0), 0
             );
+
+            /* =========================
+               RENDER PRODUCTOS
+            ========================= */
 
             document.getElementById('productosPedido').innerHTML = `
                 <div class="mb-3">
@@ -738,28 +759,87 @@ function abrirImpacto(id) {
                     </span>
                 </div>
 
-                ${r.productos.map(p => `
-                    <div class="mb-2 border-bottom pb-2">
-                        <div>
-                            <strong>${p.producto}</strong>
-                            <span class="text-muted ms-1">
-                                (${p.marca ?? 'Sin marca'})
-                            </span>
-                        </div>
+                ${r.productos.map(p => {
 
-                        <div class="small text-muted">
-                            Código proveedor: ${p.codigo_proveedor ?? '-'}
-                        </div>
+                    const cantidad = parseInt(p.cantidad || 0);
 
-                        <div class="mt-1">
-                            Cantidad:
-                            <span class="badge bg-secondary">
-                                ${p.cantidad}
-                            </span>
+                    return `
+                        <div class="mb-3 p-3 border rounded bg-dark">
+
+                            <div>
+                                <strong>${p.producto}</strong>
+                                <span class="text-muted ms-1">
+                                    (${p.marca ?? 'Sin marca'})
+                                </span>
+                            </div>
+
+                            <div class="small text-muted">
+                                Código proveedor: ${p.codigo_proveedor ?? '-'}
+                            </div>
+
+                            <div class="mt-2">
+                                Cantidad:
+                                <span class="badge bg-secondary">
+                                    ${cantidad}
+                                </span>
+                            </div>
+
+                            <div class="mt-2">
+                                <label class="form-label small">
+                                    Precio unitario
+                                </label>
+                                <input type="number"
+                                       step="0.01"
+                                       min="0"
+                                       class="form-control precioUnitarioInput"
+                                       data-id="${p.idreposicion_detalle}"
+                                       data-cantidad="${cantidad}"
+                                       placeholder="Ej: 15000">
+                            </div>
+
+                            <div class="mt-2 small text-warning fw-bold subtotalItem">
+                                Subtotal: $ 0.00
+                            </div>
+
                         </div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             `;
+
+            /* =========================
+               CÁLCULO DINÁMICO
+            ========================= */
+
+            const totalDiv = document.getElementById('totalCalculado');
+            const inputs = document.querySelectorAll('.precioUnitarioInput');
+
+            function recalcularTotal() {
+
+                let totalGeneral = 0;
+
+                inputs.forEach(input => {
+
+                    const precio = parseFloat(input.value) || 0;
+                    const cantidad = parseInt(input.dataset.cantidad);
+
+                    const subtotal = precio * cantidad;
+
+                    input.closest('.border')
+                         .querySelector('.subtotalItem')
+                         .innerText = 'Subtotal: $ ' + subtotal.toFixed(2);
+
+                    totalGeneral += subtotal;
+                });
+
+                totalDiv.innerText = '$ ' + totalGeneral.toFixed(2);
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener('input', recalcularTotal);
+            });
+
+            recalcularTotal();
+
         })
         .catch(() => {
             document.getElementById('productosPedido').innerHTML =
@@ -767,22 +847,59 @@ function abrirImpacto(id) {
         });
 }
 
-
-
-
 /* =========================
    CONFIRMAR IMPACTO (SUBMIT)
 ========================= */
 document.getElementById('formImpacto').addEventListener('submit', e => {
+
     e.preventDefault();
 
     const formData = new FormData(e.target);
+
+    /* =========================
+       VALIDAR PRECIOS
+    ========================= */
+
+    const precios = [];
+    let hayError = false;
+
+    document.querySelectorAll('.precioUnitarioInput').forEach(input => {
+
+        const precio = parseFloat(input.value);
+
+        if (!precio || precio <= 0) {
+            hayError = true;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+
+        precios.push({
+            id_detalle: input.dataset.id,
+            precio_unitario: precio
+        });
+    });
+
+    if (hayError) {
+        alert('Debe ingresar un precio unitario válido en todos los productos');
+        return;
+    }
+
+    formData.append('precios', JSON.stringify(precios));
+
+    /* =========================
+       ENVIAR
+    ========================= */
 
     fetch('api_impactar_pedido.php', {
         method: 'POST',
         body: formData
     })
-    .then(r => r.json())
+    .then(r => r.text())
+.then(t => {
+    console.log("Respuesta cruda:", t);
+    return JSON.parse(t);
+})
     .then(r => {
         if (r.ok) {
             alert('Pedido impactado correctamente');
@@ -791,6 +908,7 @@ document.getElementById('formImpacto').addEventListener('submit', e => {
             alert('Error al impactar pedido');
         }
     });
+
 });
 
 /* =========================

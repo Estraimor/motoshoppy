@@ -1,8 +1,7 @@
 <?php
 require_once '../conexion/conexion.php';
-require_once '../settings/bootstrap.php'; // auditoria + helpers
+require_once '../settings/bootstrap.php';
 
-session_start();
 header('Content-Type: application/json');
 
 /* ===============================
@@ -10,19 +9,10 @@ header('Content-Type: application/json');
 =============================== */
 $id             = $_POST['idreposicion'] ?? null;
 $observacion    = $_POST['observacion'] ?? null;
-$costo_total    = $_POST['costo_total'] ?? null;
 $numero_factura = $_POST['numero_factura'] ?? null;
 
-/* ===============================
-   VALIDACIONES BÁSICAS
-=============================== */
 if (!$id) {
     echo json_encode(['ok' => false, 'error' => 'ID inválido']);
-    exit;
-}
-
-if ($costo_total !== null && !is_numeric($costo_total)) {
-    echo json_encode(['ok' => false, 'error' => 'Costo inválido']);
     exit;
 }
 
@@ -47,12 +37,55 @@ if ($estadoActual !== 'pedido') {
     exit;
 }
 
-/* ===============================
-   TRANSACCIÓN
-=============================== */
 $conexion->beginTransaction();
 
 try {
+
+    /* ===============================
+       ACTUALIZAR PRECIOS UNITARIOS
+    =============================== */
+    $precios = json_decode($_POST['precios'] ?? '[]', true);
+
+    if (!$precios || !is_array($precios)) {
+        throw new Exception('No se recibieron precios válidos');
+    }
+
+    foreach ($precios as $p) {
+
+        if (
+            empty($p['id_detalle']) ||
+            !isset($p['precio_unitario']) ||
+            $p['precio_unitario'] <= 0
+        ) {
+            throw new Exception('Precio unitario inválido');
+        }
+
+        $updPrecio = $conexion->prepare("
+            UPDATE reposicion_detalle
+            SET precio_unitario = ?
+            WHERE idreposicion_detalle = ?
+        ");
+
+        $updPrecio->execute([
+            floatval($p['precio_unitario']),
+            intval($p['id_detalle'])
+        ]);
+    }
+
+    /* ===============================
+       OBTENER TOTAL REAL AUTOMÁTICO
+    =============================== */
+    $totalStmt = $conexion->prepare("
+        SELECT SUM(cantidad * precio_unitario)
+        FROM reposicion_detalle
+        WHERE reposicion_idreposicion = ?
+    ");
+    $totalStmt->execute([$id]);
+    $costo_total = $totalStmt->fetchColumn() ?: 0;
+
+    if ($costo_total <= 0) {
+        throw new Exception('El total del pedido es inválido');
+    }
 
     /* ===============================
        ESTADO ANTES (AUDITORÍA)
@@ -66,16 +99,13 @@ try {
     $antesRepo = $antesRepoStmt->fetch(PDO::FETCH_ASSOC);
 
     /* ===============================
-       CARPETA DE REMITOS
+       CARPETA REMITOS
     =============================== */
     $carpeta = __DIR__ . "/remitos";
     if (!is_dir($carpeta)) {
         mkdir($carpeta, 0777, true);
     }
 
-    /* ===============================
-       SUBIR ARCHIVO
-    =============================== */
     $archivoNombre = null;
 
     if (!empty($_FILES['remito']['name'])) {
@@ -146,7 +176,7 @@ try {
         'reposiciones',
         'reposicion',
         $id,
-        'Impactó la reposición y actualizó datos',
+        'Impactó la reposición',
         $antesRepo,
         $despuesRepo,
         $id,
@@ -157,7 +187,7 @@ try {
        IMPACTAR STOCK
     =============================== */
     $detalles = $conexion->prepare("
-        SELECT producto_idProducto, cantidad
+        SELECT producto_idProducto, cantidad, precio_unitario
         FROM reposicion_detalle
         WHERE reposicion_idreposicion = ?
     ");
@@ -165,7 +195,6 @@ try {
 
     foreach ($detalles as $d) {
 
-        /* stock antes */
         $stockAntesStmt = $conexion->prepare("
             SELECT cantidad_actual
             FROM stock_producto
@@ -174,18 +203,18 @@ try {
         $stockAntesStmt->execute([$d['producto_idProducto']]);
         $stockAntes = $stockAntesStmt->fetchColumn();
 
-        /* update stock */
         $updStock = $conexion->prepare("
-            UPDATE stock_producto
-            SET cantidad_actual = cantidad_actual + ?
-            WHERE producto_idProducto = ?
-        ");
-        $updStock->execute([
-            $d['cantidad'],
-            $d['producto_idProducto']
-        ]);
+    UPDATE stock_producto
+    SET cantidad_actual = cantidad_actual + ?
+    WHERE producto_idProducto = ?
+");
 
-        /* auditoría stock */
+
+        $updStock->execute([
+    $d['cantidad'],
+    $d['producto_idProducto']
+]);
+
         auditoria(
             $conexion,
             'UPDATE',

@@ -48,38 +48,81 @@ try {
 
     $conexion->beginTransaction();
 
-    /* =========================
-       CLIENTE
-    ========================= */
-    $cliente_id = CLIENTE_CONSUMIDOR_FINAL;
+   /* =========================
+   CLIENTE
+========================= */
+$cliente_id = CLIENTE_CONSUMIDOR_FINAL;
 
-    if ($tipo_comprobante > 1 && $clienteData) {
+if ($clienteData && !empty($clienteData['dni'])) {
 
-        $dni = trim($clienteData['dni']);
+    $dni = trim($clienteData['dni']);
 
-        $buscar = $conexion->prepare("
-            SELECT idCliente FROM clientes WHERE dni = ? LIMIT 1
-        ");
-        $buscar->execute([$dni]);
-        $cli = $buscar->fetch(PDO::FETCH_ASSOC);
+    // Buscar cliente por DNI
+    $buscar = $conexion->prepare("
+        SELECT idCliente, nombre, apellido, celular
+        FROM clientes
+        WHERE dni = ?
+        LIMIT 1
+    ");
+    $buscar->execute([$dni]);
+    $cli = $buscar->fetch(PDO::FETCH_ASSOC);
 
-        if ($cli) {
-            $cliente_id = $cli['idCliente'];
-        } else {
-            $ins = $conexion->prepare("
-                INSERT INTO clientes (apellido, nombre, dni, celular, email, fecha_alta, estado)
-                VALUES (?, ?, ?, ?, NULL, NOW(), 1)
+    if ($cli) {
+
+        // Cliente ya existe
+        $cliente_id = $cli['idCliente'];
+
+        // 🔥 Si es factura y vienen datos completos → completar campos vacíos
+        if ($tipo_comprobante > 1) {
+
+            $nombreNuevo   = trim($clienteData['nombre'] ?? '');
+            $apellidoNuevo = trim($clienteData['apellido'] ?? '');
+            $celularNuevo  = trim($clienteData['celular'] ?? '');
+
+            $nombreFinal   = !empty($cli['nombre'])   ? $cli['nombre']   : $nombreNuevo;
+            $apellidoFinal = !empty($cli['apellido']) ? $cli['apellido'] : $apellidoNuevo;
+            $celularFinal  = !empty($cli['celular'])  ? $cli['celular']  : $celularNuevo;
+
+            $updCliente = $conexion->prepare("
+                UPDATE clientes
+                SET nombre = ?, apellido = ?, celular = ?
+                WHERE idCliente = ?
             ");
-            $ins->execute([
-                $clienteData['apellido'] ?? '',
-                $clienteData['nombre'] ?? '',
-                $clienteData['dni'] ?? '',
-                $clienteData['celular'] ?? ''
-            ]);
 
-            $cliente_id = $conexion->lastInsertId();
+            $updCliente->execute([
+                $nombreFinal,
+                $apellidoFinal,
+                $celularFinal,
+                $cliente_id
+            ]);
         }
+
+    } else {
+
+        // Cliente no existe → crear nuevo
+        $ins = $conexion->prepare("
+            INSERT INTO clientes (
+                apellido,
+                nombre,
+                dni,
+                celular,
+                email,
+                fecha_alta,
+                estado
+            )
+            VALUES (?, ?, ?, ?, NULL, NOW(), 1)
+        ");
+
+        $ins->execute([
+            $clienteData['apellido'] ?? '',
+            $clienteData['nombre'] ?? '',
+            $dni,
+            $clienteData['celular'] ?? ''
+        ]);
+
+        $cliente_id = $conexion->lastInsertId();
     }
+}
 
     /* =========================
        INSERTAR VENTA (TOTAL SE CALCULA LUEGO)

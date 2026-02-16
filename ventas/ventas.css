@@ -288,3 +288,31 @@ tr:hover {
   border-bottom: 1px solid rgba(255,255,255,0.1);
   margin-bottom: 15px;
 }
+
+/* =========================
+   MONEDAS CON COLORES
+========================= */
+
+.moneda-usd {
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.moneda-ars {
+  color: #4fc3f7;
+  font-weight: 600;
+}
+
+.moneda-py-label {
+  color: #ff6b6b; /* rojo elegante */
+}
+
+.moneda-pyg {
+  color: #ff3b3b;  /* rojo más fuerte para el valor */
+  font-weight: 700;
+}
+
+#totalCarrito.moneda-pyg {
+  color: #ff3b3b !important;
+  font-weight: 700;
+}
