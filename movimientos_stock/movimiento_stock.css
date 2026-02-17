@@ -1,0 +1,136 @@
+/* ===========================
+   CONTENEDOR GENERAL
+=========================== */
+
+.mod-mov-stock {
+    color: #e6e6e6;
+}
+
+/* ===========================
+   CARDS
+=========================== */
+
+.mod-mov-stock .card {
+    background: #1e1f23;
+    border: 1px solid #2c2d31;
+    border-radius: 14px;
+}
+
+/* ===========================
+   TABLA BASE
+=========================== */
+
+.mod-mov-stock table {
+    background: #232429;
+    color: #e6e6e6;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.mod-mov-stock thead {
+    background: linear-gradient(90deg, #2d2f36, #24262b);
+    color: #ffd54f;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+}
+
+.mod-mov-stock thead th {
+    border-bottom: 1px solid #3a3c42;
+}
+
+/* Filas */
+.mod-mov-stock tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #2e3035;
+}
+
+/* Hover elegante */
+.mod-mov-stock tbody tr:hover {
+    background: #2f3238;
+    transform: scale(1.003);
+}
+
+/* Celdas */
+.mod-mov-stock tbody td {
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+/* ===========================
+   ESTADOS VISUALES EN FILA
+=========================== */
+
+/* Sin stock */
+.mod-mov-stock tbody tr.estado-sin-stock {
+    background: rgba(139, 0, 0, 0.15);
+}
+
+/* Crítico */
+.mod-mov-stock tbody tr.estado-critico {
+    background: rgba(255, 59, 59, 0.15);
+}
+
+/* Bajo mínimo */
+.mod-mov-stock tbody tr.estado-bajo {
+    background: rgba(0, 188, 212, 0.12);
+}
+
+/* Mover a exhibición */
+.mod-mov-stock tbody tr.estado-rotar {
+    background: rgba(255, 179, 0, 0.15);
+}
+
+/* OK */
+.mod-mov-stock tbody tr.estado-ok {
+    background: rgba(0, 166, 90, 0.10);
+}
+
+/* ===========================
+   BADGES MÁS PRO
+=========================== */
+
+.mod-mov-stock .badge {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    letter-spacing: .5px;
+}
+
+/* ===========================
+   KPIs
+=========================== */
+
+.mod-mov-stock .kpi-card {
+    border-radius: 14px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+/* Colores KPI */
+.mod-mov-stock .kpi-sin-stock { background: #8b0000; }
+.mod-mov-stock .kpi-critico { background: #ff3b3b; }
+.mod-mov-stock .kpi-rotar { background: #ffb300; color:black; }
+.mod-mov-stock .kpi-bajo { background: #00bcd4; }
+.mod-mov-stock .kpi-ok { background: #00a65a; }
+
+/* ===========================
+   MODAL STOCK
+=========================== */
+
+.stock-box {
+    background: #1f2a35;
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid #2f3b46;
+}
+
+.stock-box small {
+    color: #aaa;
+}
+
+.stock-box h4 {
+    margin: 5px 0 0;
+    font-weight: 600;
+}

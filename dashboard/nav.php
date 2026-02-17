@@ -7,47 +7,44 @@ $rol = isset($_SESSION['roles'])
         ? implode(', ', $_SESSION['roles'])
         : 'Sin rol';
 
-
-
 /* =========================
    NORMALIZAR URI
 ========================= */
 $uri = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
 /* =========================
-   FLAGS PRINCIPALES
+   DASHBOARD
 ========================= */
 $is_dashboard_active = ($uri === '/motoshoppy/index1.php');
 $is_analisis_active  = str_starts_with($uri, '/motoshoppy/analisis_comercial');
 
 /* =========================
-   PRODUCTOS
+   INVENTARIO
 ========================= */
-$is_categorias_active = str_starts_with($uri, '/motoshoppy/categorias');
-$is_marcas_active     = str_starts_with($uri, '/motoshoppy/marcas');
-$is_productos_alta    = str_starts_with($uri, '/motoshoppy/productos/alta');
-$is_productos_lista  = str_starts_with($uri, '/motoshoppy/productos/listar');
+$is_productos_lista      = str_starts_with($uri, '/motoshoppy/productos/listar');
+$is_productos_alta       = str_starts_with($uri, '/motoshoppy/productos/alta');
+$is_categorias_active    = str_starts_with($uri, '/motoshoppy/categorias');
+$is_marcas_active        = str_starts_with($uri, '/motoshoppy/marcas');
+$is_movimientos_active   = str_starts_with($uri, '/motoshoppy/movimientos_stock');
+$is_reponer_stock_active = str_starts_with($uri, '/motoshoppy/reponer_stock');
 
-$is_productos_active =
+$is_inventario_active =
+    $is_productos_lista ||
+    $is_productos_alta ||
     $is_categorias_active ||
     $is_marcas_active ||
-    $is_productos_alta ||
-    $is_productos_lista;
+    $is_movimientos_active ||
+    $is_reponer_stock_active;
 
 /* =========================
    PROVEEDORES
 ========================= */
-$is_proveedores_index = str_starts_with($uri, '/motoshoppy/proveedores');
-$is_reponer_stock     = str_starts_with($uri, '/motoshoppy/reponer_stock');
-
-$is_proveedores_active =
-    $is_proveedores_index ||
-    $is_reponer_stock;
+$is_proveedores_active = str_starts_with($uri, '/motoshoppy/proveedores');
 
 /* =========================
    VENTAS
 ========================= */
-$is_punto_venta_active = ($uri === '/motoshoppy/ventas/index.php');
+$is_punto_venta_active = str_starts_with($uri, '/motoshoppy/ventas/index');
 $is_historial_active   = str_starts_with($uri, '/motoshoppy/historial_ventas');
 
 $is_ventas_active =
@@ -57,20 +54,15 @@ $is_ventas_active =
 /* =========================
    CONFIGURACIÓN
 ========================= */
-$is_config_index_active = ($uri === '/motoshoppy/settings/index.php');
-$is_config_users_active = str_starts_with($uri, '/motoshoppy/settings/usuarios');
-$is_config_roles_active = str_starts_with($uri, '/motoshoppy/settings/roles');
-
-$is_config_active =
-    $is_config_index_active ||
-    $is_config_users_active ||
-    $is_config_roles_active;
+$is_config_active = str_starts_with($uri, '/motoshoppy/settings') ||
+                    str_starts_with($uri, '/motoshoppy/configuracion');
 
 /* =========================
    CARRITO
 ========================= */
 $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -118,26 +110,39 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
   <i class="fa-solid fa-chart-line"></i> Análisis Comercial
 </a>
 
-<!-- PRODUCTOS -->
-<div class="nav-item has-submenu <?= $is_productos_active ? 'active' : '' ?>">
+<!-- INVENTARIO -->
+<div class="nav-item has-submenu <?= $is_inventario_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
-  <i class="fa-solid fa-box"></i> Productos
+  <i class="fa-solid fa-warehouse"></i> Inventario
   <i class="fa-solid fa-chevron-down chevron"></i>
 </button>
 
-<div class="submenu" style="<?= $is_productos_active ? 'display:flex' : '' ?>">
+<div class="submenu" style="<?= $is_inventario_active ? 'display:flex' : '' ?>">
+
+  <a href="/motoshoppy/productos/listar_productos.php" class="<?= $is_productos_lista ? 'active' : '' ?>">
+    <i class="fa-solid fa-box"></i> Productos
+  </a>
+
+  <a href="/motoshoppy/productos/alta_productos.php" class="<?= $is_productos_alta ? 'active' : '' ?>">
+    <i class="fa-solid fa-plus"></i> Crear Producto
+  </a>
+
   <a href="/motoshoppy/categorias/index.php" class="<?= $is_categorias_active ? 'active' : '' ?>">
     <i class="fa-solid fa-tags"></i> Categorías
   </a>
+
   <a href="/motoshoppy/marcas/index.php" class="<?= $is_marcas_active ? 'active' : '' ?>">
     <i class="fa-solid fa-bookmark"></i> Marcas
   </a>
-  <a href="/motoshoppy/productos/alta_productos.php" class="<?= $is_productos_alta ? 'active' : '' ?>">
-    <i class="fa-solid fa-plus"></i> Crear Productos
+
+  <a href="/motoshoppy/movimientos_stock/index.php" class="<?= $is_movimientos_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-arrow-right-arrow-left"></i> Movimiento de Stock
   </a>
-  <a href="/motoshoppy/productos/listar_productos.php" class="<?= $is_productos_lista ? 'active' : '' ?>">
-    <i class="fa-solid fa-list"></i> Lista de Productos
+
+  <a href="/motoshoppy/reponer_stock/index.php" class="<?= $is_reponer_stock_active ? 'active' : '' ?>">
+    <i class="fa-solid fa-boxes-stacked"></i> Reponer Stock
   </a>
+
 </div>
 </div>
 
@@ -149,18 +154,18 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </button>
 
 <div class="submenu" style="<?= $is_proveedores_active ? 'display:flex' : '' ?>">
-  <a href="/motoshoppy/proveedores/index.php" class="<?= $is_proveedores_index ? 'active' : '' ?>">
+  <a href="/motoshoppy/proveedores/index.php" class="<?= $is_proveedores_active ? 'active' : '' ?>">
     <i class="fa-solid fa-address-book"></i> Ver Proveedores
-  </a>
-  <a href="/motoshoppy/reponer_stock/index.php" class="<?= $is_reponer_stock ? 'active' : '' ?>">
-    <i class="fa-solid fa-boxes-stacked"></i> Reponer Stock
   </a>
 </div>
 </div>
 
-<a href="/motoshoppy/clientes/index.php">
+
+<!-- CLIENTES -->
+<a href="/motoshoppy/clientes/index.php" class="<?= str_starts_with($uri, '/motoshoppy/clientes') ? 'active' : '' ?>">
   <i class="fa-solid fa-users"></i> Clientes
 </a>
+
 
 <!-- VENTAS -->
 <div class="nav-item has-submenu <?= $is_ventas_active ? 'active' : '' ?>">
@@ -179,6 +184,7 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </div>
 </div>
 
+
 <!-- CONFIGURACIÓN -->
 <div class="nav-item has-submenu <?= $is_config_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
@@ -187,18 +193,20 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </button>
 
 <div class="submenu" style="<?= $is_config_active ? 'display:flex' : '' ?>">
-  <a href="/motoshoppy/settings/index.php" class="<?= $is_config_index_active ? 'active' : '' ?>">
+  <a href="/motoshoppy/settings/index.php" class="<?= str_starts_with($uri, '/motoshoppy/settings/index') ? 'active' : '' ?>">
     <i class="fa-solid fa-wrench"></i> Ajustes
   </a>
-  <a href="/motoshoppy/configuracion/usuarios.php" class="<?= $is_config_users_active ? 'active' : '' ?>">
+  <a href="/motoshoppy/configuracion/usuarios.php" class="<?= str_starts_with($uri, '/motoshoppy/configuracion/usuarios') ? 'active' : '' ?>">
     <i class="fa-solid fa-user-gear"></i> Usuarios
   </a>
-  <a href="/motoshoppy/configuracion/roles.php" class="<?= $is_config_roles_active ? 'active' : '' ?>">
+  <a href="/motoshoppy/configuracion/roles.php" class="<?= str_starts_with($uri, '/motoshoppy/configuracion/roles') ? 'active' : '' ?>">
     <i class="fa-solid fa-id-card"></i> Roles
   </a>
 </div>
 </div>
 
+
+<!-- CARRITO -->
 <a href="/motoshoppy/ventas/carrito.php" class="nav-cart <?= $is_carrito_active ? 'active' : '' ?>">
   <i class="fa-solid fa-cart-shopping"></i>
   <span>Carrito</span>
@@ -206,10 +214,13 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </a>
 
 
+<!-- LOGOUT -->
 <a href="/motoshoppy/login/cerrar_session.php" class="logout-link">
   <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
 </a>
+
 </nav>
+
 
 <div class="sidebar-user">
 
@@ -234,11 +245,9 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 
 </div>
 
-
 </aside>
 
 <main class="main-content">
-
 
 
 <script>
