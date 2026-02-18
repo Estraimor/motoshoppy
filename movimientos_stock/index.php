@@ -105,37 +105,6 @@ include '../dashboard/nav.php';
                     Historial de Movimientos
                 </h5>
 
-                <form id="filtrosMovimientos" class="row g-3 mb-3">
-
-                    <div class="col-md-3">
-                        <input type="text" class="form-control" placeholder="Producto">
-                    </div>
-
-                    <div class="col-md-2">
-                        <select class="form-select">
-                            <option value="">Todos</option>
-                            <option value="INGRESO">Ingreso</option>
-                            <option value="SALIDA">Salida</option>
-                            <option value="AJUSTE">Ajuste</option>
-                            <option value="TRANSFERENCIA">Transferencia</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <input type="date" class="form-control">
-                    </div>
-
-                    <div class="col-md-2">
-                        <input type="date" class="form-control">
-                    </div>
-
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-warning w-100">
-                            Filtrar
-                        </button>
-                    </div>
-
-                </form>
 
                 <div class="table-responsive">
                     <table id="tablaMovimientos" class="table table-dark table-striped">
@@ -145,7 +114,6 @@ include '../dashboard/nav.php';
                                 <th>Producto</th>
                                 <th>Tipo</th>
                                 <th>Cantidad</th>
-                                <th>Origen</th>
                                 <th>Usuario</th>
                             </tr>
                         </thead>
@@ -231,12 +199,12 @@ include '../dashboard/nav.php';
 
 <script>
 $(document).ready(function(){
-
+let productoActual = null;
 /* ======================================================
    🔥 TABLA INVENTARIO
 ====================================================== */
 
-let tablaInventario = $('#tablaInventario').DataTable({
+window.tablaInventario = $('#tablaInventario').DataTable({
     ajax: {
         url: 'api/listar_inventario.php',
         type: 'GET',
@@ -251,7 +219,8 @@ let tablaInventario = $('#tablaInventario').DataTable({
             data: null,
             className:'text-center',
             render: function(row){
-                return parseInt(row.cantidad_exhibida) + parseInt(row.cantidad_actual);
+                let total = parseInt(row.cantidad_exhibida) + parseInt(row.cantidad_actual);
+                return total;
             }
         },
         { data: 'stock_minimo', className:'text-center' },
@@ -261,6 +230,71 @@ let tablaInventario = $('#tablaInventario').DataTable({
     order: [[0,'asc']],
     pageLength: 10
 });
+
+/* ======================================================
+   🚀 ABRIR MODAL AUTOMÁTICO DESDE DASHBOARD
+====================================================== */
+
+function abrirDesdeURL(){
+
+    const params = new URLSearchParams(window.location.search);
+    const productoId = params.get('producto');
+    const modo       = params.get('modo');
+
+    if(!productoId) return;
+
+    $.ajax({
+        url: 'api/get_producto_stock.php',
+        type: 'GET',
+        data: { id: productoId },
+        dataType: 'json',
+        success: function(res){
+
+            if(!res || !res.ok) return;
+
+            productoActual = res.producto;
+
+            $('#zonaAccionStock').html('');
+
+            $('#infoProducto').html(`
+                <h5 class="mb-1">${productoActual.nombre}</h5>
+                <small class="text-light opacity-75">
+                    ${productoActual.marca ?? ''} | ${productoActual.categoria ?? ''}<br>
+                    Código: ${productoActual.codigo}
+                </small>
+            `);
+
+            actualizarVistaActual();
+            renderBarraStock();
+
+            if(modo === 'configurar'){
+                renderModoConfiguracion();
+            } else {
+                renderModoMovimiento();
+            }
+
+            setTimeout(function(){
+
+                const modalElement = document.getElementById('modalStock');
+
+                if(!modalElement){
+                    console.log("NO EXISTE #modalStock");
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+
+            }, 500);
+
+            history.replaceState({}, document.title, window.location.pathname);
+
+        }
+    });
+
+}
+
+
 
 /* ======================================================
    📊 KPIs
@@ -287,22 +321,75 @@ let tablaMovimientos = $('#tablaMovimientos').DataTable({
         dataSrc: 'data'
     },
     columns: [
-        { data: 'fecha' },
-        { data: 'producto' },
-        { data: 'tipo' },
-        { data: 'cantidad' },
-        { data: 'origen' },
-        { data: 'usuario' }
+
+        // 📅 FECHA
+        { 
+            data: 'fecha',
+            render: function(data){
+                let fecha = new Date(data);
+                return fecha.toLocaleString('es-AR');
+            }
+        },
+
+        // 📦 PRODUCTO + MARCA
+        { 
+            data: null,
+            render: function(row){
+                return `
+                    <div>
+                        <strong>${row.producto ?? '—'}</strong><br>
+                        <span class="badge bg-secondary">
+                            ${row.marca ?? 'Sin marca'}
+                        </span>
+                    </div>
+                `;
+            }
+        },
+
+        // 🔄 TIPO
+        { 
+            data: 'tipo',
+            render: function(data){
+                if(data === 'a_exhibido'){
+                    return `<span class="badge bg-success">
+                                <i class="fa-solid fa-arrow-right"></i> Depósito → Exhibición
+                            </span>`;
+                } else {
+                    return `<span class="badge bg-primary">
+                                <i class="fa-solid fa-arrow-left"></i> Exhibición → Depósito
+                            </span>`;
+                }
+            }
+        },
+
+        // 🔢 CANTIDAD
+        { 
+            data: 'cantidad',
+            className:'text-center',
+            render:function(data){
+                return `<strong>${data}</strong>`;
+            }
+        },
+
+        // 👤 USUARIO
+        { 
+            data: 'usuario',
+            render:function(data){
+                return data ?? '<span class="text-muted">Sistema</span>';
+            }
+        }
+
     ],
     order: [[0,'desc']],
     pageLength: 10
 });
 
+
 /* ======================================================
    🧠 MODAL STOCK
 ====================================================== */
 
-let productoActual = null;
+
 
 $(document).on('click', '.btn-stock', function(){
 
@@ -327,7 +414,8 @@ $(document).on('click', '.btn-stock', function(){
         renderModoMovimiento();
     }
 
-    $('#modalStock').modal('show');
+    var modal = new bootstrap.Modal(document.getElementById('modalStock'));
+modal.show();
 });
 
 /* ======================================================
@@ -438,6 +526,7 @@ $(document).on('click','#guardarConfiguracion',function(){
             title:'Stock configurado',
             timer:1200,
             showConfirmButton:false
+            
         });
 
         $('#modalStock').modal('hide');
@@ -499,24 +588,38 @@ $(document).on('click','#confirmarMovimiento',function(){
 
         if(result.isConfirmed){
 
-            $.post('api/mover_stock.php',{
-                producto_id: productoActual.idproducto,
-                cantidad: cantidad,
-                origen: origen
-            },function(){
+            let tipoMovimiento = '';
 
-                Swal.fire({
-                    icon:'success',
-                    title:'Movimiento registrado',
-                    timer:1200,
-                    showConfirmButton:false
-                });
+if(origen === 'deposito'){
+    tipoMovimiento = 'a_exhibido';   // depósito → exhibición
+} else {
+    tipoMovimiento = 'a_deposito';   // exhibición → depósito
+}
 
-                $('#modalStock').modal('hide');
-                tablaInventario.ajax.reload();
-                tablaMovimientos.ajax.reload();
-                cargarKPIs();
-            });
+$.post('api/guardar_movimiento.php',{
+    producto_id: productoActual.idproducto,
+    cantidad: cantidad,
+    tipo: tipoMovimiento
+}, function(res){
+
+    if(res.status === 'error'){
+        Swal.fire('Error', res.msg, 'error');
+        return;
+    }
+
+    Swal.fire({
+        icon:'success',
+        title:'Movimiento registrado',
+        timer:1200,
+        showConfirmButton:false
+    });
+
+    $('#modalStock').modal('hide');
+    tablaInventario.ajax.reload();
+    tablaMovimientos.ajax.reload();
+    cargarKPIs();
+
+}, 'json');
 
         }
 
@@ -524,8 +627,18 @@ $(document).on('click','#confirmarMovimiento',function(){
 
 });
 
+$(window).on('load', function(){
+    abrirDesdeURL();
 });
+
+
+});
+
+
 </script>
+
+
+
 
 
 

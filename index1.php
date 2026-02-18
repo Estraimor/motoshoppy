@@ -277,25 +277,27 @@ elseif (
                 <td class="text-center"><?= $estado ?></td>
 
                 <td class="text-center">
-                  <?php if ($accion === 'mover'): ?>
-                    <a href="mover_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
-                       class="btn <?= $btn ?> btn-sm fw-bold">
-                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
-                    </a>
 
-                  <?php elseif ($accion === 'configurar'): ?>
-                    <a href="configurar_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
-                       class="btn <?= $btn ?> btn-sm fw-bold">
-                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
-                    </a>
+<?php
+    // Definimos modo final
+    if ($accion === 'mover') {
+        $modo = 'mover';
+    } elseif ($accion === 'configurar') {
+        $modo = 'configurar';
+    } else {
+        $modo = 'pedir';
+    }
+?>
 
-                  <?php else: ?>
-                    <a href="reponer_stock.php?codigo=<?= urlencode($p['codigo']) ?>"
-                       class="btn <?= $btn ?> btn-sm fw-bold">
-                      <i class="fa-solid <?= $icono ?>"></i> <?= $texto ?>
-                    </a>
-                  <?php endif; ?>
-                </td>
+<a href="movimientos_stock/index.php?producto=<?= $p['idProducto'] ?>&modo=<?= $modo ?>"
+   class="btn <?= $btn ?> btn-sm fw-bold">
+
+    <i class="fa-solid <?= $icono ?>"></i>
+    <?= $texto ?>
+
+</a>
+
+</td>
               </tr>
 
             <?php endforeach; ?>
