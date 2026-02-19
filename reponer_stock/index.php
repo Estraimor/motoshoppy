@@ -533,18 +533,26 @@ const codigoProveedor = document.getElementById('codigoProveedor');
 const marca     = document.getElementById('marca');
 const preview   = document.getElementById('previewProducto');
 
+marca.disabled = true;
+producto.disabled = true;
+producto.innerHTML = '<option>Seleccione marca</option>';
+
 
 categoria.addEventListener('change', () => {
 
+    marca.disabled = true;
+    producto.disabled = true;
+
     marca.innerHTML = '<option>Cargando...</option>';
     producto.innerHTML = '<option>Seleccione marca</option>';
-    producto.disabled = true;
+
+    if (!categoria.value) return;
 
     fetch(`get_marcas.php?idCategoria=${categoria.value}`)
         .then(r => r.json())
         .then(data => {
 
-            marca.innerHTML = '<option value="">Seleccionar...</option>';
+            marca.innerHTML = '<option value="">Seleccionar marca...</option>';
 
             data.forEach(m => {
                 marca.innerHTML += `
@@ -556,15 +564,19 @@ categoria.addEventListener('change', () => {
             marca.disabled = false;
         });
 });
+
 marca.addEventListener('change', () => {
 
+    producto.disabled = true;
     producto.innerHTML = '<option>Cargando...</option>';
+
+    if (!marca.value) return;
 
     fetch(`api_get_productos.php?idMarca=${marca.value}`)
         .then(r => r.json())
         .then(data => {
 
-            producto.innerHTML = '<option value="">Seleccionar...</option>';
+            producto.innerHTML = '<option value="">Seleccionar producto...</option>';
 
             data.forEach(p => {
                 producto.innerHTML += `
@@ -576,6 +588,7 @@ marca.addEventListener('change', () => {
             producto.disabled = false;
         });
 });
+
 
 producto.addEventListener('change', () => {
 
@@ -1350,6 +1363,44 @@ document.addEventListener('click', function (e) {
     });
 
 });
+
+</script>
+
+<script>
+const productoDesdeURL = new URLSearchParams(window.location.search).get('producto');
+
+if (productoDesdeURL) {
+
+    fetch('api_get_producto_por_id.php?id=' + encodeURIComponent(productoDesdeURL))
+        .then(r => r.json())
+        .then(r => {
+
+            if (!r.ok) return;
+
+            const p = r.producto;
+
+            // 🔹 Seleccionar categoría
+            categoria.value = p.idcategoria;
+            categoria.dispatchEvent(new Event('change'));
+
+            // Esperamos que carguen marcas
+            setTimeout(() => {
+
+                marca.value = p.idmarca;
+                marca.dispatchEvent(new Event('change'));
+
+                // Esperamos que carguen productos
+                setTimeout(() => {
+
+                    producto.value = p.idProducto;
+                    producto.dispatchEvent(new Event('change'));
+
+                }, 400);
+
+            }, 400);
+
+        });
+}
 
 </script>
 

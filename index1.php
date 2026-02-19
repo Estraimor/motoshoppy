@@ -289,7 +289,10 @@ elseif (
     }
 ?>
 
-<a href="movimientos_stock/index.php?producto=<?= $p['idProducto'] ?>&modo=<?= $modo ?>"
+<a href="<?= $modo === 'pedir'
+        ? './reponer_stock/index.php?producto=' . $p['idProducto']
+        : 'movimientos_stock/index.php?producto=' . $p['idProducto'] . '&modo=' . $modo
+    ?>"
    class="btn <?= $btn ?> btn-sm fw-bold">
 
     <i class="fa-solid <?= $icono ?>"></i>
