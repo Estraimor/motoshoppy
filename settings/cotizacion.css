@@ -1,0 +1,51 @@
+.modal-cotizacion {
+    background: #0f0f0f;
+    border-radius: 18px;
+    border: 1px solid rgba(255,165,0,0.4);
+    box-shadow: 0 0 35px rgba(255,165,0,0.25);
+    color: white;
+}
+
+.modal-cotizacion .modal-title {
+    color: #ffae00;
+    font-weight: 600;
+}
+
+.cotizacion-label {
+    color: #ffae00;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.cotizacion-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #1c1f23;
+    border: 1px solid #2f2f2f;
+    border-radius: 10px;
+    color: white;
+    transition: 0.3s;
+}
+
+.cotizacion-input:focus {
+    border-color: #ffae00;
+    box-shadow: 0 0 15px rgba(255,165,0,0.3);
+    outline: none;
+}
+
+.btn-guardar-cotizacion {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg,#ffae00,#ff8c00);
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    color: black;
+    transition: 0.3s;
+}
+
+.btn-guardar-cotizacion:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255,140,0,0.4);
+}
