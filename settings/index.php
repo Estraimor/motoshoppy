@@ -80,11 +80,11 @@ include '../dashboard/nav.php';
 
         <!-- Parámetros -->
         <div class="col-md-4">
-            <a href="parametros.php" class="text-decoration-none">
+            <a href="descuentos/index.php" class="text-decoration-none">
                 <div class="settings-card text-center">
                     <div class="icon">⚙️</div>
-                    <h5>Parámetros</h5>
-                    <small>Opciones generales</small>
+                    <h5>Descuentos</h5>
+                    <small>Porcentajes de descuentos </small>
                 </div>
             </a>
         </div>
