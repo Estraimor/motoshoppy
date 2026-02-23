@@ -2,7 +2,7 @@
 include '../../dashboard/nav.php';
 include '../../conexion/conexion.php';
 ?>
-
+<link rel="stylesheet" href="descuentos.css">
 <div class="container mt-4">
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -178,6 +178,60 @@ function eliminar(id){
     alert(r.msg);
   }
 }
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+  const modalContent = document.querySelector("#modalDescuento .modal-content");
+  const switchActivo = document.getElementById("activo");
+
+  function actualizarEstadoVisual(){
+      if(switchActivo.checked){
+          modalContent.classList.remove("modal-inactivo");
+          modalContent.classList.add("modal-activo");
+      } else {
+          modalContent.classList.remove("modal-activo");
+          modalContent.classList.add("modal-inactivo");
+      }
+  }
+
+  // Al abrir modal
+  document.getElementById("modalDescuento")
+      .addEventListener("shown.bs.modal", actualizarEstadoVisual);
+
+  // Al cambiar switch
+  switchActivo.addEventListener("change", actualizarEstadoVisual);
+
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+  const modalEl = document.getElementById('modalDescuento');
+  const formEl  = document.getElementById('formDescuento');
+
+  // 1) Cuando tocás "Nuevo descuento" (botón amarillo)
+  document.querySelector('[data-bs-target="#modalDescuento"]').addEventListener('click', function(){
+    // limpiar todo
+    formEl.reset();
+
+    // IMPORTANTÍSIMO: limpiar el hidden id para que sea INSERT
+    document.getElementById('descuento_id').value = '';
+
+    // dejar activo por defecto
+    document.getElementById('activo').checked = true;
+  });
+
+  // 2) Extra: cuando se cierra el modal, también limpialo (por seguridad)
+  modalEl.addEventListener('hidden.bs.modal', function(){
+    formEl.reset();
+    document.getElementById('descuento_id').value = '';
+    document.getElementById('activo').checked = true;
+  });
+
+});
 </script>
 
 <?php include '../../dashboard/footer.php'; ?>

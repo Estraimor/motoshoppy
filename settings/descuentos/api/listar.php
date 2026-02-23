@@ -1,7 +1,25 @@
 <?php
-require_once '../../conexion/conexion.php';
+header('Content-Type: application/json; charset=utf-8');
 
-$stmt = $conexion->query("SELECT * FROM precio_lista ORDER BY id DESC");
-$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+require_once __DIR__ . '/../../../conexion/conexion.php';
 
-echo json_encode(["data"=>$data]);
+try {
+    $stmt = $conexion->query("
+        SELECT 
+            id,
+            nombre_lista,
+            porcentaje_descuento,
+            activo
+        FROM precio_lista
+        ORDER BY id DESC
+    ");
+
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $e) {
+    echo json_encode([
+        'data' => [],
+        'error' => $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
+}

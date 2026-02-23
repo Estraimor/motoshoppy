@@ -1,0 +1,195 @@
+/* =========================
+   ANIMACIÓN ENTRADA GENERAL
+========================= */
+
+.container {
+    animation: fadeUp 0.5s ease;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================
+   CARD MODERNA
+========================= */
+
+.card {
+    background: rgba(20,20,20,0.8);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.35);
+}
+
+/* =========================
+   TABLA MEJORADA
+========================= */
+
+#tablaDescuentos tbody tr {
+    transition: all 0.2s ease;
+}
+
+#tablaDescuentos tbody tr:hover {
+    background-color: rgba(255, 193, 7, 0.08) !important;
+    transform: scale(1.01);
+}
+
+/* =========================
+   BOTONES ACCIONES
+========================= */
+
+#tablaDescuentos .btn {
+    transition: all 0.15s ease;
+}
+
+#tablaDescuentos .btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+#tablaDescuentos .btn:active {
+    transform: scale(0.95);
+}
+
+/* =========================
+   BADGE ESTADO CON EFECTO
+========================= */
+
+.badge {
+    position: relative;
+    font-weight: 500;
+}
+
+.badge.bg-success::after,
+.badge.bg-danger::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 20px;
+    opacity: 0;
+    animation: pulse 1.5s infinite;
+}
+
+.badge.bg-success::after {
+    border: 1px solid rgba(25,135,84,0.5);
+}
+
+.badge.bg-danger::after {
+    border: 1px solid rgba(220,53,69,0.5);
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.9); opacity: 0.6; }
+    70% { transform: scale(1.15); opacity: 0; }
+    100% { opacity: 0; }
+}
+
+/* =========================
+   BOTÓN NUEVO DESCUENTO
+========================= */
+
+.btn-warning {
+    transition: all 0.2s ease;
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(255,193,7,0.35);
+}
+
+/* =========================
+   MODAL ANIMADO
+========================= */
+
+.modal.fade .modal-dialog {
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.2s ease;
+}
+
+.modal.show .modal-dialog {
+    transform: translateY(0) scale(1);
+}
+
+/* =========================
+   ESTADO VISUAL DEL MODAL
+========================= */
+
+.modal-content {
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ACTIVO */
+.modal-activo {
+    border-color: rgba(25,135,84,0.6);
+    box-shadow:
+        0 0 0 2px rgba(25,135,84,0.6),
+        0 0 25px rgba(25,135,84,0.3);
+}
+
+/* INACTIVO */
+.modal-inactivo {
+    border-color: rgba(220,53,69,0.6);
+    box-shadow:
+        0 0 0 2px rgba(220,53,69,0.6),
+        0 0 25px rgba(220,53,69,0.3);
+}
+
+/* =========================
+   INPUTS MEJORADOS
+========================= */
+
+.form-control {
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255,193,7,0.25);
+    transform: scale(1.01);
+}
+
+/* =========================
+   SWITCH CORREGIDO (SIN DUPLICADO)
+========================= */
+
+.form-check-input {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* ACTIVO (verde bootstrap natural) */
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* INACTIVO (sin romper estilo bootstrap) */
+.form-check-input:not(:checked) {
+    border-color: rgba(220,53,69,0.7);
+    box-shadow: 0 0 0 0.1rem rgba(220,53,69,0.15);
+}
+
+/* =========================
+   ÍCONOS MÁS FLUIDOS
+========================= */
+
+.fa-solid {
+    transition: transform 0.2s ease;
+}
+
+.btn:hover .fa-solid {
+    transform: scale(1.1);
+}
