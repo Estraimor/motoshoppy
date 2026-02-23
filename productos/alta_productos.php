@@ -3,7 +3,9 @@ include '../dashboard/nav.php';
 require_once '../conexion/conexion.php';
 
 // Traer categorías
-$stmtCat = $conexion->query("SELECT idCategoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC");
+$stmtCat = $conexion->query("SELECT idCategoria, nombre_categoria FROM categoria c
+WHERE c.estado = 1
+ORDER BY nombre_categoria ASC");
 $categorias = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
 // Traer ubicaciones

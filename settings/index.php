@@ -90,15 +90,27 @@ include '../dashboard/nav.php';
         </div>
 
         <!-- Backup -->
-        <div class="col-md-4">
-            <a href="backup.php" class="text-decoration-none">
-                <div class="settings-card text-center">
-                    <div class="icon">💾</div>
-                    <h5>Backups</h5>
-                    <small>Exportar base de datos</small>
-                </div>
-            </a>
+        <div class="col-12 col-md-4">
+    <a href="../backups/exportar_productos_excel.php" 
+       class="text-decoration-none d-block">
+
+        <div class="settings-card text-center p-4 h-100">
+            
+            <div class="icon mb-3 fs-1">
+                💾
+            </div>
+
+            <h5 class="fw-semibold mb-1">
+                Backups
+            </h5>
+
+            <small class="text-mb-1">
+                Exportar base de datos
+            </small>
+
         </div>
+    </a>
+</div>
 
     </div>
 </div>

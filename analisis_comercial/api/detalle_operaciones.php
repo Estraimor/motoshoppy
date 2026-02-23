@@ -183,23 +183,23 @@ $pdf->MultiCell(
 
 $stmtProv = $conexion->prepare("
     SELECT 
-        r.fecha_llegada,
-        pr.empresa AS proveedor,
-        p.nombre AS producto,
-        rd.cantidad,
-        rd.costo,
-        r.estado,
-        r.numero_factura
-    FROM reposicion_detalle rd
-    JOIN reposicion r 
-        ON r.idreposicion = rd.reposicion_idreposicion
-    JOIN producto p 
-        ON p.idProducto = rd.producto_idProducto
-    JOIN proveedores pr 
-        ON pr.idproveedores = r.proveedores_idproveedores
-    WHERE DATE(r.fecha_llegada) BETWEEN :d AND :h
-      AND r.estado = 'impactado'
-    ORDER BY r.fecha_llegada ASC
+    r.fecha_llegada,
+    pr.empresa AS proveedor,
+    p.nombre AS producto,
+    rd.cantidad,
+    rd.precio_unitario,
+    r.estado,
+    r.numero_factura
+FROM reposicion_detalle rd
+JOIN reposicion r 
+    ON r.idreposicion = rd.reposicion_idreposicion
+JOIN producto p 
+    ON p.idProducto = rd.producto_idProducto
+JOIN proveedores pr 
+    ON pr.idproveedores = r.proveedores_idproveedores
+WHERE DATE(r.fecha_llegada) BETWEEN :d AND :h
+  AND r.estado = 'impactado'
+ORDER BY r.fecha_llegada ASC
 ");
 
 $stmtProv->execute([
@@ -232,11 +232,11 @@ $fill = false;
 
 while ($r = $stmtProv->fetch(PDO::FETCH_ASSOC)) {
 
-    $costoUnit = (float)($r['costo'] ?? 0);
-    $cantidad  = (int)($r['cantidad'] ?? 0);
+    $costoUnit = (float)($r['precio_unitario'] ?? 0);
+$cantidad  = (int)($r['cantidad'] ?? 0);
 
-    $total = $cantidad * $costoUnit;
-    $totalCompras += $total;
+$total = $cantidad * $costoUnit;
+$totalCompras += $total;
 
     $pdf->Cell(25,7,date('d/m/Y', strtotime($r['fecha_llegada'])),1,0,'L',$fill);
     $pdf->Cell(35,7,substr($r['proveedor'],0,18),1,0,'L',$fill);
