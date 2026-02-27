@@ -275,7 +275,7 @@ document.getElementById('selectCategoria').addEventListener('change', function()
             // =====================================================
 
             // === Bloques especiales (Cubiertas, etc) ===
-            const categoriasEspeciales = [12, 13];
+            const categoriasEspeciales = [12, 14,85,87];
             const bloqueCubiertas = document.getElementById('bloqueCubiertas');
             const catId = parseInt(categoriaId);
 
