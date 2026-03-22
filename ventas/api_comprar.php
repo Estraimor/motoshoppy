@@ -8,9 +8,13 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 /* =========================
    CONSTANTES
 ========================= */
+
 define('CLIENTE_CONSUMIDOR_FINAL', 1);
+
 define('METODO_EFECTIVO', 1);
 define('METODO_TARJETA', 2);
+define('METODO_TRANSFERENCIA', 3);
+define('METODO_MERCADO_PAGO', 4);
 
 define('MONEDA_GUARANI', 1);
 define('MONEDA_ARS', 2);
@@ -27,6 +31,7 @@ try {
     /* =========================
        LEER JSON
     ========================= */
+
     $data = json_decode(file_get_contents("php://input"), true);
 
     if (!$data || empty($data['productos'])) {
@@ -40,93 +45,122 @@ try {
     $clienteData      = $data['cliente'] ?? null;
 
     /* =========================
-       TARJETA → GUARANÍ
+       VALIDAR METODO DE PAGO
     ========================= */
-    if ($metodo_pago === METODO_TARJETA) {
+
+    $metodosValidos = [
+        METODO_EFECTIVO,
+        METODO_TARJETA,
+        METODO_TRANSFERENCIA,
+        METODO_MERCADO_PAGO
+    ];
+
+    if (!in_array($metodo_pago, $metodosValidos)) {
+        $metodo_pago = METODO_EFECTIVO;
+    }
+
+    /* =========================
+       VALIDAR MONEDA
+    ========================= */
+
+    $monedasValidas = [
+        MONEDA_GUARANI,
+        MONEDA_ARS,
+        MONEDA_USD
+    ];
+
+    if (!in_array($moneda, $monedasValidas)) {
+        $moneda = MONEDA_GUARANI;
+    }
+
+    /* =========================
+       SI NO ES EFECTIVO → GUARANI
+    ========================= */
+
+    if ($metodo_pago !== METODO_EFECTIVO) {
         $moneda = MONEDA_GUARANI;
     }
 
     $conexion->beginTransaction();
 
-   /* =========================
-   CLIENTE
-========================= */
-$cliente_id = CLIENTE_CONSUMIDOR_FINAL;
+    /* =========================
+       CLIENTE
+    ========================= */
 
-if ($clienteData && !empty($clienteData['dni'])) {
+    $cliente_id = CLIENTE_CONSUMIDOR_FINAL;
 
-    $dni = trim($clienteData['dni']);
+    if ($clienteData && !empty($clienteData['dni'])) {
 
-    // Buscar cliente por DNI
-    $buscar = $conexion->prepare("
-        SELECT idCliente, nombre, apellido, celular
-        FROM clientes
-        WHERE dni = ?
-        LIMIT 1
-    ");
-    $buscar->execute([$dni]);
-    $cli = $buscar->fetch(PDO::FETCH_ASSOC);
+        $dni = trim($clienteData['dni']);
 
-    if ($cli) {
-
-        // Cliente ya existe
-        $cliente_id = $cli['idCliente'];
-
-        // 🔥 Si es factura y vienen datos completos → completar campos vacíos
-        if ($tipo_comprobante > 1) {
-
-            $nombreNuevo   = trim($clienteData['nombre'] ?? '');
-            $apellidoNuevo = trim($clienteData['apellido'] ?? '');
-            $celularNuevo  = trim($clienteData['celular'] ?? '');
-
-            $nombreFinal   = !empty($cli['nombre'])   ? $cli['nombre']   : $nombreNuevo;
-            $apellidoFinal = !empty($cli['apellido']) ? $cli['apellido'] : $apellidoNuevo;
-            $celularFinal  = !empty($cli['celular'])  ? $cli['celular']  : $celularNuevo;
-
-            $updCliente = $conexion->prepare("
-                UPDATE clientes
-                SET nombre = ?, apellido = ?, celular = ?
-                WHERE idCliente = ?
-            ");
-
-            $updCliente->execute([
-                $nombreFinal,
-                $apellidoFinal,
-                $celularFinal,
-                $cliente_id
-            ]);
-        }
-
-    } else {
-
-        // Cliente no existe → crear nuevo
-        $ins = $conexion->prepare("
-            INSERT INTO clientes (
-                apellido,
-                nombre,
-                dni,
-                celular,
-                email,
-                fecha_alta,
-                estado
-            )
-            VALUES (?, ?, ?, ?, NULL, NOW(), 1)
+        $buscar = $conexion->prepare("
+            SELECT idCliente, nombre, apellido, celular
+            FROM clientes
+            WHERE dni = ?
+            LIMIT 1
         ");
 
-        $ins->execute([
-            $clienteData['apellido'] ?? '',
-            $clienteData['nombre'] ?? '',
-            $dni,
-            $clienteData['celular'] ?? ''
-        ]);
+        $buscar->execute([$dni]);
+        $cli = $buscar->fetch(PDO::FETCH_ASSOC);
 
-        $cliente_id = $conexion->lastInsertId();
+        if ($cli) {
+
+            $cliente_id = $cli['idCliente'];
+
+            if ($tipo_comprobante > 1) {
+
+                $nombreNuevo   = trim($clienteData['nombre'] ?? '');
+                $apellidoNuevo = trim($clienteData['apellido'] ?? '');
+                $celularNuevo  = trim($clienteData['celular'] ?? '');
+
+                $nombreFinal   = !empty($cli['nombre'])   ? $cli['nombre']   : $nombreNuevo;
+                $apellidoFinal = !empty($cli['apellido']) ? $cli['apellido'] : $apellidoNuevo;
+                $celularFinal  = !empty($cli['celular'])  ? $cli['celular']  : $celularNuevo;
+
+                $updCliente = $conexion->prepare("
+                    UPDATE clientes
+                    SET nombre = ?, apellido = ?, celular = ?
+                    WHERE idCliente = ?
+                ");
+
+                $updCliente->execute([
+                    $nombreFinal,
+                    $apellidoFinal,
+                    $celularFinal,
+                    $cliente_id
+                ]);
+            }
+
+        } else {
+
+            $ins = $conexion->prepare("
+                INSERT INTO clientes (
+                    apellido,
+                    nombre,
+                    dni,
+                    celular,
+                    email,
+                    fecha_alta,
+                    estado
+                )
+                VALUES (?, ?, ?, ?, NULL, NOW(), 1)
+            ");
+
+            $ins->execute([
+                $clienteData['apellido'] ?? '',
+                $clienteData['nombre'] ?? '',
+                $dni,
+                $clienteData['celular'] ?? ''
+            ]);
+
+            $cliente_id = $conexion->lastInsertId();
+        }
     }
-}
 
     /* =========================
-       INSERTAR VENTA (TOTAL SE CALCULA LUEGO)
+       INSERTAR VENTA
     ========================= */
+
     $stmtVenta = $conexion->prepare("
         INSERT INTO ventas (
             fecha,
@@ -154,17 +188,18 @@ if ($clienteData && !empty($clienteData['dni'])) {
     /* =========================
        DETALLE DE VENTA
     ========================= */
+
     $stmtDetalle = $conexion->prepare("
         INSERT INTO detalle_venta (
-    ventas_idVenta,
-    producto_idProducto,
-    cantidad,
-    precio_base,
-    porcentaje_descuento,
-    precio_unitario,
-    devuelto
-)
-VALUES (?, ?, ?, ?, ?, ?, 0)
+            ventas_idVenta,
+            producto_idProducto,
+            cantidad,
+            precio_base,
+            porcentaje_descuento,
+            precio_unitario,
+            devuelto
+        )
+        VALUES (?, ?, ?, ?, ?, ?, 0)
     ");
 
     $totalVenta = 0;
@@ -174,9 +209,9 @@ VALUES (?, ?, ?, ?, ?, ?, 0)
         $idProd   = (int)$p['idProducto'];
         $cantidad = (int)$p['cantidad'];
 
-        $precioBase = (float)$p['precio_base'];          // 13.00
-        $precioUnit = (float)$p['precio_unitario'];      // 12.35
-        $descuento  = (float)$p['porcentaje_descuento']; // 5.00
+        $precioBase = (float)$p['precio_base'];
+        $precioUnit = (float)$p['precio_unitario'];
+        $descuento  = (float)$p['porcentaje_descuento'];
 
         if ($precioUnit <= 0 || $cantidad <= 0) {
             throw new Exception("Precio o cantidad inválidos.");
@@ -184,13 +219,17 @@ VALUES (?, ?, ?, ?, ?, ?, 0)
 
         $subtotal = round($precioUnit * $cantidad, 2);
 
-        /* ===== CONTROL DE STOCK ===== */
+        /* =========================
+           CONTROL DE STOCK
+        ========================= */
+
         $check = $conexion->prepare("
             SELECT cantidad_exhibida, cantidad_actual
             FROM stock_producto
             WHERE producto_idProducto = ?
             FOR UPDATE
         ");
+
         $check->execute([$idProd]);
         $stk = $check->fetch(PDO::FETCH_ASSOC);
 
@@ -206,10 +245,13 @@ VALUES (?, ?, ?, ?, ?, ?, 0)
         }
 
         if ($ex > 0) {
+
             $nuevoEx = max(0, $ex - $cantidad);
             $resto   = max(0, $cantidad - $ex);
             $nuevoGr = max(0, $gr - $resto);
+
         } else {
+
             $nuevoEx = 0;
             $nuevoGr = max(0, $gr - $cantidad);
         }
@@ -223,26 +265,35 @@ VALUES (?, ?, ?, ?, ?, ?, 0)
             SET cantidad_exhibida = ?, cantidad_actual = ?
             WHERE producto_idProducto = ?
         ");
+
         $upd->execute([$nuevoEx, $nuevoGr, $idProd]);
 
-        /* ===== INSERT DETALLE ===== */
-        $stmtDetalle->execute([
-    $venta_id,
-    $idProd,
-    $cantidad,
-    $precioBase,
-    $descuento,
-    $precioUnit
-]);
+        /* =========================
+           INSERT DETALLE
+        ========================= */
 
+        $stmtDetalle->execute([
+            $venta_id,
+            $idProd,
+            $cantidad,
+            $precioBase,
+            $descuento,
+            $precioUnit
+        ]);
 
         $totalVenta += $subtotal;
     }
 
     /* =========================
-       ACTUALIZAR TOTAL REAL
+       ACTUALIZAR TOTAL
     ========================= */
-    $updTotal = $conexion->prepare("UPDATE ventas SET total = ? WHERE idVenta = ?");
+
+    $updTotal = $conexion->prepare("
+        UPDATE ventas
+        SET total = ?
+        WHERE idVenta = ?
+    ");
+
     $updTotal->execute([$totalVenta, $venta_id]);
 
     $conexion->commit();

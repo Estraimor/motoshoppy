@@ -3,9 +3,19 @@ require_once __DIR__ . '/../login/session_bootstrap.php';
 
 $nombreUsuario   = $_SESSION['nombre']   ?? 'Usuario';
 $apellidoUsuario = $_SESSION['apellido'] ?? '';
+
+$rolesArray = $_SESSION['roles'] ?? [];
+
 $rol = isset($_SESSION['roles'])
         ? implode(', ', $_SESSION['roles'])
         : 'Sin rol';
+
+/* =========================
+   HELPER ROLES
+========================= */
+function tieneRol($roles, $rolBuscado) {
+    return in_array($rolBuscado, $roles);
+}
 
 /* =========================
    NORMALIZAR URI
@@ -102,15 +112,20 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 
 <nav class="nav-links">
 
+<!-- DASHBOARD (TODOS) -->
 <a href="/motoshoppy/index1.php" class="<?= $is_dashboard_active ? 'active' : '' ?>">
   <i class="fa-solid fa-gauge"></i> Dashboard
 </a>
 
+<!-- ANALISIS (SOLO ADMIN) -->
+<?php if (tieneRol($rolesArray, 'Administrador')): ?>
 <a href="/motoshoppy/analisis_comercial/index.php" class="<?= $is_analisis_active ? 'active' : '' ?>">
   <i class="fa-solid fa-chart-line"></i> Análisis Comercial
 </a>
+<?php endif; ?>
 
-<!-- INVENTARIO -->
+<!-- INVENTARIO (ADMIN + REPONEDOR) -->
+<?php if (tieneRol($rolesArray, 'Administrador') || tieneRol($rolesArray, 'Reponedor')): ?>
 <div class="nav-item has-submenu <?= $is_inventario_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
   <i class="fa-solid fa-warehouse"></i> Inventario
@@ -123,9 +138,12 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
     <i class="fa-solid fa-box"></i> Productos
   </a>
 
+  <!-- SOLO ADMIN CREA -->
+  <?php if (tieneRol($rolesArray, 'Administrador')): ?>
   <a href="/motoshoppy/productos/alta_productos.php" class="<?= $is_productos_alta ? 'active' : '' ?>">
     <i class="fa-solid fa-plus"></i> Crear Producto
   </a>
+  <?php endif; ?>
 
   <a href="/motoshoppy/categorias/index.php" class="<?= $is_categorias_active ? 'active' : '' ?>">
     <i class="fa-solid fa-tags"></i> Categorías
@@ -145,8 +163,10 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 
 </div>
 </div>
+<?php endif; ?>
 
-<!-- PROVEEDORES -->
+<!-- PROVEEDORES (ADMIN + REPONEDOR) -->
+<?php if (tieneRol($rolesArray, 'Administrador') || tieneRol($rolesArray, 'Reponedor')): ?>
 <div class="nav-item has-submenu <?= $is_proveedores_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
   <i class="fa-solid fa-truck-field"></i> Proveedores
@@ -154,20 +174,22 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </button>
 
 <div class="submenu" style="<?= $is_proveedores_active ? 'display:flex' : '' ?>">
-  <a href="/motoshoppy/proveedores/index.php" class="<?= $is_proveedores_active ? 'active' : '' ?>">
+  <a href="/motoshoppy/proveedores/index.php">
     <i class="fa-solid fa-address-book"></i> Ver Proveedores
   </a>
 </div>
 </div>
+<?php endif; ?>
 
-
-<!-- CLIENTES -->
+<!-- CLIENTES (ADMIN + VENTAS) -->
+<?php if (tieneRol($rolesArray, 'Administrador') || tieneRol($rolesArray, 'Ventas')): ?>
 <a href="/motoshoppy/clientes/index.php" class="<?= str_starts_with($uri, '/motoshoppy/clientes') ? 'active' : '' ?>">
   <i class="fa-solid fa-users"></i> Clientes
 </a>
+<?php endif; ?>
 
-
-<!-- VENTAS -->
+<!-- VENTAS (ADMIN + VENTAS) -->
+<?php if (tieneRol($rolesArray, 'Administrador') || tieneRol($rolesArray, 'Ventas')): ?>
 <div class="nav-item has-submenu <?= $is_ventas_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
   <i class="fa-solid fa-receipt"></i> Ventas
@@ -183,9 +205,10 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
   </a>
 </div>
 </div>
+<?php endif; ?>
 
-
-<!-- CONFIGURACIÓN -->
+<!-- CONFIG (SOLO ADMIN) -->
+<?php if (tieneRol($rolesArray, 'Administrador')): ?>
 <div class="nav-item has-submenu <?= $is_config_active ? 'active' : '' ?>">
 <button class="submenu-toggle">
   <i class="fa-solid fa-gear"></i> Configuración
@@ -204,15 +227,16 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
   </a>
 </div>
 </div>
+<?php endif; ?>
 
-
-<!-- CARRITO -->
+<!-- CARRITO (ADMIN + VENTAS) -->
+<?php if (tieneRol($rolesArray, 'Administrador') || tieneRol($rolesArray, 'Ventas')): ?>
 <a href="/motoshoppy/ventas/carrito.php" class="nav-cart <?= $is_carrito_active ? 'active' : '' ?>">
   <i class="fa-solid fa-cart-shopping"></i>
   <span>Carrito</span>
   <span id="cartCountSide" class="cart-badge">0</span>
 </a>
-
+<?php endif; ?>
 
 <!-- LOGOUT -->
 <a href="/motoshoppy/login/cerrar_session.php" class="logout-link">
@@ -220,7 +244,6 @@ $is_carrito_active = str_contains($uri, '/motoshoppy/ventas/carrito.php');
 </a>
 
 </nav>
-
 
 <div class="sidebar-user">
 

@@ -35,6 +35,7 @@ require_once '../conexion/conexion.php';
         <table id="tablaVentas" class="table table-dark table-hover table-sm w-100 align-middle">
           <thead>
   <tr>
+    <th>Categoría</th>
     <th style="width:100px">Código</th>
     <th>Nombre</th>
     <th>Modelo</th>
@@ -111,33 +112,33 @@ require_once '../conexion/conexion.php';
       <input type="text" id="filtroBusqueda" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Motul, 10W40...">
     </div>
 
-    <!-- Marca -->
-    <div class="mb-3">
-      <label class="form-label text-warning"><i class="fa-solid fa-tags"></i> Marca</label>
-      <select id="filtroMarca" class="form-select bg-dark text-light border-secondary">
-        <option value="">Todas</option>
-        <?php
-          $marcas = $conexion->query("SELECT idmarcas, nombre_marca FROM marcas ORDER BY nombre_marca ASC");
-          while($m = $marcas->fetch(PDO::FETCH_ASSOC)){
-              echo "<option value='{$m['idmarcas']}'>{$m['nombre_marca']}</option>";
-          }
-        ?>
-      </select>
-    </div>
-
     <!-- Categoría -->
-    <div class="mb-3">
-      <label class="form-label text-warning"><i class="fa-solid fa-layer-group"></i> Categoría</label>
-      <select id="filtroCategoria" class="form-select bg-dark text-light border-secondary">
-        <option value="">Todas</option>
-        <?php
-          $categorias = $conexion->query("SELECT idCategoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC");
-          while($c = $categorias->fetch(PDO::FETCH_ASSOC)){
-              echo "<option value='{$c['idCategoria']}'>{$c['nombre_categoria']}</option>";
-          }
-        ?>
-      </select>
-    </div>
+<div class="mb-3">
+  <label class="form-label text-warning">
+    <i class="fa-solid fa-layer-group"></i> Categoría
+  </label>
+
+  <select id="filtroCategoria" class="form-select bg-dark text-light border-secondary">
+    <option value="">Todas</option>
+    <?php
+      $categorias = $conexion->query("SELECT idCategoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC");
+      while($c = $categorias->fetch(PDO::FETCH_ASSOC)){
+          echo "<option value='{$c['idCategoria']}'>{$c['nombre_categoria']}</option>";
+      }
+    ?>
+  </select>
+</div>
+
+<!-- Marca -->
+<div class="mb-3">
+  <label class="form-label text-warning">
+    <i class="fa-solid fa-tags"></i> Marca
+  </label>
+
+  <select id="filtroMarca" class="form-select bg-dark text-light border-secondary">
+    <option value="">Todas</option>
+  </select>
+</div>
 
     <!-- Rango de precios -->
     <div class="mb-3">
@@ -215,6 +216,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const filtroCategoria = document.getElementById("filtroCategoria");
+const filtroMarca = document.getElementById("filtroMarca");
+
+filtroCategoria.addEventListener("change", async () => {
+
+  const categoria = filtroCategoria.value;
+
+  filtroMarca.innerHTML = `<option value="">Todas</option>`;
+
+  if (!categoria) return;
+
+  const res = await fetch(`/motoshoppy/ventas/get_marcas_por_categoria.php?categoria=${categoria}`);
+  const marcas = await res.json();
+
+  marcas.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.idmarcas;
+    opt.textContent = m.nombre_marca;
+    filtroMarca.appendChild(opt);
+  });
+
+});
+
   // Inicializar DataTable
   tabla = new DataTable('#tablaVentas', {
     ajax: (d, cb) => {
@@ -231,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lengthChange: false,
     ordering: false,
     columns: [
+      { data: 'nombre_categoria' },
       { data: 'codigo' },
       { data: 'nombre' },
       { data: 'modelo' },
@@ -837,47 +862,47 @@ METADATA.monedas.forEach(m => {
     // ===============================
     // 4) ARMAR HTML DEL MODAL
     // ===============================
-    const htmlPago = `
-        <div class="text-start">
+    htmlPago = `
+  <div class="text-start">
 
-            <label class="form-label fw-bold mt-2">Método de pago</label>
-            <select id="metodoPago" class="form-select">
-                ${optionsMetodo}
-            </select>
+    <label class="form-label fw-bold mt-2">Método de pago</label>
+    <select id="metodoPago" class="form-select">
+      ${optionsMetodo}
+    </select>
 
-            <div id="otroMetodo" class="mt-3 d-none">
-                <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
-            </div>
+    <div id="otroMetodo" class="mt-3 d-none">
+      <input id="otroTexto" class="form-control" placeholder="Describí el método de pago...">
+    </div>
 
-            <hr class="my-3">
+    <hr class="my-3">
 
-<label class="form-label fw-bold">Moneda</label>
-<select id="monedaPago" class="form-select d-none">
-    ${optionsMoneda}
-</select>
+    <label class="form-label fw-bold">Moneda</label>
+    <select id="monedaPago" class="form-select d-none">
+      ${optionsMoneda}
+    </select>
 
+    ${
+      comprobanteNombre === "factura"
+      ? `
+        <hr class="my-3">
+        <label class="form-label fw-bold">Datos del cliente (Factura)</label>
 
-            ${
-                comprobanteNombre === "factura"
-                ? `
-                    <hr class="my-3">
-                    <label class="form-label fw-bold">Datos del cliente (Factura)</label>
+        <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
+        <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
+        <input id="cliDniFactura" class="form-control mb-2" placeholder="CI/RUC">
+        <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
 
-                    <input id="cliNombreFactura" class="form-control mb-2" placeholder="Nombre">
-                    <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
-                    <input id="cliDniFactura" class="form-control mb-2" placeholder="CI/RUC">
-                    <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
-                `
-                : `
-                    <hr class="my-3">
-                    <label class="form-label fw-bold">CI/RUC del cliente (Ticket)</label>
-                    <input id="cliDniTicket" class="form-control mb-2" placeholder="CI/RUC">
-                `
-            }
-
-        </div>
-    `;
-
+        <!-- 🔥 NUEVO CAMPO -->
+        <input id="cliDireccionFactura" class="form-control mb-2" placeholder="Dirección">
+      `
+      : `
+        <hr class="my-3">
+        <label class="form-label fw-bold">CI/RUC del cliente (Ticket)</label>
+        <input id="cliDniTicket" class="form-control mb-2" placeholder="CI/RUC">
+      `
+    }
+  </div>
+`;
     // ===============================
     // 5) CONFIRMAR VENTA
     // ===============================
@@ -941,7 +966,7 @@ METADATA.monedas.forEach(m => {
         },
 
         preConfirm: () => {
-
+    const direccion = document.getElementById('cliDireccionFactura')?.value.trim();
     const metodo = document.getElementById('metodoPago').value;
     const metodo_desc = metodo === '4'
         ? document.getElementById('otroTexto').value.trim()
@@ -959,6 +984,10 @@ METADATA.monedas.forEach(m => {
         return false;
     }
 
+    if (!direccion) {
+  Swal.showValidationMessage("Ingresá la dirección del cliente");
+  return false;
+}
     // Obtener método seleccionado desde METADATA
     const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == metodo);
 
@@ -992,7 +1021,7 @@ METADATA.monedas.forEach(m => {
             return false;
         }
 
-        cliente = { nombre, apellido, dni, celular };
+        cliente = { nombre, apellido, dni, celular, direccion };
 
     } else {
         const dni = document.getElementById('cliDniTicket').value.trim();
@@ -1045,11 +1074,19 @@ if (!confirmar) return;
             showConfirmButton: false
         });
 
-        if (comprobanteNombre === "ticket") {
-            window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}`, '_blank');
-        } else {
-            window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, '_blank');
-        }
+        const direccion = confirmar.cliente?.direccion || '';
+
+if (comprobanteNombre === "ticket") {
+    window.open(
+        `/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}`,
+        '_blank'
+    );
+} else {
+    window.open(
+        `/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(direccion)}`,
+        '_blank'
+    );
+}
 
     } catch (err) {
         console.error(err);

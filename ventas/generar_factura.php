@@ -13,7 +13,7 @@ class FacturaParaguayaPDF extends FPDF
     public $cliDni;
     public $cliCelular;
     public $metodoPago;
-
+public $cliDireccion;
     function conv($txt) {
         return mb_convert_encoding($txt, 'ISO-8859-1', 'UTF-8');
     }
@@ -94,9 +94,9 @@ class FacturaParaguayaPDF extends FPDF
         $this->Rect(10,10,190,32,'F');
 
         // logo
-        $logo = "../uploads/img/logo_motosshoppy.jpg";
+        $logo = "../imagenes/logo_motosshoppy.png";
         if(file_exists($logo)){
-            $this->Image($logo, 12, 12, 70, 28);
+            $this->Image($logo, 12, 5, 70, 80);
         }
 
         // titulo
@@ -165,11 +165,17 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(22,6,$this->conv('C.I / RUC:'),1,0,'L');
         $this->Cell(43,6,$this->conv($this->cliDni),1,1,'L');
 
-        // CEL
-        $this->Cell(15,6,$this->conv('Celular:'),1,0,'L');
-        $this->Cell(100,6,$this->conv($this->cliCelular),1,0,'L');
-        $this->Cell(36,6,$this->conv('NOTA REMISIÓN N°:'),1,0,'L');
-        $this->Cell(39,6,'',1,1,'L');
+        // CELULAR
+$this->Cell(15,6,$this->conv('Celular:'),1,0,'L');
+$this->Cell(60,6,$this->conv($this->cliCelular),1,0,'L');
+
+// DIRECCIÓN
+$this->Cell(20,6,$this->conv('Dirección:'),1,0,'L');
+$this->Cell(95,6,$this->conv($this->cliDireccion),1,1,'L');
+
+// REMISIÓN
+$this->Cell(36,6,$this->conv('NOTA REMISIÓN N°:'),1,0,'L');
+$this->Cell(154,6,'',1,1,'L');
 
         $this->Ln(2);
     }
@@ -373,6 +379,8 @@ $pdf->cliCelular  = $venta['cliCelular'];
 $metodo = $venta['metodo_pago_nombre'] ?? '';
 $moneda = $venta['moneda_codigo'] ?? '';
 
+$direccion = $_GET['dir'] ?? '';
+$pdf->cliDireccion = $direccion;
 if ($moneda !== '') {
     $pdf->metodoPago = $metodo . " (" . $moneda . ")";
 } else {

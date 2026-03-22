@@ -97,7 +97,7 @@ switch ($ordenar) {
 /* ==========================
    LÍMITE
 ========================== */
-$sql .= " LIMIT 200 ";
+
 
 $stmt = $conexion->prepare($sql);
 $stmt->execute($params);

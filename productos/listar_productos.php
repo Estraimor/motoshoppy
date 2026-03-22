@@ -5,44 +5,43 @@ require_once '../conexion/conexion.php';
 // Traer productos
 $stmt = $conexion->query("
     SELECT 
-        p.idproducto, 
-        p.codigo, 
-        p.nombre, 
-        p.modelo, 
-        p.precio_expuesto,
-        p.precio_costo,      -- si querés permitir verlo
-        c.nombre_categoria,
+    p.idproducto,
+    p.codigo,
+    COALESCE(p.nombre,'Sin nombre') AS nombre,
+    COALESCE(p.modelo,'-') AS modelo,
+    COALESCE(p.precio_expuesto,0) AS precio_expuesto,
+    COALESCE(p.precio_costo,0) AS precio_costo,
 
-        m.idmarcas AS idmarca,
-        m.nombre_marca,
+    COALESCE(c.nombre_categoria,'Sin categoría') AS nombre_categoria,
 
-        p.descripcion, 
-        p.peso_ml, 
-        p.peso_g, 
-        p.imagen,
+    m.idmarcas AS idmarca,
+    COALESCE(m.nombre_marca,'Sin marca') AS nombre_marca,
 
-        u.lugar, 
-        u.estante,
+    COALESCE(p.descripcion,'{}') AS descripcion,
+    COALESCE(p.peso_ml,0) AS peso_ml,
+    COALESCE(p.peso_g,0) AS peso_g,
 
-        -- 🔥 STOCK
-        sp.idstock_producto,
-        sp.stock_minimo,
-        sp.cantidad_actual,
-        sp.cantidad_exhibida
+    COALESCE(p.imagen,'') AS imagen,
 
-    FROM producto p
-    LEFT JOIN categoria c 
-        ON p.Categoria_idCategoria = c.idCategoria
-    LEFT JOIN marcas m 
-        ON p.marcas_idmarcas = m.idmarcas
-    LEFT JOIN ubicacion_producto u 
-        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
+    COALESCE(u.lugar,'Sin ubicación') AS lugar,
+    COALESCE(u.estante,'') AS estante,
 
-    -- 🔥 JOIN REAL QUE FALTABA
-    LEFT JOIN stock_producto sp 
-        ON sp.producto_idProducto = p.idproducto
+    sp.idstock_producto,
+    COALESCE(sp.stock_minimo,0) AS stock_minimo,
+    COALESCE(sp.cantidad_actual,0) AS cantidad_actual,
+    COALESCE(sp.cantidad_exhibida,0) AS cantidad_exhibida
 
-    ORDER BY p.idproducto DESC
+FROM producto p
+LEFT JOIN categoria c
+    ON p.Categoria_idCategoria = c.idCategoria
+LEFT JOIN marcas m
+    ON p.marcas_idmarcas = m.idmarcas
+LEFT JOIN ubicacion_producto u
+    ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
+LEFT JOIN stock_producto sp
+    ON sp.producto_idProducto = p.idproducto
+
+ORDER BY p.idproducto DESC
 ");
 
 $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -108,7 +107,7 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <td><?= htmlspecialchars($p['nombre_marca'] ?? '') ?></td>
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
-                            <td>$<?= number_format($p['precio_expuesto'], 2, ',', '.') ?></td>
+                            <td>$<?= number_format((float)($p['precio_expuesto'] ?? 0), 2, ',', '.') ?></td>
                             <td class="text-center">
                                 <!-- Botón detalle de cada producto -->
                                 <button class="btn btn-info btn-sm ver-detalle"
@@ -263,87 +262,77 @@ const USER_ROLE = <?= json_encode($_SESSION['rol'] ?? '') ?>;
 $(document).ready(function () {
 
     let tabla = $('#tablaProductos').DataTable({
-        processing: true,
-        serverSide: true,
-        pageLength: 5,
-        lengthMenu: [5,10,25,50,100],
-        ajax: {
-            url: 'buscar_productos.php',
-            type: 'POST',
-            data: function(d) {
 
-                d.busqueda  = $('#filtroBusqueda').val();
-                d.marca     = $('#filtroMarca').val();
-                d.categoria = $('#filtroCategoria').val();
-                d.min       = $('#precioMin').val();
-                d.max       = $('#precioMax').val();
-                d.proveedor = $('#filtroProveedor').val();
-                d.orden     = $('#ordenarPor').val();
-            }
-        },
-        columns: [
-            { data: 'codigo' },
-            { data: 'nombre' },
-            { data: 'nombre_marca' },
-            { data: 'nombre_categoria' },
-            { 
-                data: 'precio_expuesto',
-                render: function(data){
-                    return "$" + parseFloat(data).toLocaleString('es-AR',{
-                        minimumFractionDigits:2
-                    });
-                }
-            },
-            { 
-                data: null,
-                orderable: false,
-                render: function(data){
+    pageLength: 10,
+    lengthMenu: [5,10,25,50,100],
+    responsive: true,
 
-                    // 🔥 Botón dinámico según estado
-                    let botonEstado = data.estado == 1
-                        ? `<button class="btn btn-danger btn-sm toggle-estado"
-                                data-id="${data.idproducto}"
-                                data-estado="0">
-                                <i class="fa-solid fa-trash"></i> Desactivar
-                           </button>`
-                        : `<button class="btn btn-success btn-sm toggle-estado"
-                                data-id="${data.idproducto}"
-                                data-estado="1">
-                                <i class="fa-solid fa-rotate-left"></i> Activar
-                           </button>`;
+    language: {
+        lengthMenu: "Mostrar _MENU_ productos",
+        search: "Buscar:",
+        info: "Mostrando _START_ a _END_ de _TOTAL_ productos",
+        zeroRecords: "No se encontraron productos"
+    }
 
-                    return `
-                        <button class="btn btn-info btn-sm ver-detalle"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalDetalle"
-                            data-producto='${JSON.stringify(data)}'>
-                            <i class="fa-solid fa-circle-info"></i> Detalle
-                        </button>
-                        ${botonEstado}
-                    `;
-                }
-            }
-        ],
-        language: {
-            lengthMenu: "Mostrar _MENU_ productos",
-            search: "Buscar:",
-            info: "Mostrando _START_ a _END_ de _TOTAL_ productos",
-            processing: "Cargando..."
+});
+
+
+/* ===============================
+   FILTROS PERSONALIZADOS
+================================ */
+
+$('#btnAplicarFiltros').click(function(){
+
+    let busqueda = $('#filtroBusqueda').val().toLowerCase();
+    let marca = $('#filtroMarca option:selected').text().toLowerCase();
+    let categoria = $('#filtroCategoria option:selected').text().toLowerCase();
+    let min = parseFloat($('#precioMin').val()) || 0;
+    let max = parseFloat($('#precioMax').val()) || Infinity;
+
+    $.fn.dataTable.ext.search.push(function(settings, data){
+
+        let codigo = (data[0] || '').toLowerCase();
+        let nombre = (data[1] || '').toLowerCase();
+        let marcaTabla = (data[2] || '').toLowerCase();
+        let categoriaTabla = (data[3] || '').toLowerCase();
+        let precio = parseFloat(data[4].replace(/[^\d.-]/g,'')) || 0;
+
+        if(busqueda && !(codigo.includes(busqueda) || nombre.includes(busqueda))){
+            return false;
         }
+
+        if(marca && marca !== 'todas' && !marcaTabla.includes(marca)){
+            return false;
+        }
+
+        if(categoria && categoria !== 'todas' && !categoriaTabla.includes(categoria)){
+            return false;
+        }
+
+        if(precio < min || precio > max){
+            return false;
+        }
+
+        return true;
+
     });
 
+    tabla.draw();
+
+});
     /* ===============================
        BOTÓN APLICAR FILTROS
     ================================ */
 
-    $('#btnAplicarFiltros').click(function(){
-        tabla.ajax.reload(null, false);
-    });
-
     $('#btnLimpiarFiltros').click(function(){
-        $('#panelSettings input, #panelSettings select').val('');
-        tabla.ajax.reload();
-    });
+
+    $('#panelSettings input, #panelSettings select').val('');
+
+    $.fn.dataTable.ext.search.pop();
+
+    tabla.search('').columns().search('').draw();
+
+});
 
     /* ===============================
        ACTIVAR / DESACTIVAR

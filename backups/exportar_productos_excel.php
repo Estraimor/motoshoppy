@@ -101,16 +101,28 @@ foreach ($productos as $p) {
 
     // limpiar json descripcion
     $descripcion = '';
-    if($p['descripcion']){
-        $desc = json_decode($p['descripcion'], true);
-        if(is_array($desc)){
-            foreach($desc as $k => $v){
-                $descripcion .= ucfirst($k) . ": " . $v . " | ";
+
+if (!empty($p['descripcion'])) {
+
+    $desc = json_decode($p['descripcion'], true);
+
+    if (is_array($desc)) {
+
+        foreach ($desc as $k => $v) {
+
+            if (is_array($v)) {
+                $v = implode(', ', $v);
             }
-        } else {
-            $descripcion = $p['descripcion'];
+
+            $descripcion .= ucfirst($k) . ": " . $v . " | ";
         }
+
+    } else {
+
+        $descripcion = $p['descripcion'];
+
     }
+}
 
     $sheet->setCellValue("A$fila", $p['nombre']);
     $sheet->setCellValue("B$fila", $p['codigo']);

@@ -2,6 +2,13 @@
 include './dashboard/nav.php';
 require_once './conexion/conexion.php';
 
+
+function mostrar($valor, $texto = 'Sin dato'){
+    if($valor === null || $valor === ''){
+        return $texto;
+    }
+    return htmlspecialchars($valor);
+}
 // === Obtener métricas del sistema ===
 $totalCategorias = $conexion->query("SELECT COUNT(*) FROM categoria")->fetchColumn();
 $totalMarcas = $conexion->query("SELECT COUNT(*) FROM marcas")->fetchColumn();
@@ -257,7 +264,7 @@ elseif (
 
               <tr>
                 <td><?= htmlspecialchars($p['nombre']) ?></td>
-                <td><?= htmlspecialchars($p['codigo']) ?></td>
+                <td><?= mostrar($p['codigo'], 'Sin código') ?></td>
 
                 <!-- Stock exhibido -->
                 <td class="text-center <?= $exhibido === 0 ? 'text-danger fw-bold' : 'text-warning' ?>">
@@ -339,11 +346,11 @@ elseif (
       </div>
       <form id="formCotizacion" autocomplete="off">
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="usd_ars" class="form-label text-warning fw-semibold">
-              <i class="fa-solid fa-dollar-sign me-1"></i>1 USD en ARS
+          <div class="mb-2">
+            <label for="ars_pyg" class="form-label text-warning fw-semibold">
+              <i class="fa-solid fa-money-bill-wave me-1"></i>1 ARS en PYG
             </label>
-            <input type="number" step="0.01" min="0" name="usd_ars" id="usd_ars" class="form-control bg-dark text-white border-secondary" required>
+            <input type="number" step="0.01" min="0" name="ars_pyg" id="ars_pyg" class="form-control bg-dark text-white border-secondary" required>
           </div>
           <div class="mb-3">
             <label for="usd_pyg" class="form-label text-warning fw-semibold">
@@ -351,11 +358,11 @@ elseif (
             </label>
             <input type="number" step="0.01" min="0" name="usd_pyg" id="usd_pyg" class="form-control bg-dark text-white border-secondary" required>
           </div>
-          <div class="mb-2">
-            <label for="ars_pyg" class="form-label text-warning fw-semibold">
-              <i class="fa-solid fa-money-bill-wave me-1"></i>1 ARS en PYG
+          <div class="mb-3">
+            <label for="usd_ars" class="form-label text-warning fw-semibold">
+              <i class="fa-solid fa-dollar-sign me-1"></i>1 USD en ARS
             </label>
-            <input type="number" step="0.01" min="0" name="ars_pyg" id="ars_pyg" class="form-control bg-dark text-white border-secondary" required>
+            <input type="number" step="0.01" min="0" name="usd_ars" id="usd_ars" class="form-control bg-dark text-white border-secondary" required>
           </div>
         </div>
         <div class="modal-footer border-secondary">
@@ -367,25 +374,6 @@ elseif (
 </div>
 
 
-  <!-- === BLOQUE DE GRÁFICOS === -->
-<div class="row mt-4">
-  <div class="col-md-7 mb-4">
-    <div class="card bg-dark text-white shadow-sm border-secondary">
-      <div class="card-body">
-        <h5 class="text-warning fw-bold mb-3"><i class="fa-solid fa-chart-column me-2"></i>Ventas por mes</h5>
-        <canvas id="graficoVentas"></canvas>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-5 mb-4">
-    <div class="card bg-dark text-white shadow-sm border-secondary">
-      <div class="card-body">
-        <h5 class="text-info fw-bold mb-3"><i class="fa-solid fa-pie-chart me-2"></i>Estado de stock</h5>
-        <canvas id="graficoStock"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
 
 
 

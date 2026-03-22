@@ -38,5 +38,5 @@ if (isset($_GET['id'])) {
     }
 }
 
-header("Location: index.php");
+header("Location: index.php?msg=eliminado");
 exit;

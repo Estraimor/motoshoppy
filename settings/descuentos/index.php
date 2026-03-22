@@ -107,8 +107,7 @@ include '../../conexion/conexion.php';
         SCRIPTS
 ========================= -->
 
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
 
 <script>
 
@@ -128,11 +127,14 @@ let tabla = $('#tablaDescuentos').DataTable({
 
   columns: [
     { data: 'id' },
+
     { data: 'nombre_lista' },
+
     { 
       data: 'porcentaje_descuento',
       render: data => parseFloat(data).toFixed(2) + '%'
     },
+
     {
       data: 'activo',
       render: function(data, type, row){
@@ -142,13 +144,15 @@ let tabla = $('#tablaDescuentos').DataTable({
 
         return `
           <span class="badge ${clase} me-2">${texto}</span>
-          <button class="btn btn-sm btn-outline-light"
-                  onclick="toggleEstado(${row.id}, ${data})">
+          <button class="btn btn-sm btn-outline-light btn-toggle"
+                  data-id="${row.id}"
+                  data-estado="${data}">
             <i class="fa-solid fa-power-off"></i>
           </button>
         `;
       }
     },
+
     { 
       data: null,
       className:'text-center',
@@ -162,6 +166,34 @@ let tabla = $('#tablaDescuentos').DataTable({
       }
     }
   ]
+});
+
+
+// =========================
+// CAMBIAR ESTADO
+// =========================
+
+$('#tablaDescuentos').on('click', '.btn-toggle', async function(){
+
+  const id = this.dataset.id;
+  const estadoActual = this.dataset.estado;
+
+  const nuevoEstado = estadoActual == 1 ? 0 : 1;
+
+  const res = await fetch('api/cambiar_estado.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, estado: nuevoEstado })
+  });
+
+  const r = await res.json();
+
+  if(r.ok){
+    tabla.ajax.reload(null,false);
+  } else {
+    alert(r.msg);
+  }
+
 });
 
 
@@ -184,14 +216,19 @@ document.getElementById('formDescuento')
   const r = await res.json();
 
   if(r.ok){
+
     bootstrap.Modal
       .getInstance(document.getElementById('modalDescuento'))
       .hide();
 
     tabla.ajax.reload(null,false);
+
   } else {
+
     alert(r.msg);
+
   }
+
 });
 
 
@@ -213,7 +250,9 @@ function editar(id){
       new bootstrap.Modal(
         document.getElementById('modalDescuento')
       ).show();
+
     });
+
 }
 
 
@@ -228,32 +267,13 @@ function eliminar(id){
   fetch('api/eliminar.php?id=' + id)
     .then(res => res.json())
     .then(r => {
-      if(r.ok) tabla.ajax.reload(null,false);
+
+      if(r.ok){
+        tabla.ajax.reload(null,false);
+      }
+
     });
-}
 
-
-// =========================
-// TOGGLE ESTADO
-// =========================
-
-async function toggleEstado(id, estadoActual){
-
-  const nuevoEstado = estadoActual == 1 ? 0 : 1;
-
-  const res = await fetch('api/cambiar_estado.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, estado: nuevoEstado })
-  });
-
-  const r = await res.json();
-
-  if(r.ok){
-    tabla.ajax.reload(null,false);
-  } else {
-    alert(r.msg);
-  }
 }
 
 
@@ -273,6 +293,7 @@ document.addEventListener("DOMContentLoaded", function(){
       formEl.reset();
       document.getElementById('descuento_id').value = '';
       document.getElementById('activo').checked = true;
+
   });
 
   modalEl.addEventListener('hidden.bs.modal', function(){
@@ -280,10 +301,10 @@ document.addEventListener("DOMContentLoaded", function(){
       formEl.reset();
       document.getElementById('descuento_id').value = '';
       document.getElementById('activo').checked = true;
+
   });
 
 });
 
 </script>
-
 <?php include '../../dashboard/footer.php'; ?>
