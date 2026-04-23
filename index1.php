@@ -37,12 +37,24 @@ WHERE
 ORDER BY
   cantidad_exhibida ASC,
   cantidad_actual ASC
-
-LIMIT 10;
+;
 
 
 ")->fetchAll(PDO::FETCH_ASSOC);
 
+
+// =========================
+// ROLES (usar los del nav.php)
+// =========================
+$roles = $_SESSION['roles'] ?? [];
+
+// permisos
+$esAdmin       = in_array('Administrador', $roles);
+$esReponedor   = in_array('Reponedor', $roles);
+$esVentas      = in_array('Ventas', $roles);
+
+// regla principal
+$puedeTocarStock = $esAdmin || $esReponedor;
 ?>
 <link rel="stylesheet" href="./stock.css">
 <div class="content-header d-flex justify-content-between align-items-center mb-3">
@@ -285,27 +297,38 @@ elseif (
 
                 <td class="text-center">
 
-<?php
-    // Definimos modo final
-    if ($accion === 'mover') {
-        $modo = 'mover';
-    } elseif ($accion === 'configurar') {
-        $modo = 'configurar';
-    } else {
-        $modo = 'pedir';
-    }
-?>
+<?php if ($puedeTocarStock): ?>
 
-<a href="<?= $modo === 'pedir'
-        ? './reponer_stock/index.php?producto=' . $p['idProducto']
-        : 'movimientos_stock/index.php?producto=' . $p['idProducto'] . '&modo=' . $modo
-    ?>"
-   class="btn <?= $btn ?> btn-sm fw-bold">
+    <?php
+        // modo limpio y claro
+        switch ($accion) {
+            case 'mover':
+                $modo = 'mover';
+                break;
+            case 'configurar':
+                $modo = 'configurar';
+                break;
+            default:
+                $modo = 'pedir';
+        }
 
-    <i class="fa-solid <?= $icono ?>"></i>
-    <?= $texto ?>
+        $url = ($modo === 'pedir')
+            ? './reponer_stock/index.php?producto=' . $p['idProducto']
+            : 'movimientos_stock/index.php?producto=' . $p['idProducto'] . '&modo=' . $modo;
+    ?>
 
-</a>
+    <a href="<?= $url ?>" class="btn <?= $btn ?> btn-sm fw-bold">
+        <i class="fa-solid <?= $icono ?>"></i>
+        <?= $texto ?>
+    </a>
+
+<?php else: ?>
+
+    <span class="badge bg-secondary px-3 py-2">
+        <i class="fa-solid fa-lock me-1"></i> Sin permiso
+    </span>
+
+<?php endif; ?>
 
 </td>
               </tr>

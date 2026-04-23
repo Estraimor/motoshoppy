@@ -438,36 +438,60 @@ console.log(data); // 🔍 debug
             atributosHTML = `<p class="text-danger">Error al interpretar JSON</p>`;
         }
 
-        const imagenURL = (data.imagen && data.imagen !== "NULL") 
-            ? '../' + data.imagen 
-            : 'https://via.placeholder.com/250x250?text=Sin+Imagen';
+        const imagenURL = (data.imagen && data.imagen !== "NULL" && data.imagen !== "")
+    ? '../' + data.imagen 
+    : 'https://via.placeholder.com/250x250?text=Sin+Imagen';
 
-        // Construcción del contenido horizontal
-        const html = `
-        <div class="col-info">
-            <p><strong>Código:</strong> ${data.codigo ?? ''}</p>
-            <p><strong>Nombre:</strong> ${data.nombre ?? ''}</p>
-            <p><strong>Modelo:</strong> ${data.modelo ?? ''}</p>
-            <p><strong>Marca:</strong> ${data.nombre_marca ?? ''}</p>
-            <p><strong>Categoría:</strong> ${data.nombre_categoria ?? ''}</p>
-            <p><strong>Precio Expuesto:</strong> $${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
-            <p><strong>Peso (ml):</strong> ${data.peso_ml ?? ''}</p>
-            <p><strong>Peso (g):</strong> ${data.peso_g ?? ''}</p>
-            <p><strong>Ubicación:</strong> ${(data.lugar ?? '')} ${(data.estante ?? '')}</p>
-        </div>
+// ==============================
+//   FORMATEO UBICACIÓN 🔥
+// ==============================
+let ubicacionTexto = 'Sin ubicación';
 
-        <div class="col-img">
-            <img id="detalleImagen" src="${imagenURL}" alt="Imagen del producto">
-        </div>
-        `;
+if (data.lugar && data.lugar !== 'Sin ubicación') {
+    ubicacionTexto = data.lugar;
 
-        $('#detalleContenido').html(html);
-        $('#bloqueAtributos').html(atributosHTML);
+    if (data.estante && data.estante !== '') {
+        ubicacionTexto += ' - Estante ' + data.estante;
+    }
+}
 
-        // Restaurar botón si estaba en modo guardar
-        $('#btnGuardar').text('Modificar').attr('id', 'btnEditar')
-            .removeClass('btn-success').addClass('btn-primary');
-    });
+// ==============================
+//   CONTENIDO HTML
+// ==============================
+const html = `
+<div class="col-info">
+    <p><strong>Código:</strong> ${data.codigo ?? ''}</p>
+    <p><strong>Nombre:</strong> ${data.nombre ?? ''}</p>
+    <p><strong>Modelo:</strong> ${data.modelo ?? '-'}</p>
+    <p><strong>Marca:</strong> ${data.nombre_marca ?? 'Sin marca'}</p>
+    <p><strong>Categoría:</strong> ${data.nombre_categoria ?? 'Sin categoría'}</p>
+    <p><strong>Precio Expuesto:</strong> $${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
+    <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
+    <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
+    <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>
+</div>
+
+<div class="col-img text-center">
+    <img id="detalleImagen" src="${imagenURL}" alt="Imagen del producto" class="img-fluid rounded">
+</div>
+`;
+
+// ==============================
+//   RENDER
+// ==============================
+$('#detalleContenido').html(html);
+$('#bloqueAtributos').html(atributosHTML);
+
+// ==============================
+//   RESET BOTÓN
+// ==============================
+$('#btnGuardar')
+    .text('Modificar')
+    .attr('id', 'btnEditar')
+    .removeClass('btn-success')
+    .addClass('btn-primary');
+
+});
 
 let productoActual = null;
 
@@ -524,6 +548,20 @@ $(document).on('click', '#btnEditar', function () {
 
             <label class="mt-2"><strong>Peso (g):</strong></label>
             <input type="number" id="edit_pesog" class="form-control form-control-sm" value="${data.peso_g ?? ''}">
+            
+            
+<label class="mt-2"><strong>Ubicación:</strong></label>
+<input type="text" id="edit_ubicacion_search" 
+class="form-control form-control-sm" 
+placeholder="Ej: Depósito - Estante 3"
+value="${data.lugar && data.lugar !== 'Sin ubicación' 
+    ? data.lugar + (data.estante ? ' - Estante ' + data.estante : '') 
+    : ''}">
+
+<label class="mt-2"><strong>Estante:</strong></label>
+<input type="text" id="edit_estante" 
+class="form-control form-control-sm" 
+value="${data.estante ?? ''}">
         </div>
 
         <div class="col-img w-50 text-center">
@@ -690,6 +728,9 @@ $(document).on('click', '#btnGuardar', function () {
     formData.append('precio', $('#edit_precio').val());
     formData.append('peso_ml', $('#edit_pesoml').val());
     formData.append('peso_g', $('#edit_pesog').val());
+    formData.append('lugar', $('#edit_lugar').val());
+formData.append('estante', $('#edit_estante').val());
+formData.append('ubicacion_texto', $('#edit_ubicacion_search').val());
 
     // Si es admin → guardar precio costo
     if (USER_ROLE === "Administrador") {
@@ -830,6 +871,31 @@ $(document).on('click', '.borrar-producto', function() {
 });
 
 
+</script>
+
+<script>
+$(document).on('focus', '#edit_ubicacion_search', function() {
+
+    if (!$(this).data('ui-autocomplete')) {
+
+        $(this).autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "buscar_ubicaciones.php",
+                    type: "GET",
+                    data: { term: request.term },
+                    dataType: "json",
+                    success: function(data) {
+                        response(data);
+                    }
+                });
+            },
+            minLength: 1
+        });
+
+    }
+
+});
 </script>
 
 <!-- SweetAlert2 -->

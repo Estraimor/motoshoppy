@@ -68,6 +68,17 @@
   vertical-align: middle;
 }
 
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+#tablaStockAlertas {
+  width: 100% !important;
+  table-layout: auto;
+  min-width: 900px; 
+}
 /* =========================================
    🎯 ESTADOS DE STOCK
    ========================================= */

@@ -239,113 +239,148 @@ filtroCategoria.addEventListener("change", async () => {
 
 });
 
-  // Inicializar DataTable
   tabla = new DataTable('#tablaVentas', {
-    ajax: (d, cb) => {
-      const p = paramsActuales();
-      const qs = new URLSearchParams(p).toString();
-      const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
-      fetch(url)
-        .then(r => r.json())
-        .then(rows => cb({ data: rows }))
-        .catch(() => cb({ data: [] }));
+  ajax: (d, cb) => {
+    const p = paramsActuales();
+    const qs = new URLSearchParams(p).toString();
+    const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
+    fetch(url)
+      .then(r => r.json())
+      .then(rows => cb({ data: rows }))
+      .catch(() => cb({ data: [] }));
+  },
+
+  deferRender: true,
+  pageLength: 10,
+  lengthChange: false,
+  ordering: false,
+
+  /* 🔥 CLAVES */
+  scrollX: true,
+  autoWidth: false,
+  responsive: false,
+
+  /* 🔥 ESTO ES MUY IMPORTANTE */
+  columnDefs: [
+    { width: "120px", targets: 0 },
+    { width: "100px", targets: 1 },
+    { width: "200px", targets: 2 },
+    { width: "120px", targets: 3 },
+    { width: "120px", targets: 4 },
+    { width: "100px", targets: 5 },
+    { width: "120px", targets: 6 },
+    { width: "180px", targets: 7 }
+  ],
+
+  columns: [
+    { data: 'nombre_categoria' },
+    { data: 'codigo' },
+    { data: 'nombre' },
+    { data: 'modelo' },
+    { data: 'nombre_marca' },
+    {
+      data: 'precio_expuesto',
+      render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
     },
-    deferRender: true,
-    pageLength: 10,
-    lengthChange: false,
-    ordering: false,
-    columns: [
-      { data: 'nombre_categoria' },
-      { data: 'codigo' },
-      { data: 'nombre' },
-      { data: 'modelo' },
-      { data: 'nombre_marca' },
-      {
-        data: 'precio_expuesto',
-        render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
-      },
-      {
-  data: null,
-  render: (_, __, row) => {
+    {
+      data: null,
+      render: (_, __, row) => {
+        const g = row.stock_general;
+        const e = row.stock_exhibido;
 
-    const g = row.stock_general;   // depósito
-    const e = row.stock_exhibido;  // exhibido
+        if (row.stock_estado === 'sin_stock') {
+          return `<span class="text-danger fw-bold">Sin stock</span>`;
+        }
 
-    // Caso sin stock
-    if (row.stock_estado === 'sin_stock') {
-      return `<span class="text-danger fw-bold">Sin stock</span>`;
+        let colorG = 'text-success';
+        let colorE = 'text-info';
+
+        if (row.stock_estado === 'bajo_stock') {
+          colorG = 'text-warning';
+        }
+
+        return `
+          <span class="${colorG} fw-bold">${g}</span>
+          <span class="text-secondary"> / </span>
+          <span class="${colorE} fw-bold">${e}</span>
+        `;
+      }
+    },
+    {
+      data: null,
+      render: (_, __, row) => `
+        <div class="input-group input-group-sm">
+          <button class="btn btn-outline-warning btnMenos" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>-</button>
+          <input type="number" value="1" min="1" class="form-control text-center qtyInput" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
+          <button class="btn btn-outline-warning btnMas" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>+</button>
+          <button class="btn btn-success btnAgregar ms-2" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
+            <i class="fa-solid fa-cart-plus"></i>
+          </button>
+        </div>`
+    }
+  ],
+
+  rowCallback: (row, data) => {
+    if (data.stock_estado === 'sin_stock') {
+      row.style.opacity = '0.6';
+      row.style.pointerEvents = 'none';
+    } else {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.input-group')) return;
+        mostrarDetalle(data);
+      });
     }
 
-    // Colores según estado
-    let colorG = 'text-success';
-    let colorE = 'text-info';
+    const menos = row.querySelector('.btnMenos');
+    const mas = row.querySelector('.btnMas');
+    const agregar = row.querySelector('.btnAgregar');
 
-    if (row.stock_estado === 'bajo_stock') {
-      colorG = 'text-warning';
+    if (menos && mas && agregar && data.stock_estado !== 'sin_stock') {
+      menos.onclick = e => {
+        e.stopPropagation();
+        const input = row.querySelector('.qtyInput');
+        input.value = Math.max(1, parseInt(input.value || 1) - 1);
+      };
+
+      mas.onclick = e => {
+        e.stopPropagation();
+        const input = row.querySelector('.qtyInput');
+        input.value = parseInt(input.value || 1) + 1;
+      };
+
+      agregar.onclick = e => {
+        e.stopPropagation();
+        const qty = parseInt(row.querySelector('.qtyInput').value || 1);
+        agregarAlCarrito(data, qty);
+      };
     }
+  },
 
-    return `
-      <span class="${colorG} fw-bold">${g}</span>
-      <span class="text-secondary"> / </span>
-      <span class="${colorE} fw-bold">${e}</span>
-    `;
+  language: {
+    search: 'Buscar:',
+    zeroRecords: 'Sin resultados',
+    info: 'Mostrando _START_ a _END_ de _TOTAL_',
+    infoEmpty: 'Sin registros',
+    paginate: { previous: '‹', next: '›' }
   }
-},
+});
 
-      {
-        data: null,
-        render: (_, __, row) => `
-          <div class="input-group input-group-sm">
-            <button class="btn btn-outline-warning btnMenos" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>-</button>
-            <input type="number" value="1" min="1" class="form-control text-center qtyInput" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
-            <button class="btn btn-outline-warning btnMas" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>+</button>
-            <button class="btn btn-success btnAgregar ms-2" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
-              <i class="fa-solid fa-cart-plus"></i>
-            </button>
-          </div>`
-      }
-    ],
-    rowCallback: (row, data) => {
-      if (data.stock_estado === 'sin_stock') {
-        row.style.opacity = '0.6';
-        row.style.pointerEvents = 'none';
-      } else {
-        row.addEventListener('click', (e) => {
-          if (e.target.closest('.input-group')) return;
-          mostrarDetalle(data);
-        });
-      }
 
-      const menos = row.querySelector('.btnMenos');
-      const mas = row.querySelector('.btnMas');
-      const agregar = row.querySelector('.btnAgregar');
-      if (menos && mas && agregar && data.stock_estado !== 'sin_stock') {
-        menos.onclick = e => {
-          e.stopPropagation();
-          const input = row.querySelector('.qtyInput');
-          input.value = Math.max(1, parseInt(input.value || 1) - 1);
-        };
-        mas.onclick = e => {
-          e.stopPropagation();
-          const input = row.querySelector('.qtyInput');
-          input.value = parseInt(input.value || 1) + 1;
-        };
-        agregar.onclick = e => {
-          e.stopPropagation();
-          const qty = parseInt(row.querySelector('.qtyInput').value || 1);
-          agregarAlCarrito(data, qty);
-        };
-      }
-    },
-    language: {
-      search: 'Buscar:',
-      zeroRecords: 'Sin resultados',
-      info: 'Mostrando _START_ a _END_ de _TOTAL_',
-      infoEmpty: 'Sin registros',
-      paginate: { previous: '‹', next: '›' }
-    }
-  });
+// 🔥 REAJUSTE AUTOMÁTICO (ZOOM / RESIZE)
+function ajustarTabla() {
+  setTimeout(() => {
+    tabla.columns.adjust().draw(false);
+  }, 200);
+}
 
+// cuando cambia tamaño (zoom incluido)
+window.addEventListener('resize', ajustarTabla);
+
+// cuando volvés a la pestaña
+window.addEventListener('focus', ajustarTabla);
+
+// opcional: cada cierto tiempo (ultra estable)
+setInterval(ajustarTabla, 3000);
   // 🔹 Búsqueda rápida
   const buscarInput = document.getElementById('buscarRapido');
   if (buscarInput) buscarInput.addEventListener('input', debounce(() => tabla.ajax.reload(), 300));
@@ -966,8 +1001,7 @@ METADATA.monedas.forEach(m => {
         },
 
         preConfirm: () => {
-    const direccion = document.getElementById('cliDireccionFactura')?.value.trim();
-    const metodo = document.getElementById('metodoPago').value;
+let direccion = '';    const metodo = document.getElementById('metodoPago').value;
     const metodo_desc = metodo === '4'
         ? document.getElementById('otroTexto').value.trim()
         : metodo;
@@ -984,9 +1018,13 @@ METADATA.monedas.forEach(m => {
         return false;
     }
 
+    if (comprobanteNombre === "factura") {
+    direccion = document.getElementById('cliDireccionFactura')?.value.trim();
+
     if (!direccion) {
-  Swal.showValidationMessage("Ingresá la dirección del cliente");
-  return false;
+        Swal.showValidationMessage("Ingresá la dirección del cliente");
+        return false;
+    }
 }
     // Obtener método seleccionado desde METADATA
     const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == metodo);
