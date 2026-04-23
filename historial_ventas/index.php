@@ -1,5 +1,6 @@
     <?php
     include '../dashboard/nav.php';
+    requerirRol('Administrador', 'Ventas');
     require_once '../conexion/conexion.php';
 
     // Consulta usando PDO
@@ -167,7 +168,9 @@ data-comprobante="<?= ucfirst($row['tipo_comprobante'] ?? 'Sin comprobante') ?>"
         </div>
 
         <div class="modal-footer border-secondary">
-            <button class="btn btn-outline-light" onclick="window.print()">🖨 Imprimir</button>
+            <button class="btn btn-outline-light" id="btnImprimir" onclick="imprimirVenta()">
+              <i class="fa-solid fa-print me-1"></i> Imprimir
+            </button>
 
             <span id="btnDevolverParcialContainer"></span>
             <span id="btnCancelarVentaContainer"></span>
@@ -229,6 +232,9 @@ $(document).ready(() => {
     // ===========================================
     //  Ver detalle
     // ===========================================
+    window.ventaActualId = null;
+    window.ventaActualComprobante = '';
+
     $(document).on("click", ".ver-detalle", function(){
 
         $("#d_fecha").text($(this).data("fecha"));
@@ -239,6 +245,10 @@ $(document).ready(() => {
 
         let idVenta = $(this).data("id");
         let esCancelada = $(this).closest("tr").hasClass("venta-cancelada");
+
+        // Guardar para el botón Imprimir
+        window.ventaActualId = idVenta;
+        window.ventaActualComprobante = $(this).data("comprobante").toLowerCase();
 
         $.post("obtener_detalle.php", { idVenta, modo: "view" }, function(data){
 
@@ -277,6 +287,21 @@ $(document).ready(() => {
     });
 });
 
+
+// ======================================================
+// IMPRIMIR VENTA (ticket o factura según comprobante)
+// ======================================================
+function imprimirVenta() {
+    if (!window.ventaActualId) return;
+
+    const base = window.location.origin + '/motoshoppy';
+
+    if (window.ventaActualComprobante.includes('factura')) {
+        window.open(`${base}/ventas/generar_factura.php?id=${window.ventaActualId}&dir=`, '_blank');
+    } else {
+        window.open(`${base}/ventas/generar_ticket.php?id=${window.ventaActualId}`, '_blank');
+    }
+}
 
 // ======================================================
 // CANCELAR VENTA COMPLETA — USANDO MODAL PERSONALIZADO

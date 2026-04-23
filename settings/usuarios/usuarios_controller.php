@@ -59,6 +59,54 @@ if ($accion === 'crear_usuario') {
 }
 
 /* =========================
+   EDITAR USUARIO
+========================= */
+if ($accion === 'editar_usuario') {
+
+    $usuarioId = $_POST['usuario_id'] ?? null;
+    if (!$usuarioId) {
+        header("Location: index.php?msg=error");
+        exit;
+    }
+
+    $campos = [];
+    $params = [];
+
+    foreach (['nombre', 'apellido', 'dni', 'celular', 'usuario'] as $campo) {
+        $campos[] = "$campo = ?";
+        $params[] = trim($_POST[$campo] ?? '');
+    }
+
+    // Solo actualizar contraseña si se escribió una nueva
+    $nuevaPass = trim($_POST['nueva_pass'] ?? '');
+    if ($nuevaPass !== '') {
+        $campos[] = "pass = ?";
+        $params[] = $nuevaPass;
+    }
+
+    $params[] = $usuarioId;
+
+    $sql = "UPDATE usuario SET " . implode(', ', $campos) . " WHERE idusuario = ?";
+    $conexion->prepare($sql)->execute($params);
+
+    auditoria(
+        $conexion,
+        'UPDATE',
+        'usuarios',
+        'usuario',
+        $usuarioId,
+        'Editó datos del usuario',
+        null,
+        ['nombre' => $_POST['nombre'], 'usuario' => $_POST['usuario']],
+        'usuario',
+        $usuarioId
+    );
+
+    header("Location: index.php?msg=usuario_editado");
+    exit;
+}
+
+/* =========================
    ASIGNAR / CAMBIAR ROLES
 ========================= */
 if ($accion === 'asignar_roles') {

@@ -1,5 +1,6 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Reponedor');
 require_once '../conexion/conexion.php';
 
 // Traer productos
@@ -46,6 +47,15 @@ ORDER BY p.idproducto DESC
 
 $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Cargar ubicaciones para Select2
+$ubicacionesData = $conexion->query("
+    SELECT
+        CONCAT(lugar, IF(estante != '' AND estante IS NOT NULL, CONCAT(' - Estante ', estante), '')) AS id,
+        CONCAT(lugar, IF(estante != '' AND estante IS NOT NULL, CONCAT(' - Estante ', estante), '')) AS text
+    FROM ubicacion_producto
+    ORDER BY lugar, estante
+")->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -57,20 +67,33 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
-/* Tema oscuro para que combine */
+/* ---- Select2 tema oscuro ---- */
 .select2-container .select2-selection {
     background-color: #181818 !important;
     color: #fff !important;
-    border: 1px solid #666 !important;
+    border: 1px solid #555 !important;
+    border-radius: 6px !important;
+    min-height: 32px !important;
 }
+.select2-container .select2-selection__rendered { color: #fff !important; line-height: 30px !important; }
+.select2-container .select2-selection__arrow { top: 4px !important; }
 .select2-dropdown {
-    background-color: #1f1f1f !important;
-    color: white !important;
+    background-color: #1e1e1e !important;
+    border: 1px solid #555 !important;
+    color: #fff !important;
 }
+.select2-results__option { color: #e5e7eb !important; padding: 7px 12px !important; }
+.select2-results__option--highlighted { background: #f59e0b !important; color: #111 !important; }
 .select2-search__field {
     background-color: #111 !important;
-    color: white !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    padding: 5px 8px !important;
 }
+
+/* ---- Badge imagen en tabla ---- */
+#tablaProductos .badge { font-size: 12px; padding: 5px 10px; border-radius: 6px; }
 </style>
 
 
@@ -96,6 +119,7 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <th>Marca</th>
                         <th>Categoría</th>
                         <th>Precio</th>
+                        <th class="text-center">Imagen</th>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -108,6 +132,17 @@ $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
                             <td>$<?= number_format((float)($p['precio_expuesto'] ?? 0), 2, ',', '.') ?></td>
+                            <td class="text-center">
+                                <?php
+                                $img = $p['imagen'] ?? '';
+                                $imgPath = __DIR__ . '/../' . $img;
+                                if ($img && $img !== 'NULL' && file_exists($imgPath)):
+                                ?>
+                                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Imagen OK</span>
+                                <?php else: ?>
+                                    <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>Falta imagen</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-center">
                                 <!-- Botón detalle de cada producto -->
                                 <button class="btn btn-info btn-sm ver-detalle"
@@ -261,78 +296,94 @@ const USER_ROLE = <?= json_encode($_SESSION['rol'] ?? '') ?>;
 <script>
 $(document).ready(function () {
 
+    // Limpiar cualquier filtro residual de sesiones anteriores
+    $.fn.dataTable.ext.search.length = 0;
+
     let tabla = $('#tablaProductos').DataTable({
-
-    pageLength: 10,
-    lengthMenu: [5,10,25,50,100],
-    responsive: true,
-
-    language: {
-        lengthMenu: "Mostrar _MENU_ productos",
-        search: "Buscar:",
-        info: "Mostrando _START_ a _END_ de _TOTAL_ productos",
-        zeroRecords: "No se encontraron productos"
-    }
-
-});
-
-
-/* ===============================
-   FILTROS PERSONALIZADOS
-================================ */
-
-$('#btnAplicarFiltros').click(function(){
-
-    let busqueda = $('#filtroBusqueda').val().toLowerCase();
-    let marca = $('#filtroMarca option:selected').text().toLowerCase();
-    let categoria = $('#filtroCategoria option:selected').text().toLowerCase();
-    let min = parseFloat($('#precioMin').val()) || 0;
-    let max = parseFloat($('#precioMax').val()) || Infinity;
-
-    $.fn.dataTable.ext.search.push(function(settings, data){
-
-        let codigo = (data[0] || '').toLowerCase();
-        let nombre = (data[1] || '').toLowerCase();
-        let marcaTabla = (data[2] || '').toLowerCase();
-        let categoriaTabla = (data[3] || '').toLowerCase();
-        let precio = parseFloat(data[4].replace(/[^\d.-]/g,'')) || 0;
-
-        if(busqueda && !(codigo.includes(busqueda) || nombre.includes(busqueda))){
-            return false;
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        responsive: true,
+        columnDefs: [
+            { targets: 5, searchable: false }  // columna Imagen: excluir del search global
+        ],
+        language: {
+            lengthMenu:  "Mostrar _MENU_ productos",
+            search:      "Buscar:",
+            info:        "Mostrando _START_ a _END_ de _TOTAL_ productos",
+            infoFiltered:"(filtrado de _MAX_ productos)",
+            zeroRecords: "No se encontraron productos",
+            emptyTable:  "No hay productos cargados",
+            paginate: { previous: "Anterior", next: "Siguiente" }
         }
-
-        if(marca && marca !== 'todas' && !marcaTabla.includes(marca)){
-            return false;
-        }
-
-        if(categoria && categoria !== 'todas' && !categoriaTabla.includes(categoria)){
-            return false;
-        }
-
-        if(precio < min || precio > max){
-            return false;
-        }
-
-        return true;
-
     });
 
-    tabla.draw();
-
-});
     /* ===============================
-       BOTÓN APLICAR FILTROS
+       FILTROS PERSONALIZADOS
     ================================ */
 
-    $('#btnLimpiarFiltros').click(function(){
+    // Referencia única al filtro activo — así podemos reemplazarlo sin acumular
+    let filtroFn = null;
 
-    $('#panelSettings input, #panelSettings select').val('');
+    function aplicarFiltros() {
+        const busqueda  = $('#filtroBusqueda').val().toLowerCase().trim();
+        const marcaTxt  = $('#filtroMarca option:selected').text().toLowerCase();
+        const catTxt    = $('#filtroCategoria option:selected').text().toLowerCase();
+        const min       = parseFloat($('#precioMin').val());
+        const max       = parseFloat($('#precioMax').val());
+        const hayMin    = !isNaN(min);
+        const hayMax    = !isNaN(max) && max > 0;
 
-    $.fn.dataTable.ext.search.pop();
+        // Si no hay ningún filtro activo, limpiar y salir
+        const sinFiltros = !busqueda
+            && (!marcaTxt  || marcaTxt  === 'todas')
+            && (!catTxt    || catTxt    === 'todas')
+            && !hayMin && !hayMax;
 
-    tabla.search('').columns().search('').draw();
+        // Remover filtro anterior
+        if (filtroFn !== null) {
+            const idx = $.fn.dataTable.ext.search.indexOf(filtroFn);
+            if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+            filtroFn = null;
+        }
 
-});
+        if (!sinFiltros) {
+            filtroFn = function (settings, data) {
+                if (settings.nTable.id !== 'tablaProductos') return true;
+
+                const codigo    = (data[0] || '').toLowerCase();
+                const nombre    = (data[1] || '').toLowerCase();
+                const marcaFila = (data[2] || '').toLowerCase();
+                const catFila   = (data[3] || '').toLowerCase();
+                const precio    = parseFloat((data[4] || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+
+                if (busqueda && !codigo.includes(busqueda) && !nombre.includes(busqueda)) return false;
+                if (marcaTxt && marcaTxt !== 'todas' && !marcaFila.includes(marcaTxt))    return false;
+                if (catTxt   && catTxt   !== 'todas' && !catFila.includes(catTxt))        return false;
+                if (hayMin && precio < min) return false;
+                if (hayMax && precio > max) return false;
+
+                return true;
+            };
+            $.fn.dataTable.ext.search.push(filtroFn);
+        }
+
+        tabla.draw();
+    }
+
+    $('#btnAplicarFiltros').click(aplicarFiltros);
+
+    $('#btnLimpiarFiltros').click(function () {
+        $('#panelSettings input').val('');
+        $('#panelSettings select').val('').trigger('change');
+
+        if (filtroFn !== null) {
+            const idx = $.fn.dataTable.ext.search.indexOf(filtroFn);
+            if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+            filtroFn = null;
+        }
+
+        tabla.search('').draw();
+    });
 
     /* ===============================
        ACTIVAR / DESACTIVAR
@@ -438,36 +489,60 @@ console.log(data); // 🔍 debug
             atributosHTML = `<p class="text-danger">Error al interpretar JSON</p>`;
         }
 
-        const imagenURL = (data.imagen && data.imagen !== "NULL") 
-            ? '../' + data.imagen 
-            : 'https://via.placeholder.com/250x250?text=Sin+Imagen';
+        const imagenURL = (data.imagen && data.imagen !== "NULL" && data.imagen !== "")
+    ? '../' + data.imagen 
+    : 'https://via.placeholder.com/250x250?text=Sin+Imagen';
 
-        // Construcción del contenido horizontal
-        const html = `
-        <div class="col-info">
-            <p><strong>Código:</strong> ${data.codigo ?? ''}</p>
-            <p><strong>Nombre:</strong> ${data.nombre ?? ''}</p>
-            <p><strong>Modelo:</strong> ${data.modelo ?? ''}</p>
-            <p><strong>Marca:</strong> ${data.nombre_marca ?? ''}</p>
-            <p><strong>Categoría:</strong> ${data.nombre_categoria ?? ''}</p>
-            <p><strong>Precio Expuesto:</strong> $${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
-            <p><strong>Peso (ml):</strong> ${data.peso_ml ?? ''}</p>
-            <p><strong>Peso (g):</strong> ${data.peso_g ?? ''}</p>
-            <p><strong>Ubicación:</strong> ${(data.lugar ?? '')} ${(data.estante ?? '')}</p>
-        </div>
+// ==============================
+//   FORMATEO UBICACIÓN 🔥
+// ==============================
+let ubicacionTexto = 'Sin ubicación';
 
-        <div class="col-img">
-            <img id="detalleImagen" src="${imagenURL}" alt="Imagen del producto">
-        </div>
-        `;
+if (data.lugar && data.lugar !== 'Sin ubicación') {
+    ubicacionTexto = data.lugar;
 
-        $('#detalleContenido').html(html);
-        $('#bloqueAtributos').html(atributosHTML);
+    if (data.estante && data.estante !== '') {
+        ubicacionTexto += ' - Estante ' + data.estante;
+    }
+}
 
-        // Restaurar botón si estaba en modo guardar
-        $('#btnGuardar').text('Modificar').attr('id', 'btnEditar')
-            .removeClass('btn-success').addClass('btn-primary');
-    });
+// ==============================
+//   CONTENIDO HTML
+// ==============================
+const html = `
+<div class="col-info">
+    <p><strong>Código:</strong> ${data.codigo ?? ''}</p>
+    <p><strong>Nombre:</strong> ${data.nombre ?? ''}</p>
+    <p><strong>Modelo:</strong> ${data.modelo ?? '-'}</p>
+    <p><strong>Marca:</strong> ${data.nombre_marca ?? 'Sin marca'}</p>
+    <p><strong>Categoría:</strong> ${data.nombre_categoria ?? 'Sin categoría'}</p>
+    <p><strong>Precio Expuesto:</strong> $${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
+    <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
+    <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
+    <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>
+</div>
+
+<div class="col-img text-center">
+    <img id="detalleImagen" src="${imagenURL}" alt="Imagen del producto" class="img-fluid rounded">
+</div>
+`;
+
+// ==============================
+//   RENDER
+// ==============================
+$('#detalleContenido').html(html);
+$('#bloqueAtributos').html(atributosHTML);
+
+// ==============================
+//   RESET BOTÓN
+// ==============================
+$('#btnGuardar')
+    .text('Modificar')
+    .attr('id', 'btnEditar')
+    .removeClass('btn-success')
+    .addClass('btn-primary');
+
+});
 
 let productoActual = null;
 
@@ -524,6 +599,18 @@ $(document).on('click', '#btnEditar', function () {
 
             <label class="mt-2"><strong>Peso (g):</strong></label>
             <input type="number" id="edit_pesog" class="form-control form-control-sm" value="${data.peso_g ?? ''}">
+            
+            
+<label class="mt-2"><strong>Ubicación:</strong></label>
+<select id="edit_ubicacion_select" class="form-select form-select-sm" style="width:100%">
+    ${(() => {
+        const ub = (data.lugar && data.lugar !== 'Sin ubicación')
+            ? data.lugar + (data.estante ? ' - Estante ' + data.estante : '')
+            : '';
+        return ub ? `<option value="${ub}" selected>${ub}</option>` : '<option value="">Sin ubicación</option>';
+    })()}
+</select>
+<small class="text-secondary">Buscá una existente o escribí una nueva y presioná Enter</small>
         </div>
 
         <div class="col-img w-50 text-center">
@@ -552,6 +639,28 @@ $(document).on('click', '#btnEditar', function () {
                 placeholder: "Buscar marca...",
                 allowClear: true
             });
+        }
+    });
+
+    // ===============================
+    //   SELECT2 UBICACIÓN (local + tags)
+    // ===============================
+    const ubicacionesDisponibles = <?= json_encode(array_values($ubicacionesData), JSON_UNESCAPED_UNICODE) ?>;
+
+    $('#edit_ubicacion_select').select2({
+        dropdownParent: $('#modalDetalle'),
+        width: '100%',
+        placeholder: 'Buscar o escribir nueva ubicación...',
+        allowClear: true,
+        tags: true,
+        data: ubicacionesDisponibles,
+        createTag: params => {
+            const term = $.trim(params.term);
+            if (!term) return null;
+            return { id: term, text: '➕ Nueva: ' + term, newTag: true };
+        },
+        language: {
+            noResults: () => 'No encontrada — escribí y presioná Enter para crear'
         }
     });
 
@@ -690,6 +799,10 @@ $(document).on('click', '#btnGuardar', function () {
     formData.append('precio', $('#edit_precio').val());
     formData.append('peso_ml', $('#edit_pesoml').val());
     formData.append('peso_g', $('#edit_pesog').val());
+    // Valor de ubicación: limpiar el prefijo "➕ Crear: " si es nueva
+    let ubicacionVal = $('#edit_ubicacion_select').val() || '';
+    ubicacionVal = ubicacionVal.replace(/^➕ Crear: /, '').trim();
+    formData.append('ubicacion_texto', ubicacionVal);
 
     // Si es admin → guardar precio costo
     if (USER_ROLE === "Administrador") {
@@ -748,26 +861,7 @@ $(document).on('click', '#btnGuardar', function () {
 
 
 
-    // === Limpiar filtros ===
-    $(document).on('click', '#btnLimpiarFiltros', function() {
-
-    $('#panelSettings input, #panelSettings select').val('');
-
-    if ($.fn.DataTable.isDataTable('#tablaProductos')) {
-        $('#tablaProductos').DataTable().destroy();
-    }
-
-    $('#tablaProductos tbody')
-        .load(location.href + ' #tablaProductos tbody>*', '', function(){
-
-            $('#tablaProductos').DataTable({
-                pageLength: 5,
-                lengthChange: true,
-                lengthMenu: [5,10,25,50,100]
-            });
-
-        });
-});
+    // (limpiar filtros ya está manejado arriba — este bloque era duplicado)
 
 
 
@@ -831,6 +925,7 @@ $(document).on('click', '.borrar-producto', function() {
 
 
 </script>
+
 
 <!-- SweetAlert2 -->
 

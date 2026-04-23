@@ -1,4 +1,13 @@
 <?php
+/* ===== BASE URL DINÁMICA ===== */
+// Calcula el prefijo de la app automáticamente (funciona local y en producción)
+if (!defined('BASE_URL')) {
+    $_appRoot  = rtrim(str_replace('\\', '/', realpath(dirname(__DIR__))), '/');
+    $_docRoot  = rtrim(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])), '/');
+    $_basePath = str_replace($_docRoot, '', $_appRoot);
+    define('BASE_URL', $_basePath);  // '' en raíz, '/motoshoppy' en local
+}
+
 /* ===== CONFIG DE SESIÓN ===== */
 $IDLE_TIMEOUT   = 30 * 60;   // 30 minutos
 $ABS_EXPIRATION = 0;         // 0 = cookie de sesión (se borra al cerrar navegador). 
@@ -31,7 +40,7 @@ if (isset($_SESSION['LAST_ACTIVITY']) && ($now - $_SESSION['LAST_ACTIVITY'] > $I
         setcookie(session_name(), '', $now - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
     session_destroy();
-    header("Location: /motoshoppy/login/login.php?timeout=1");
+    header("Location: " . BASE_URL . "/login/login.php?timeout=1");
     exit;
 }
 $_SESSION['LAST_ACTIVITY'] = $now;
@@ -46,6 +55,21 @@ if (!isset($_SESSION['CREATED'])) {
 
 /* ===== GUARDIA: exigir login ===== */
 if (empty($_SESSION['idusuario'])) {
-    header("Location: /motoshoppy/login/login.php");
+    header("Location: " . BASE_URL . "/login/login.php");
     exit;
+}
+
+/* ===== HELPER: requerirRol() ===== */
+// Uso: requerirRol('Administrador')  o  requerirRol('Administrador','Ventas')
+if (!function_exists('requerirRol')) {
+    function requerirRol(string ...$rolesPermitidos): void {
+        $rolesUsuario = $_SESSION['roles'] ?? [];
+        foreach ($rolesPermitidos as $r) {
+            if (in_array($r, $rolesUsuario)) return;
+        }
+        http_response_code(403);
+        $base = defined('BASE_URL') ? BASE_URL : '';
+        header("Location: {$base}/index1.php?acceso=denegado");
+        exit;
+    }
 }

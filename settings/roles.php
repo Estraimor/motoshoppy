@@ -8,6 +8,7 @@ $roles = $conexion->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 include '../dashboard/nav.php';
+requerirRol('Administrador');
 ?>
 
 <link rel="stylesheet" href="estilos_settings.css">

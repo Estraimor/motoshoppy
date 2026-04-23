@@ -1,5 +1,6 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Ventas');
 require_once '../conexion/conexion.php';
 ?>
 <link rel="stylesheet" href="./analisis.css">

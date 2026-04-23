@@ -22,6 +22,43 @@ $peso_ml = $_POST['peso_ml'] !== '' ? $_POST['peso_ml'] : null;
 $peso_g  = $_POST['peso_g'] !== '' ? $_POST['peso_g'] : null;
 
 /* ==============================
+   🔥 UBICACIÓN INTELIGENTE
+============================== */
+
+$ubicacion_texto = $_POST['ubicacion_texto'] ?? '';
+$ubicacion_id = null;
+
+if (!empty($ubicacion_texto)) {
+
+    // Separar lugar y estante
+    $partes = explode(' - Estante ', $ubicacion_texto);
+    $lugar = trim($partes[0]);
+    $estante = isset($partes[1]) ? trim($partes[1]) : '';
+
+    // Buscar si existe
+    $stmt = $conexion->prepare("
+        SELECT idubicacion_producto 
+        FROM ubicacion_producto 
+        WHERE lugar = ? AND estante = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$lugar, $estante]);
+    $ubicacion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($ubicacion) {
+        $ubicacion_id = $ubicacion['idubicacion_producto'];
+    } else {
+        // Crear nueva ubicación
+        $stmt = $conexion->prepare("
+            INSERT INTO ubicacion_producto (lugar, estante)
+            VALUES (?, ?)
+        ");
+        $stmt->execute([$lugar, $estante]);
+        $ubicacion_id = $conexion->lastInsertId();
+    }
+}
+
+/* ==============================
    PRECIO COSTO (solo admin)
 ============================== */
 
@@ -34,13 +71,12 @@ if (isset($_SESSION['rol']) && $_SESSION['rol'] == 1) {
 }
 
 /* ==============================
-   JSON ATRIBUTOS ADICIONALES
+   JSON ATRIBUTOS
 ============================== */
 
 $descripcion = null;
 
 if (isset($_POST['atributos_json'])) {
-
     $jsonRecibido = json_decode($_POST['atributos_json'], true);
 
     if (is_array($jsonRecibido)) {
@@ -49,7 +85,7 @@ if (isset($_POST['atributos_json'])) {
 }
 
 /* ==============================
-   UPDATE PRODUCTO
+   UPDATE PRODUCTO 🔥
 ============================== */
 
 $sql = $conexion->prepare("
@@ -62,7 +98,8 @@ $sql = $conexion->prepare("
         $extraCostoSQL,
         peso_ml = :peso_ml,
         peso_g = :peso_g,
-        descripcion = COALESCE(:descripcion, descripcion)
+        descripcion = COALESCE(:descripcion, descripcion),
+        ubicacion_producto_idubicacion_producto = :ubicacion
     WHERE idproducto = :id
 ");
 
@@ -74,13 +111,13 @@ $sql->bindValue(':precio_expuesto', $precio_expuesto);
 $sql->bindValue(':peso_ml', $peso_ml);
 $sql->bindValue(':peso_g', $peso_g);
 $sql->bindValue(':descripcion', $descripcion);
+$sql->bindValue(':ubicacion', $ubicacion_id);
 
 if ($precio_costo !== null) {
     $sql->bindValue(':precio_costo', $precio_costo);
 }
 
 $sql->bindValue(':id', $id);
-
 $sql->execute();
 
 /* ==============================
@@ -164,9 +201,7 @@ if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
     }
 
     $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
-
     $nombreArchivo = "prod_" . $codigo . "_" . time() . "." . $ext;
-
     $rutaDestino = $directorio . $nombreArchivo;
 
     if (move_uploaded_file($_FILES['imagen']['tmp_name'], $rutaDestino)) {

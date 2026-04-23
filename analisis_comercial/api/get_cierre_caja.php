@@ -1,4 +1,5 @@
 <?php
+session_start(); if (empty($_SESSION["idusuario"]) || !array_intersect(["Administrador","Ventas"], $_SESSION["roles"] ?? [])) { http_response_code(403); echo json_encode(["error"=>"Acceso denegado"]); exit; }
 date_default_timezone_set('America/Asuncion');
 require_once '../../conexion/conexion.php';
 require_once '../../vendor/autoload.php';

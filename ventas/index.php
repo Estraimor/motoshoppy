@@ -1,104 +1,94 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Ventas');
 require_once '../conexion/conexion.php';
 ?>
 <link rel="stylesheet" href="ventas.css">
 
+<!-- HEADER -->
 <div class="content-header d-flex justify-content-between align-items-center">
-  <h2><i class="fa-solid fa-bolt"></i> Punto de Venta</h2>
+  <h2><i class="fa-solid fa-bolt me-2" style="color:#f59e0b"></i>Punto de Venta</h2>
   <div class="d-flex align-items-center gap-2">
-    <input id="buscarRapido" class="form-control form-control-sm bg-dark text-light border-secondary"
-           placeholder="Buscar nombre o código (Ctrl+K)">
+    <div class="pv-leyenda">
+      <span><b style="color:#34d399">G</b> = Depósito</span>
+      <span><b style="color:#60a5fa">E</b> = Exhibido</span>
+    </div>
+    <input id="buscarRapido" class="form-control form-control-sm"
+           placeholder="🔍 Buscar... (Ctrl+K)">
     <button class="btn btn-outline-warning btn-sm" data-bs-toggle="offcanvas" data-bs-target="#panelSettings">
       <i class="fa-solid fa-sliders"></i> Filtros
     </button>
   </div>
 </div>
-<div class="d-flex justify-content-end mt-1 mb-2">
-  <div class="px-3 py-1 rounded text-light small" 
-       style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.08);">
-    <span class="me-3">
-      <span class="fw-bold" style="color:#28a745;">G</span> = General (depósito)
-    </span>
-    <span>
-      <span class="fw-bold" style="color:#17a2b8;">E</span> = Exhibido (mostrador)
-    </span>
-  </div>
-</div>
-
 
 <div class="content-body">
-  <div class="row g-3">
-    <!-- Tabla de productos -->
-    <div class="col-lg-8">
-      <div class="card shadow-sm p-2 modulo">
-        <table id="tablaVentas" class="table table-dark table-hover table-sm w-100 align-middle">
-          <thead>
-  <tr>
-    <th>Categoría</th>
-    <th style="width:100px">Código</th>
-    <th>Nombre</th>
-    <th>Modelo</th>
-    <th>Marca</th>
-    <th>Precio</th>
+<div class="pv-wrap">
 
-    <!-- ⭐ TITULAR DEL STOCK CON DOS VALORES ⭐ -->
-    <th>Stock<br><span class="text-secondary small">(G / E)</span></th>
-
-    <th style="width:130px">Acciones</th>
-  </tr>
-</thead>
-
-
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Panel de detalle / agregado rápido -->
-  <div class="col-lg-4">
-  <div id="panelDetalle" class="card shadow-sm p-2 modulo" style="min-height: 360px;">
-    <div class="text-center text-secondary" id="detalleVacio">
-      <i class="fa-solid fa-image fa-2x mb-2"></i>
-      <p>Seleccioná un producto para ver detalles y agregar al carrito.</p>
-    </div>
-
-    <div id="detalleContenido" class="d-none">
-      <div class="text-center mb-2">
-        <img id="detImagen" src="" alt="imagen" class="img-fluid rounded"
-             style="max-height: 220px; object-fit: contain;">
-      </div>
-      <h5 id="detNombre" class="mb-1"></h5>
-      <div class="d-flex justify-content-between small text-secondary mb-2">
-        <span id="detCodigo"></span>
-        <span id="detMarca"></span>
-      </div>
-      <div class="small" id="detDesc"></div>
-      <hr class="border-secondary my-2">
-      <div class="d-flex align-items-center justify-content-between">
-        <div class="h5 m-0 text-success" id="detPrecio"></div>
-        <div class="input-group" style="width: 140px;">
-          <button class="btn btn-outline-warning btn-sm" id="menosCant">-</button>
-          <input type="number" min="1" value="1" id="detCantidad"
-                 class="form-control form-control-sm bg-dark text-light border-secondary text-center">
-          <button class="btn btn-outline-warning btn-sm" id="masCant">+</button>
-        </div>
-      </div>
-      <button id="btnAgregar" class="btn btn-success w-100 mt-2">
-        <i class="fa-solid fa-cart-plus"></i> Agregar al carrito (Enter)
-      </button>
-       <!-- 🔵 Botón de compra directa  -->
-  <button id="btnComprarAhora" class="btn btn-primary w-100 fw-bold mt-3 py-2">
-    <i class="fa-solid fa-bolt me-1"></i> Comprar ahora
-  </button>
+  <!-- ===== TABLA ===== -->
+  <div class="pv-tabla">
+    <div class="modulo">
+      <table id="tablaVentas" class="table table-dark table-hover table-sm w-100 align-middle">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Modelo</th>
+            <th>Marca</th>
+            <th>Precio</th>
+            <th>Stock <span class="text-secondary">(G/E)</span></th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
- 
-</div>
+  <!-- ===== PANEL DETALLE ===== -->
+  <div class="pv-detalle">
+    <div id="panelDetalle" class="modulo">
+
+      <div id="detalleVacio">
+        <i class="fa-solid fa-box-open"></i>
+        <p>Seleccioná un producto para ver sus detalles y agregarlo al carrito.</p>
+      </div>
+
+      <div id="detalleContenido" class="d-none">
+        <div class="text-center">
+          <img id="detImagen" src="" alt="imagen">
+        </div>
+        <h5 id="detNombre"></h5>
+        <div class="d-flex justify-content-between mb-2">
+          <span id="detCodigo"></span>
+          <span id="detMarca"></span>
+        </div>
+        <div id="detDesc"></div>
+        <div id="detPrecio"></div>
+        <hr class="border-secondary my-2">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="input-group" style="width:130px">
+            <button class="btn btn-outline-warning btn-sm" id="menosCant">−</button>
+            <input type="number" min="1" value="1" id="detCantidad" class="text-center">
+            <button class="btn btn-outline-warning btn-sm" id="masCant">+</button>
+          </div>
+        </div>
+        <button id="btnAgregar" class="btn btn-success w-100 mt-2">
+          <i class="fa-solid fa-cart-plus me-1"></i> Agregar al carrito
+        </button>
+        <button id="btnComprarAhora" class="btn btn-primary w-100 mt-2">
+          <i class="fa-solid fa-bolt me-1"></i> Comprar ahora
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /pv-wrap -->
+</div><!-- /content-body -->
 
 
-<!-- ===== OFFCANVAS FILTROS (tu bloque) ===== -->
+<!-- ===== OFFCANVAS FILTROS ===== -->
 <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="panelSettings">
   <div class="offcanvas-header border-bottom border-secondary">
     <h5 class="offcanvas-title"><i class="fa-solid fa-sliders"></i> Filtros y Configuración</h5>
@@ -239,113 +229,146 @@ filtroCategoria.addEventListener("change", async () => {
 
 });
 
-  // Inicializar DataTable
   tabla = new DataTable('#tablaVentas', {
-    ajax: (d, cb) => {
-      const p = paramsActuales();
-      const qs = new URLSearchParams(p).toString();
-      const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
-      fetch(url)
-        .then(r => r.json())
-        .then(rows => cb({ data: rows }))
-        .catch(() => cb({ data: [] }));
+  ajax: (d, cb) => {
+    const p = paramsActuales();
+    const qs = new URLSearchParams(p).toString();
+    const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
+    fetch(url)
+      .then(r => r.json())
+      .then(rows => cb({ data: rows }))
+      .catch(() => cb({ data: [] }));
+  },
+
+  deferRender: true,
+  pageLength: 10,
+  lengthChange: false,
+  ordering: false,
+
+  scrollX: false,
+  autoWidth: true,
+  responsive: false,
+
+  columnDefs: [
+    { width: "14%",  targets: 0 },  // categoría
+    { width: "9%",   targets: 1 },  // código
+    { width: "22%",  targets: 2 },  // nombre
+    { width: "10%",  targets: 3 },  // modelo
+    { width: "10%",  targets: 4 },  // marca
+    { width: "10%",  targets: 5 },  // precio
+    { width: "8%",   targets: 6 },  // stock
+    { width: "17%",  targets: 7 },  // acciones
+  ],
+
+  columns: [
+    { data: 'nombre_categoria' },
+    { data: 'codigo' },
+    { data: 'nombre' },
+    { data: 'modelo' },
+    { data: 'nombre_marca' },
+    {
+      data: 'precio_expuesto',
+      render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
     },
-    deferRender: true,
-    pageLength: 10,
-    lengthChange: false,
-    ordering: false,
-    columns: [
-      { data: 'nombre_categoria' },
-      { data: 'codigo' },
-      { data: 'nombre' },
-      { data: 'modelo' },
-      { data: 'nombre_marca' },
-      {
-        data: 'precio_expuesto',
-        render: v => `<span class="text-success fw-semibold">$ ${money(v)}</span>`
-      },
-      {
-  data: null,
-  render: (_, __, row) => {
+    {
+      data: null,
+      render: (_, __, row) => {
+        const g = row.stock_general;
+        const e = row.stock_exhibido;
 
-    const g = row.stock_general;   // depósito
-    const e = row.stock_exhibido;  // exhibido
+        if (row.stock_estado === 'sin_stock') {
+          return `<span class="text-danger fw-bold">Sin stock</span>`;
+        }
 
-    // Caso sin stock
-    if (row.stock_estado === 'sin_stock') {
-      return `<span class="text-danger fw-bold">Sin stock</span>`;
+        let colorG = 'text-success';
+        let colorE = 'text-info';
+
+        if (row.stock_estado === 'bajo_stock') {
+          colorG = 'text-warning';
+        }
+
+        return `
+          <span class="${colorG} fw-bold">${g}</span>
+          <span class="text-secondary"> / </span>
+          <span class="${colorE} fw-bold">${e}</span>
+        `;
+      }
+    },
+    {
+      data: null,
+      render: (_, __, row) => `
+        <div class="input-group input-group-sm">
+          <button class="btn btn-outline-warning btnMenos" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>-</button>
+          <input type="number" value="1" min="1" class="form-control text-center qtyInput" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
+          <button class="btn btn-outline-warning btnMas" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>+</button>
+          <button class="btn btn-success btnAgregar ms-2" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
+            <i class="fa-solid fa-cart-plus"></i>
+          </button>
+        </div>`
+    }
+  ],
+
+  rowCallback: (row, data) => {
+    if (data.stock_estado === 'sin_stock') {
+      row.style.opacity = '0.6';
+      row.style.pointerEvents = 'none';
+    } else {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.input-group')) return;
+        mostrarDetalle(data);
+      });
     }
 
-    // Colores según estado
-    let colorG = 'text-success';
-    let colorE = 'text-info';
+    const menos = row.querySelector('.btnMenos');
+    const mas = row.querySelector('.btnMas');
+    const agregar = row.querySelector('.btnAgregar');
 
-    if (row.stock_estado === 'bajo_stock') {
-      colorG = 'text-warning';
+    if (menos && mas && agregar && data.stock_estado !== 'sin_stock') {
+      menos.onclick = e => {
+        e.stopPropagation();
+        const input = row.querySelector('.qtyInput');
+        input.value = Math.max(1, parseInt(input.value || 1) - 1);
+      };
+
+      mas.onclick = e => {
+        e.stopPropagation();
+        const input = row.querySelector('.qtyInput');
+        input.value = parseInt(input.value || 1) + 1;
+      };
+
+      agregar.onclick = e => {
+        e.stopPropagation();
+        const qty = parseInt(row.querySelector('.qtyInput').value || 1);
+        agregarAlCarrito(data, qty);
+      };
     }
+  },
 
-    return `
-      <span class="${colorG} fw-bold">${g}</span>
-      <span class="text-secondary"> / </span>
-      <span class="${colorE} fw-bold">${e}</span>
-    `;
+  language: {
+    search: 'Buscar:',
+    zeroRecords: 'Sin resultados',
+    info: 'Mostrando _START_ a _END_ de _TOTAL_',
+    infoEmpty: 'Sin registros',
+    paginate: { previous: '‹', next: '›' }
   }
-},
+});
 
-      {
-        data: null,
-        render: (_, __, row) => `
-          <div class="input-group input-group-sm">
-            <button class="btn btn-outline-warning btnMenos" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>-</button>
-            <input type="number" value="1" min="1" class="form-control text-center qtyInput" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
-            <button class="btn btn-outline-warning btnMas" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>+</button>
-            <button class="btn btn-success btnAgregar ms-2" ${row.stock_estado === 'sin_stock' ? 'disabled' : ''}>
-              <i class="fa-solid fa-cart-plus"></i>
-            </button>
-          </div>`
-      }
-    ],
-    rowCallback: (row, data) => {
-      if (data.stock_estado === 'sin_stock') {
-        row.style.opacity = '0.6';
-        row.style.pointerEvents = 'none';
-      } else {
-        row.addEventListener('click', (e) => {
-          if (e.target.closest('.input-group')) return;
-          mostrarDetalle(data);
-        });
-      }
 
-      const menos = row.querySelector('.btnMenos');
-      const mas = row.querySelector('.btnMas');
-      const agregar = row.querySelector('.btnAgregar');
-      if (menos && mas && agregar && data.stock_estado !== 'sin_stock') {
-        menos.onclick = e => {
-          e.stopPropagation();
-          const input = row.querySelector('.qtyInput');
-          input.value = Math.max(1, parseInt(input.value || 1) - 1);
-        };
-        mas.onclick = e => {
-          e.stopPropagation();
-          const input = row.querySelector('.qtyInput');
-          input.value = parseInt(input.value || 1) + 1;
-        };
-        agregar.onclick = e => {
-          e.stopPropagation();
-          const qty = parseInt(row.querySelector('.qtyInput').value || 1);
-          agregarAlCarrito(data, qty);
-        };
-      }
-    },
-    language: {
-      search: 'Buscar:',
-      zeroRecords: 'Sin resultados',
-      info: 'Mostrando _START_ a _END_ de _TOTAL_',
-      infoEmpty: 'Sin registros',
-      paginate: { previous: '‹', next: '›' }
-    }
-  });
+// 🔥 REAJUSTE AUTOMÁTICO (ZOOM / RESIZE)
+function ajustarTabla() {
+  setTimeout(() => {
+    tabla.columns.adjust().draw(false);
+  }, 200);
+}
 
+// cuando cambia tamaño (zoom incluido)
+window.addEventListener('resize', ajustarTabla);
+
+// cuando volvés a la pestaña
+window.addEventListener('focus', ajustarTabla);
+
+// opcional: cada cierto tiempo (ultra estable)
+setInterval(ajustarTabla, 3000);
   // 🔹 Búsqueda rápida
   const buscarInput = document.getElementById('buscarRapido');
   if (buscarInput) buscarInput.addEventListener('input', debounce(() => tabla.ajax.reload(), 300));
@@ -560,101 +583,58 @@ function mostrarDetalle(p) {
       actualizarTotal();
     });
 
-  // === Descripción ===
-  // === Descripción mejorada ===
-let descHtml = '';
 
-function renderValor(v) {
-  if (v === null || v === undefined) return "<em class='text-muted'>-</em>";
-
-  if (Array.isArray(v)) {
-    return v.join(", ");
+  // Armar atributos JSON en grid 2 columnas
+  let attrsGrid = '';
+  if (p.descripcion) {
+    try {
+      const json = JSON.parse(p.descripcion);
+      const entries = Object.entries(json);
+      if (entries.length) {
+        attrsGrid = `
+          <div class="pv-ficha">
+            <div class="pv-ficha-titulo">Atributos del producto</div>
+            <div class="pv-attrs">
+              ${entries.map(([k, v]) => `
+                <div class="pv-attr">
+                  <span class="pv-attr-key">${k}</span>
+                  <span class="pv-attr-val" title="${v}">${v ?? '—'}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }
+    } catch {}
   }
 
-  if (typeof v === "object") {
-    return Object.entries(v)
-      .map(([k2, v2]) =>
-        `<div class="ms-3"><span class="text-info">${k2}:</span> ${renderValor(v2)}</div>`
-      ).join("");
-  }
+  // Ficha técnica (modelo, categoría, peso, ubicación)
+  let fichaItems = [];
+  if (p.modelo)           fichaItems.push(['Modelo',    p.modelo]);
+  if (p.nombre_categoria) fichaItems.push(['Categoría', p.nombre_categoria]);
+  if (p.peso_ml)          fichaItems.push(['Vol. (ml)', p.peso_ml]);
+  if (p.peso_g)           fichaItems.push(['Peso (g)',  p.peso_g]);
+  if (p.aro)              fichaItems.push(['Aro',       p.aro]);
+  if (p.ancho)            fichaItems.push(['Ancho',     p.ancho]);
+  if (p.perfil_cubierta)  fichaItems.push(['Perfil',    p.perfil_cubierta]);
+  if (p.tipo)             fichaItems.push(['Tipo',      p.tipo]);
 
-  return v;
-}
-
-if (p.descripcion) {
-  try {
-    const json = JSON.parse(p.descripcion);
-
-    descHtml = Object.entries(json)
-      .map(([k, v]) => `
-        <div class="mb-1">
-          <span class="text-warning fw-semibold">${k}:</span>
-          <span class="text-light ms-1">${renderValor(v)}</span>
+  let fichaGrid = '';
+  if (fichaItems.length) {
+    fichaGrid = `
+      <div class="pv-ficha">
+        <div class="pv-ficha-titulo">Ficha técnica</div>
+        <div class="pv-attrs">
+          ${fichaItems.map(([k, v]) => `
+            <div class="pv-attr">
+              <span class="pv-attr-key">${k}</span>
+              <span class="pv-attr-val" title="${v}">${v}</span>
+            </div>
+          `).join('')}
         </div>
-      `).join('');
-
-  } catch {
-    descHtml = `<div class="text-light">${p.descripcion}</div>`;
+      </div>`;
   }
-} else {
-  descHtml = '<em class="text-muted">Sin descripción</em>';
-}
 
-let ficha = "";
-
-// Modelo
-if (p.modelo) ficha += `<div><span class="text-warning">Modelo:</span> ${p.modelo}</div>`;
-
-// Categoría
-if (p.nombre_categoria) ficha += `<div><span class="text-warning">Categoría:</span> ${p.nombre_categoria}</div>`;
-
-// Peso en ML
-if (p.peso_ml) ficha += `<div><span class="text-warning">Contenido (ml):</span> ${p.peso_ml}</div>`;
-
-// Peso en GR
-if (p.peso_g) ficha += `<div><span class="text-warning">Peso (g):</span> ${p.peso_g}</div>`;
-
-// Ubicación física
-if (p.ubicacion_producto_idubicacion_producto)
-  ficha += `<div><span class="text-warning">Ubicación:</span> ${p.ubicacion_producto_idubicacion_producto}</div>`;
-
-
-
-// Atributos de cubierta
-if (p.aro || p.ancho || p.perfil_cubierta || p.tipo) {
-  ficha += `<hr class="border-secondary">`;
-  ficha += `<div class="fw-bold text-info">Atributos de cubierta:</div>`;
-  
-  if (p.aro) ficha += `<div>Aro: ${p.aro}</div>`;
-  if (p.ancho) ficha += `<div>Ancho: ${p.ancho}</div>`;
-  if (p.perfil_cubierta) ficha += `<div>Perfil: ${p.perfil_cubierta}</div>`;
-  if (p.tipo) ficha += `<div>Tipo: ${p.tipo}</div>`;
-}
-
-  document.getElementById('detDesc').innerHTML = `
-  <div class="bg-dark bg-opacity-25 rounded p-2 mb-2">
-    ${descHtml || '<em class="text-muted">Sin descripción</em>'}
-  </div>
-
-  <hr class="border-secondary">
-
-  <div class="bg-dark bg-opacity-10 rounded p-2 mb-3">
-    <div class="fw-bold text-info mb-1">Ficha técnica</div>
-    ${ficha || '<em class="text-muted">Sin datos técnicos</em>'}
-  </div>
-
-  <hr class="border-secondary">
-
-  <div>Stock actual:
-    <span class="fw-bold text-${
-      p.stock_estado === 'ok'
-        ? 'success'
-        : p.stock_estado === 'bajo_stock'
-        ? 'warning'
-        : 'danger'
-    }">${p.stock_visible}</span>
-    / Mínimo ${p.stock_minimo || 0}
-  </div>`;
+  document.getElementById('detDesc').innerHTML = attrsGrid + fichaGrid;
 }
 
 
@@ -966,8 +946,7 @@ METADATA.monedas.forEach(m => {
         },
 
         preConfirm: () => {
-    const direccion = document.getElementById('cliDireccionFactura')?.value.trim();
-    const metodo = document.getElementById('metodoPago').value;
+let direccion = '';    const metodo = document.getElementById('metodoPago').value;
     const metodo_desc = metodo === '4'
         ? document.getElementById('otroTexto').value.trim()
         : metodo;
@@ -984,9 +963,13 @@ METADATA.monedas.forEach(m => {
         return false;
     }
 
+    if (comprobanteNombre === "factura") {
+    direccion = document.getElementById('cliDireccionFactura')?.value.trim();
+
     if (!direccion) {
-  Swal.showValidationMessage("Ingresá la dirección del cliente");
-  return false;
+        Swal.showValidationMessage("Ingresá la dirección del cliente");
+        return false;
+    }
 }
     // Obtener método seleccionado desde METADATA
     const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == metodo);

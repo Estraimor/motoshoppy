@@ -1,6 +1,7 @@
 <?php
 require_once '../conexion/conexion.php';
 include '../dashboard/nav.php';
+requerirRol('Administrador');
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -85,6 +86,17 @@ include '../dashboard/nav.php';
                     <div class="icon">⚙️</div>
                     <h5>Descuentos</h5>
                     <small>Porcentajes de descuentos </small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Ubicaciones -->
+        <div class="col-md-4">
+            <a href="./ubicaciones/index.php" class="text-decoration-none">
+                <div class="settings-card text-center">
+                    <div class="icon">📍</div>
+                    <h5>Ubicaciones</h5>
+                    <small>Lugares y estantes de stock</small>
                 </div>
             </a>
         </div>

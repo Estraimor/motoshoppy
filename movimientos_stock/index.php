@@ -1,5 +1,6 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Reponedor');
 ?>
 <link rel="stylesheet" href="./movimiento_stock.css">
 

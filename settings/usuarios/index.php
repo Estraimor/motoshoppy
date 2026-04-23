@@ -1,4 +1,6 @@
 <?php
+include '../../dashboard/nav.php';
+requerirRol('Administrador');
 include '../../conexion/conexion.php';
 
 /* =========================
@@ -30,7 +32,6 @@ $roles = $conexion->query("
     WHERE estado = 1
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-include '../../dashboard/nav.php';
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -94,6 +95,14 @@ include '../../dashboard/nav.php';
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
                                 <button
+                                    class="btn btn-success"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarUsuario"
+                                    onclick='abrirEditar(<?= json_encode($u, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>
+                                    ✏️ Editar
+                                </button>
+
+                                <button
                                     class="btn btn-primary"
                                     data-bs-toggle="modal"
                                     data-bs-target="#modalRol"
@@ -113,6 +122,63 @@ include '../../dashboard/nav.php';
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- =========================
+     MODAL EDITAR USUARIO
+========================= -->
+<div class="modal fade" id="modalEditarUsuario">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="usuarios_controller.php" method="POST" class="modal-content bg-dark text-white">
+
+            <input type="hidden" name="accion" value="editar_usuario">
+            <input type="hidden" name="usuario_id" id="edit_usuario_id">
+
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">✏️ Editar usuario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <label class="form-label">Usuario (login)</label>
+                <input class="form-control mb-3" name="usuario" id="edit_campo_usuario" required>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre</label>
+                        <input class="form-control" name="nombre" id="edit_nombre">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Apellido</label>
+                        <input class="form-control" name="apellido" id="edit_apellido">
+                    </div>
+                </div>
+
+                <div class="row g-2 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">DNI</label>
+                        <input class="form-control" name="dni" id="edit_dni">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Celular</label>
+                        <input class="form-control" name="celular" id="edit_celular">
+                    </div>
+                </div>
+
+                <hr class="border-secondary mt-3">
+
+                <label class="form-label">Nueva contraseña <small class="text-secondary">(dejá vacío para no cambiar)</small></label>
+                <input type="password" class="form-control" name="nueva_pass" autocomplete="new-password">
+
+            </div>
+
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-warning fw-bold">Guardar cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -221,6 +287,18 @@ include '../../dashboard/nav.php';
 </form>
 
 <script>
+/* =========================================================
+   EDITAR USUARIO
+========================================================= */
+function abrirEditar(u) {
+    document.getElementById('edit_usuario_id').value   = u.idusuario;
+    document.getElementById('edit_campo_usuario').value = u.usuario;
+    document.getElementById('edit_nombre').value        = u.nombre;
+    document.getElementById('edit_apellido').value      = u.apellido;
+    document.getElementById('edit_dni').value           = u.dni    || '';
+    document.getElementById('edit_celular').value       = u.celular || '';
+}
+
 /* =========================================================
    ROLES (modal)
 ========================================================= */
@@ -333,6 +411,16 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: 'success',
             title: 'Usuario creado',
             text: 'La cuenta fue creada correctamente',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    }
+
+    if (msg === 'usuario_editado') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Usuario actualizado',
+            text: 'Los datos fueron guardados correctamente',
             timer: 1800,
             showConfirmButton: false
         });

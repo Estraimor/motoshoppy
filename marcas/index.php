@@ -1,5 +1,6 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Reponedor');
 require_once '../conexion/conexion.php';
 
 // Traer marcas con join para mostrar el nombre de la categoría y el estado

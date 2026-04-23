@@ -1,5 +1,6 @@
 <?php
 include '../dashboard/nav.php';
+requerirRol('Administrador', 'Ventas');
 require_once '../conexion/conexion.php';
 ?>
 <link rel="stylesheet" href="ventas.css">
@@ -294,6 +295,7 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
             <input id="cliApellidoFactura" class="form-control mb-2" placeholder="Apellido">
             <input id="cliDniFactura" class="form-control mb-2" placeholder="CI/RUC">
             <input id="cliCelularFactura" class="form-control mb-2" placeholder="Celular">
+    <input id="cliDireccionFactura" class="form-control mb-2" placeholder="Dirección">
         ` : `
             <label class="fw-bold">CI/RUC Cliente (Ticket)</label>
             <input id="cliDniTicket" class="form-control mb-2" placeholder="CI/RUC">
@@ -366,10 +368,17 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
                 const n = document.getElementById("cliNombreFactura").value.trim();
                 const a = document.getElementById("cliApellidoFactura").value.trim();
                 const dni = document.getElementById("cliDniFactura").value.trim();
+                const direccion = document.getElementById("cliDireccionFactura").value.trim();
 
-                if (!n || !a || !dni) return Swal.showValidationMessage("Completá todos los datos del cliente");
+                if (!n || !a || !dni) {
+        return Swal.showValidationMessage("Completá todos los datos del cliente");
+    }
 
-                cliente = { nombre: n, apellido: a, dni };
+    if (!direccion) {
+        return Swal.showValidationMessage("Ingresá la dirección del cliente");
+    }
+
+    cliente = { nombre: n, apellido: a, dni, celular, direccion };
             } else {
                 const dni = document.getElementById("cliDniTicket").value.trim();
                 if (!dni) return Swal.showValidationMessage("Ingresá CI/RUC del cliente");
@@ -450,8 +459,13 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
             }
 
             if (parseInt(payload.tipo_comprobante) === 2) {
-                window.open(`/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}`, "_blank");
-            }
+    const dir = payload.cliente?.direccion || "";
+
+    window.open(
+        `/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(dir)}`,
+        "_blank"
+    );
+}
 
         } else {
             Swal.fire({ icon: "error", title: "Error", text: data.msg });

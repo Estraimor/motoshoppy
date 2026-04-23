@@ -3,7 +3,7 @@
 // CONEXIÓN SEGURA A "motoshoppy"
 // ===============================
 $host = 'localhost';      // Cambia si tu servidor no es local
-$db   = 'motoshoppy';     // Nombre de tu base de datos
+$db   = 'u966473590_motoshoppy';     // Nombre de tu base de datos
 $user = 'root';     // Usuario de MySQL
 $pass = '';    // Contraseña de MySQL
 $charset = 'utf8mb4';     // Codificación recomendada
