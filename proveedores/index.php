@@ -369,9 +369,62 @@ $(document).ready(function () {
         },
         dom: 'Bfrtip',
         buttons: [
-            { extend: 'excel', text: '<i class="fa-solid fa-file-excel me-1"></i>Excel', className: 'btn btn-success btn-sm' },
-            { extend: 'pdf',   text: '<i class="fa-solid fa-file-pdf me-1"></i>PDF',    className: 'btn btn-danger btn-sm'  },
-            { extend: 'print', text: '<i class="fa-solid fa-print me-1"></i>Imprimir',  className: 'btn btn-info btn-sm'    }
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fa-solid fa-file-excel me-1"></i>Excel',
+                className: 'btn btn-success btn-sm',
+                filename: 'Proveedores_Motoshoppy',
+                title: 'Motoshoppy — Proveedores',
+                exportOptions: { columns: [0,1,2,3,4,5,6] }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fa-solid fa-file-pdf me-1"></i>PDF',
+                className: 'btn btn-danger btn-sm',
+                filename: 'Proveedores_Motoshoppy',
+                title: 'Motoshoppy — Listado de Proveedores',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: { columns: [0,1,2,3,4,5,6] },
+                customize: function(doc) {
+                    // Título
+                    doc.content[0].fontSize  = 16;
+                    doc.content[0].bold      = true;
+                    doc.content[0].color     = '#1e3a5f';
+                    doc.content[0].alignment = 'center';
+                    doc.content[0].margin    = [0, 0, 0, 4];
+
+                    // Fecha
+                    doc.content.splice(1, 0, {
+                        text: 'Generado: ' + new Date().toLocaleDateString('es-AR'),
+                        alignment: 'right', fontSize: 8,
+                        color: '#666666', margin: [0, 0, 0, 10]
+                    });
+
+                    // Encabezado de tabla
+                    doc.styles.tableHeader = {
+                        bold: true, fontSize: 9,
+                        color: '#ffffff', fillColor: '#1e3a5f',
+                        alignment: 'center'
+                    };
+
+                    // Filas alternadas
+                    const body = doc.content[2].table.body;
+                    for (let i = 1; i < body.length; i++) {
+                        body[i].forEach(cell => {
+                            if (typeof cell === 'object') {
+                                cell.fillColor = i % 2 === 0 ? '#eef2f7' : '#ffffff';
+                                cell.fontSize  = 8;
+                                cell.color     = '#222222';
+                            }
+                        });
+                    }
+
+                    // Anchos iguales
+                    doc.content[2].table.widths =
+                        Array(doc.content[2].table.body[0].length).fill('*');
+                }
+            }
         ]
     });
 
