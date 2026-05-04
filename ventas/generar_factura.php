@@ -22,9 +22,25 @@ class FacturaParaguayaPDF extends FPDF
     public $metodoPago;
     public $cliDireccion;
     public $nroFactura;
+    public $condicionVenta = 'CONTADO';
 
     function conv($txt) {
         return mb_convert_encoding($txt, 'ISO-8859-1', 'UTF-8');
+    }
+
+    // Línea punteada entre x1,y1 → x2,y2
+    function LineaDotted($x1, $y1, $x2, $y2, $gap = 1.5) {
+        $len = sqrt(pow($x2-$x1,2) + pow($y2-$y1,2));
+        $n   = floor($len / $gap);
+        for ($i = 0; $i <= $n; $i++) {
+            if ($i % 2 == 0) {
+                $px = $x1 + ($i / $n) * ($x2 - $x1);
+                $py = $y1 + ($i / $n) * ($y2 - $y1);
+                $this->SetLineWidth(0.3);
+                $this->Line($px, $py, min($px + 0.8, $x2), $py);
+            }
+        }
+        $this->SetLineWidth(0.2);
     }
 
     function mesEsp() {
@@ -97,9 +113,9 @@ class FacturaParaguayaPDF extends FPDF
         $this->Rect(10, 10, 190, 35);
 
         // LOGO
-        $logo = "../imagenes/logo_motosshoppy.png";
+        $logo = "../imagenes/logo nuevo motoshop.png";
         if (file_exists($logo)) {
-            $this->Image($logo, 12, -15, 95);
+            $this->Image($logo, 12, 11, 95);
         }
 
         // BLOQUE DERECHO - NOMBRE EMPRESA
@@ -122,8 +138,10 @@ class FacturaParaguayaPDF extends FPDF
             "0975 651 002"
         ), 0, 'L');
 
-        // CAJA FACTURA (esquina superior derecha)
+        // CAJA FACTURA (esquina superior derecha) — borde izquierdo punteado
         $this->Rect(165, 10, 35, 30);
+        // Sobreescribir borde izquierdo con línea punteada
+        $this->LineaDotted(165, 10, 165, 40, 1.8);
 
         // Timbrado
         $this->SetXY(166, 12);
@@ -135,7 +153,7 @@ class FacturaParaguayaPDF extends FPDF
             "RUC: 3.281.779-7"
         ), 0, 'L');
 
-        // Número de factura — se usa el valor asignado antes de AddPage()
+        // Número de factura
         $nro = $this->nroFactura ?? '001-001-0000001';
 
         $this->SetXY(165, 26);
@@ -143,7 +161,7 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(35, 5, $this->conv('FACTURA'), 0, 0, 'C');
 
         $this->SetXY(165, 31);
-        $this->SetFont('Arial', 'B', 9);
+        $this->SetFont('Arial', 'B', 8);
         $this->Cell(35, 5, $this->conv('N° ' . $nro), 0, 0, 'C');
 
         $this->Ln(12);
@@ -166,7 +184,10 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(14, 6, $this->conv(substr(date("Y"), 2)), 1, 0, 'L');
         $this->Cell(39, 6, $this->conv('MÉTODO DE PAGO'), 1, 0, 'L');
         $met = $this->metodoPago ?? '---';
+        // Ajustar fuente según largo del texto
+        $this->SetFont('Arial', '', strlen($met) > 22 ? 6 : 8);
         $this->Cell(35, 6, $this->conv($met), 1, 1, 'C');
+        $this->SetFont('Arial', '', 8);
 
         // CLIENTE
         $this->Cell(40, 6, $this->conv('NOMBRE O RAZÓN SOCIAL:'), 1, 0, 'L');
@@ -181,6 +202,17 @@ class FacturaParaguayaPDF extends FPDF
         // DIRECCIÓN — viene de $_GET['dir'] pasado desde el front
         $this->Cell(20, 6, $this->conv('Dirección:'), 1, 0, 'L');
         $this->Cell(95, 6, $this->conv($this->cliDireccion ?? ''), 1, 1, 'L');
+
+        // CONDICIÓN DE VENTA
+        $condicion  = strtoupper($this->condicionVenta ?? '');
+        $chkContado = (strpos($condicion, 'CONTADO') !== false) ? '[X]' : '[ ]';
+        $chkCredito = (strpos($condicion, 'CREDITO') !== false) ? '[X]' : '[ ]';
+        $this->Cell(45, 6, $this->conv('CONDICION DE VENTA:'), 1, 0, 'L');
+        $this->SetFont('Arial', 'B', 8);
+        $this->Cell(22, 6, $this->conv("$chkContado CONTADO"), 0, 0, 'L');
+        $this->Cell(22, 6, $this->conv("$chkCredito CREDITO"), 0, 0, 'L');
+        $this->SetFont('Arial', '', 8);
+        $this->Cell(101, 6, '', 1, 1, 'L');
 
         // REMISIÓN
         $this->Cell(36, 6, $this->conv('NOTA REMISIÓN N°:'), 1, 0, 'L');
@@ -323,9 +355,10 @@ class FacturaParaguayaPDF extends FPDF
    ============================================================ */
 
 // 🔥 CORRECCIÓN 1: Leer dirección y número de factura desde GET
-$id          = intval($_GET['id']  ?? 0);
-$direccion   = trim($_GET['dir']   ?? '');      // viene del front
-$nroFactura  = trim($_GET['nro']   ?? '001-001-0000001'); // opcional, con default
+$id             = intval($_GET['id']       ?? 0);
+$direccion      = trim($_GET['dir']       ?? '');
+$nroFactura     = trim($_GET['nro']       ?? '001-001-0000001');
+$condicionVenta = trim($_GET['condicion'] ?? 'CONTADO');
 
 if ($id <= 0) die("ID inválido");
 
@@ -393,8 +426,9 @@ $pdf->cliNombre   = $venta['cliNombre']   ?? '';
 $pdf->cliApellido = $venta['cliApellido'] ?? '';
 $pdf->cliDni      = $venta['cliDni']      ?? '';
 $pdf->cliCelular  = $venta['cliCelular']  ?? '';
-$pdf->cliDireccion = $direccion;   // 🔥 viene de $_GET['dir']
-$pdf->nroFactura   = $nroFactura;  // 🔥 viene de $_GET['nro'] o default
+$pdf->cliDireccion  = $direccion;
+$pdf->nroFactura    = $nroFactura;
+$pdf->condicionVenta = strtoupper($condicionVenta);
 
 $metodo = $venta['metodo_pago_nombre'] ?? '---';
 $moneda = $venta['moneda_codigo']      ?? '';

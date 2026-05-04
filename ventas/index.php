@@ -164,6 +164,8 @@ require_once '../conexion/conexion.php';
 </div>
 
 <script>
+const BASE = '<?= BASE_URL ?>';
+
 /* ==== Helpers ==== */
 const money = v => {
   const n = Number(v || 0);
@@ -217,7 +219,7 @@ filtroCategoria.addEventListener("change", async () => {
 
   if (!categoria) return;
 
-  const res = await fetch(`/motoshoppy/ventas/get_marcas_por_categoria.php?categoria=${categoria}`);
+  const res = await fetch(`${BASE}/ventas/get_marcas_por_categoria.php?categoria=${categoria}`);
   const marcas = await res.json();
 
   marcas.forEach(m => {
@@ -233,7 +235,7 @@ filtroCategoria.addEventListener("change", async () => {
   ajax: (d, cb) => {
     const p = paramsActuales();
     const qs = new URLSearchParams(p).toString();
-    const url = `/motoshoppy/ventas/api_buscar_productos.php?${qs}`;
+    const url = `${BASE}/ventas/api_buscar_productos.php?${qs}`;
     fetch(url)
       .then(r => r.json())
       .then(rows => cb({ data: rows }))
@@ -315,7 +317,7 @@ filtroCategoria.addEventListener("change", async () => {
     } else {
       row.addEventListener('click', (e) => {
         if (e.target.closest('.input-group')) return;
-        mostrarDetalle(data);
+        seleccionarFila(row, data);
       });
     }
 
@@ -402,7 +404,7 @@ window.COT = null;
 
 async function inicializarCotizacion() {
   try {
-    const res = await fetch('/motoshoppy/api/get_cotizacion.php');
+    const res = await fetch(`${BASE}/api/get_cotizacion.php`);
     const data = await res.json();
 
     if (!data || data.error) {
@@ -424,7 +426,7 @@ inicializarCotizacion();
 
 async function cargarMetadataVentas() {
     try {
-        const r = await fetch('/motoshoppy/api/get_metadata_ventas.php');
+        const r = await fetch(`${BASE}/api/get_metadata_ventas.php`);
         const d = await r.json();
 
         METADATA.comprobantes = d.comprobantes;
@@ -442,6 +444,46 @@ cargarMetadataVentas();
 
 
 /* ==== Detalle ==== */
+/* ============================================================
+   NAVEGACIÓN CON FLECHAS
+============================================================ */
+let filaSeleccionada = null;
+
+function seleccionarFila(row, data) {
+  // Quitar resaltado anterior
+  document.querySelectorAll('#tablaVentas tbody tr.selected-row')
+    .forEach(r => r.classList.remove('selected-row'));
+
+  row.classList.add('selected-row');
+  filaSeleccionada = row;
+  mostrarDetalle(data);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!['ArrowDown', 'ArrowUp'].includes(e.key)) return;
+  // No activar si el foco está en un input
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+  e.preventDefault();
+
+  const filas = [...document.querySelectorAll('#tablaVentas tbody tr:not([style*="opacity"])')];
+  if (!filas.length) return;
+
+  let idx = filaSeleccionada ? filas.indexOf(filaSeleccionada) : -1;
+
+  if (e.key === 'ArrowDown') idx = Math.min(idx + 1, filas.length - 1);
+  if (e.key === 'ArrowUp')   idx = Math.max(idx - 1, 0);
+
+  const siguienteFila = filas[idx];
+  if (!siguienteFila) return;
+
+  // Obtener data del row desde DataTables
+  const rowData = tabla.row(siguienteFila).data();
+  if (!rowData) return;
+
+  siguienteFila.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  seleccionarFila(siguienteFila, rowData);
+});
+
 function mostrarDetalle(p) {
   productoSeleccionado = p;
   document.getElementById('detalleVacio').classList.add('d-none');
@@ -449,7 +491,7 @@ function mostrarDetalle(p) {
 
   // Imagen
   const img = document.getElementById('detImagen');
-  img.src = p.imagen ? `/motoshoppy/${p.imagen.replace(/\\/g, '/')}` : '/motoshoppy/imagenes/noimg.png';
+  img.src = p.imagen ? `${BASE}/${p.imagen.replace(/\\/g, '/')}` : `${BASE}/imagenes/noimg.png`;
   img.onclick = () => abrirZoom(img.src);
 
   // Datos generales
@@ -467,7 +509,7 @@ function mostrarDetalle(p) {
   const basePYG = Number(p.precio_expuesto || 0);
 
   // ✅ Traer listas desde API y recién ahí armar el bloque HTML
-  fetch('/motoshoppy/ventas/get_listas_precios.php')
+  fetch(`${BASE}/ventas/get_listas_precios.php`)
     .then(res => res.json())
     .then(data => {
       const listas = data.listas || [];
@@ -845,6 +887,20 @@ METADATA.monedas.forEach(m => {
     htmlPago = `
   <div class="text-start">
 
+    <label class="form-label fw-bold mt-2">Condición de venta</label>
+    <div class="d-flex gap-3 mb-2">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="condContado" value="CONTADO"
+          onchange="if(this.checked) document.getElementById('condCredito').checked = false;">
+        <label class="form-check-label fw-bold" for="condContado">Contado</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="condCredito" value="CREDITO"
+          onchange="if(this.checked) document.getElementById('condContado').checked = false;">
+        <label class="form-check-label fw-bold" for="condCredito">Crédito</label>
+      </div>
+    </div>
+
     <label class="form-label fw-bold mt-2">Método de pago</label>
     <select id="metodoPago" class="form-select">
       ${optionsMetodo}
@@ -932,7 +988,7 @@ METADATA.monedas.forEach(m => {
                 dniInput.addEventListener('input', async (e) => {
                     const dni = e.target.value.trim();
                     if (dni.length >= 6) {
-                        const r = await fetch(`/motoshoppy/ventas/api_buscar_cliente.php?dni=${dni}`);
+                        const r = await fetch(`${BASE}/ventas/api_buscar_cliente.php?dni=${dni}`);
                         const d = await r.json();
 
                         if (d.ok && d.cliente) {
@@ -1015,7 +1071,12 @@ let direccion = '';    const metodo = document.getElementById('metodoPago').valu
         cliente = { dni };
     }
 
-    return { metodo, metodo_desc, moneda, cliente };
+    // Leer condición de venta DENTRO del preConfirm (antes que el modal cierre)
+    const condContado = document.getElementById('condContado')?.checked;
+    const condCredito = document.getElementById('condCredito')?.checked;
+    const condicion = condContado ? 'CONTADO' : (condCredito ? 'CREDITO' : '');
+
+    return { metodo, metodo_desc, moneda, cliente, condicion };
 }
 });
 
@@ -1038,7 +1099,7 @@ if (!confirmar) return;
     // 7) ENVIAR AL BACKEND
     // ===============================
     try {
-        const res = await fetch('/motoshoppy/ventas/api_comprar.php', {
+        const res = await fetch(`${BASE}/ventas/api_comprar.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1061,12 +1122,12 @@ if (!confirmar) return;
 
 if (comprobanteNombre === "ticket") {
     window.open(
-        `/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}`,
+        `${BASE}/ventas/generar_ticket.php?id=${data.venta_id}`,
         '_blank'
     );
 } else {
     window.open(
-        `/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(direccion)}`,
+        `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(direccion)}&condicion=${encodeURIComponent(confirmar.condicion || '')}`,
         '_blank'
     );
 }

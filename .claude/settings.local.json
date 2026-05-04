@@ -6,7 +6,9 @@
       "Read(//c/wamp64/**)",
       "Bash(./bin/mysql/mysql8.0.31/bin/mysql.exe -u root -e \"SELECT idroles, nombre_rol FROM motoshoppy.roles;\")",
       "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password=\"\" -e \"SELECT idroles, nombre_rol, estado FROM motoshoppy.roles ORDER BY idroles;\")",
-      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password= -e ' *)"
+      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password= -e ' *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
     ]
   }
 }

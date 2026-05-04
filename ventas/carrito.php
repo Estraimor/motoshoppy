@@ -275,6 +275,20 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
     });
 
     const htmlPago = `
+        <label class="fw-bold mt-2">Condición de venta</label>
+        <div class="d-flex gap-3 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="condContado" value="CONTADO"
+              onchange="if(this.checked) document.getElementById('condCredito').checked = false;">
+            <label class="form-check-label fw-bold" for="condContado">Contado</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="condCredito" value="CREDITO"
+              onchange="if(this.checked) document.getElementById('condContado').checked = false;">
+            <label class="form-check-label fw-bold" for="condCredito">Crédito</label>
+          </div>
+        </div>
+
         <label class="fw-bold mt-2">Método de Pago</label>
         <select id="metodoPago" class="form-select">${htmlMetodo}</select>
 
@@ -385,7 +399,11 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
                 cliente = { dni };
             }
 
-            return { metodo_pago: metodoID, moneda: monedaID, cliente };
+            const condContado = document.getElementById('condContado')?.checked;
+            const condCredito = document.getElementById('condCredito')?.checked;
+            const condicion = condContado ? 'CONTADO' : (condCredito ? 'CREDITO' : '');
+
+            return { metodo_pago: metodoID, moneda: monedaID, cliente, condicion };
         }
     });
 
@@ -429,7 +447,7 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
     };
 
     try {
-        const r = await fetch("/motoshoppy/ventas/api_comprar.php", {
+        const r = await fetch(`<?= BASE_URL ?>/ventas/api_comprar.php`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -454,18 +472,20 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
             ---------------------------- */
             const dni = payload.cliente?.dni || "";
 
+            const BASE = '<?= BASE_URL ?>';
+
             if (parseInt(payload.tipo_comprobante) === 1) {
-                window.open(`/motoshoppy/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, "_blank");
+                window.open(`${BASE}/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, "_blank");
             }
 
             if (parseInt(payload.tipo_comprobante) === 2) {
-    const dir = payload.cliente?.direccion || "";
-
-    window.open(
-        `/motoshoppy/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(dir)}`,
-        "_blank"
-    );
-}
+                const dir = payload.cliente?.direccion || "";
+                const cond = confirmar.condicion || '';
+                window.open(
+                    `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(dir)}&condicion=${encodeURIComponent(cond)}`,
+                    "_blank"
+                );
+            }
 
         } else {
             Swal.fire({ icon: "error", title: "Error", text: data.msg });

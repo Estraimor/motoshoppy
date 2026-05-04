@@ -211,20 +211,6 @@ $ubicacionesData = $conexion->query("
       <input type="text" id="filtroBusqueda" class="form-control bg-dark text-light border-secondary" placeholder="Ej: Motul, 10W40...">
     </div>
 
-    <!-- 🏷️ Marca -->
-    <div class="mb-3">
-      <label class="form-label text-warning"><i class="fa-solid fa-tags"></i> Marca</label>
-      <select id="filtroMarca" class="form-select bg-dark text-light border-secondary">
-        <option value="">Todas</option>
-        <?php
-          $marcas = $conexion->query("SELECT idmarcas, nombre_marca FROM marcas ORDER BY nombre_marca ASC");
-          while($m = $marcas->fetch(PDO::FETCH_ASSOC)){
-              echo "<option value='{$m['idmarcas']}'>{$m['nombre_marca']}</option>";
-          }
-        ?>
-      </select>
-    </div>
-
     <!-- 🧩 Categoría -->
     <div class="mb-3">
       <label class="form-label text-warning"><i class="fa-solid fa-layer-group"></i> Categoría</label>
@@ -237,6 +223,23 @@ $ubicacionesData = $conexion->query("
           }
         ?>
       </select>
+    </div>
+
+    <!-- 🏷️ Marca (se filtra por categoría seleccionada) -->
+    <div class="mb-3">
+      <label class="form-label text-warning"><i class="fa-solid fa-tags"></i> Marca</label>
+      <select id="filtroMarca" class="form-select bg-dark text-light border-secondary">
+        <option value="">Todas</option>
+        <?php
+          $marcas = $conexion->query("SELECT idmarcas, nombre_marca FROM marcas ORDER BY nombre_marca ASC");
+          while($m = $marcas->fetch(PDO::FETCH_ASSOC)){
+              echo "<option value='{$m['idmarcas']}'>{$m['nombre_marca']}</option>";
+          }
+        ?>
+      </select>
+      <small class="text-secondary" id="marcaHint" style="display:none">
+        <i class="fa-solid fa-circle-info me-1"></i>Filtrando por categoría seleccionada
+      </small>
     </div>
 
     <!-- 💲 Rango de precios -->
@@ -370,11 +373,34 @@ $(document).ready(function () {
         tabla.draw();
     }
 
+    /* ==============================
+       MARCAS POR CATEGORÍA
+    ============================== */
+    $('#filtroCategoria').on('change', function () {
+        const idCat   = $(this).val();
+        const $marca  = $('#filtroMarca');
+        const $hint   = $('#marcaHint');
+
+        $.getJSON('get_marcas_por_categoria.php', { categoria: idCat }, function (marcas) {
+            $marca.html('<option value="">Todas</option>');
+            marcas.forEach(m => {
+                $marca.append(`<option value="${m.idmarcas}">${m.nombre_marca}</option>`);
+            });
+            $hint.toggle(idCat !== '');
+        });
+    });
+
     $('#btnAplicarFiltros').click(aplicarFiltros);
 
     $('#btnLimpiarFiltros').click(function () {
         $('#panelSettings input').val('');
-        $('#panelSettings select').val('').trigger('change');
+        $('#panelSettings select').val('');
+        // Restaurar todas las marcas al limpiar
+        $.getJSON('get_marcas_por_categoria.php', { categoria: '' }, function (marcas) {
+            const $marca = $('#filtroMarca').html('<option value="">Todas</option>');
+            marcas.forEach(m => $marca.append(`<option value="${m.idmarcas}">${m.nombre_marca}</option>`));
+            $('#marcaHint').hide();
+        });
 
         if (filtroFn !== null) {
             const idx = $.fn.dataTable.ext.search.indexOf(filtroFn);

@@ -2,10 +2,12 @@
 // ===============================
 // CONEXIÓN SEGURA A "motoshoppy"
 // ===============================
-$host = 'localhost';      // Cambia si tu servidor no es local
-$db   = 'u966473590_motoshoppy';     // Nombre de tu base de datos
-$user = 'root';     // Usuario de MySQL
-$pass = '';    // Contraseña de MySQL
+// Para LOCAL: $user = 'root', $pass = ''
+// Para HOSTINGER: usar credenciales del panel de Hostinger
+$host = 'localhost';
+$db   = 'u966473590_motoshoppy';
+$user = 'u966473590_jorgeandino';
+$pass = '#Lucianobarros820012.';
 $charset = 'utf8mb4';     // Codificación recomendada
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
