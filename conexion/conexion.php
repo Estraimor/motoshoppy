@@ -6,8 +6,8 @@
 // Para HOSTINGER: usar credenciales del panel de Hostinger
 $host = 'localhost';
 $db   = 'u966473590_motoshoppy';
-$user = 'u966473590_jorgeandino';
-$pass = '#Lucianobarros820012.';
+$user = 'root';
+$pass = '';
 $charset = 'utf8mb4';     // Codificación recomendada
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

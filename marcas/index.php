@@ -15,6 +15,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <link rel="stylesheet" href="estilos_marcas.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="content-header d-flex justify-content-between align-items-center">
     <h2><i class="fa-solid fa-bookmark"></i> Marcas</h2>
@@ -63,11 +64,11 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     data-estado="<?= $marca['estado'] ?>">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <a href="eliminar.php?id=<?= $marca['idmarcas'] ?>" 
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('¿Seguro que deseas eliminar esta marca?')">
+                            <button class="btn btn-sm btn-danger btn-eliminar-marca"
+                                    data-id="<?= $marca['idmarcas'] ?>"
+                                    data-nombre="<?= htmlspecialchars($marca['nombre_marca']) ?>">
                                 <i class="fa-solid fa-trash"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -221,9 +222,9 @@ document.getElementById('modalEditar').addEventListener('show.bs.modal', functio
 
 // Inicializar DataTable
 $(document).ready(function () {
-    $('#tablaMarcas').DataTable({
+    const tabla = $('#tablaMarcas').DataTable({
         responsive: true,
-        pageLength: 5,
+        pageLength: 10,
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
@@ -231,6 +232,66 @@ $(document).ready(function () {
             { orderable: false, targets: [3, 4] }
         ]
     });
+
+    // === ELIMINAR MARCA (AJAX + SweetAlert) ===
+    $(document).on('click', '.btn-eliminar-marca', function () {
+        const id     = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const fila   = $(this).closest('tr');
+
+        Swal.fire({
+            title: '¿Eliminar marca?',
+            html: `¿Estás seguro de eliminar <b>${nombre}</b>?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: `eliminar.php?id=${id}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function (res) {
+                    if (res.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Marca eliminada',
+                            text: `"${nombre}" fue eliminada correctamente.`,
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
+                        tabla.row(fila).remove().draw(false);
+                    } else if (res.productos) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'No se puede eliminar',
+                            html: `<b>${nombre}</b> tiene <strong>${res.productos}</strong> producto(s) asociado(s).<br><br>
+                                   Para eliminar esta marca primero debés reasignar o eliminar esos productos.`,
+                            confirmButtonColor: '#f59e0b',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        Swal.fire('Error', res.msg || 'No se pudo eliminar la marca.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'Error en la conexión con el servidor.', 'error');
+                }
+            });
+        });
+    });
+
+    // === TOAST POR MSG EN URL ===
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('msg');
+    if (msg === 'eliminado') {
+        Swal.fire({ icon: 'success', title: 'Marca eliminada', timer: 1500, showConfirmButton: false });
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 </script>
 

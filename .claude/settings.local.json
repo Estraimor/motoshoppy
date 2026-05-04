@@ -8,7 +8,8 @@
       "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password=\"\" -e \"SELECT idroles, nombre_rol, estado FROM motoshoppy.roles ORDER BY idroles;\")",
       "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password= -e ' *)",
       "Bash(git checkout *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -E '^d|php$')"
     ]
   }
 }

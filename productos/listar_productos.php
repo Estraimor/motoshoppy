@@ -924,8 +924,9 @@ $(document).on('click', '.borrar-producto', function() {
                 url: 'eliminar_producto.php',
                 type: 'POST',
                 data: { id },
+                dataType: 'json',
                 success: function(res) {
-                    if (res.trim() === 'OK') {
+                    if (res.ok) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Eliminado',
@@ -933,12 +934,19 @@ $(document).on('click', '.borrar-producto', function() {
                             timer: 1500,
                             showConfirmButton: false
                         });
-
-                        // 🧩 Remover la fila sin recargar
                         const tabla = $('#tablaProductos').DataTable();
                         tabla.row(fila).remove().draw(false);
+                    } else if (res.ventas) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'No se puede eliminar',
+                            html: `<p>Este producto tiene <strong>${res.ventas}</strong> venta(s) registrada(s).</p>
+                                   <p class="text-muted mb-0">No es posible eliminar un producto con historial de ventas.</p>`,
+                            confirmButtonColor: '#f59e0b',
+                            confirmButtonText: 'Entendido'
+                        });
                     } else {
-                        Swal.fire('Error', 'No se pudo eliminar el producto', 'error');
+                        Swal.fire('Error', res.msg || 'No se pudo eliminar el producto', 'error');
                     }
                 },
                 error: function() {
