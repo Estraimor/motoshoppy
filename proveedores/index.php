@@ -77,17 +77,45 @@ $totalInactivos = count($proveedores) - $totalActivos;
 .dataTables_wrapper .dataTables_paginate { color: #94a3b8; }
 .dataTables_wrapper .page-link { background: #1e293b; color: #fff; border-color: #334155; }
 .dataTables_wrapper .page-item.active .page-link { background: #3b82f6; border-color: #3b82f6; }
+
+    @media (max-width: 768px) {
+        .prov-header { padding: 4.5rem .6rem .4rem; }
+
+        /* stats en fila compacta */
+        .stat-mini {
+            flex: 1 1 calc(33% - .5rem);
+            min-width: 0;
+            padding: .6rem .8rem;
+        }
+        .stat-mini .num { font-size: 1.3rem; }
+
+        /* filtros apilados */
+        .filtros-bar { flex-direction: column; gap: .6rem; }
+        .filtros-bar .form-control,
+        .filtros-bar .form-select { width: 100% !important; min-width: 0 !important; }
+        #btnLimpiar { width: 100%; }
+
+        /* tabla scroll horizontal */
+        .table-prov { border-radius: 8px; }
+        .table-prov .table { min-width: 700px; }
+        .table-prov td { font-size: .8rem; white-space: nowrap; }
+        .table-prov th { font-size: .68rem; white-space: nowrap; }
+
+        /* DataTable controls apilados */
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_length { width: 100%; text-align: left; }
+        .dataTables_wrapper .dataTables_filter input { width: 100% !important; box-sizing: border-box; }
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate { font-size: .8rem; }
+    }
 </style>
 
-<!-- TOAST -->
-<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1100;">
-    <div id="toastProv" class="toast border-0" role="alert">
+<div id="toastProv" class="toast border-0" role="alert">
         <div class="d-flex">
             <div id="toastProvBody" class="toast-body fw-semibold"></div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
-</div>
 
 <div class="prov-header">
 
@@ -164,10 +192,10 @@ $totalInactivos = count($proveedores) - $totalActivos;
                 <tbody>
                     <?php foreach ($proveedores as $p): ?>
                         <tr data-activo="<?= $p['activo'] ?>">
-                            <td class="fw-semibold"><?= htmlspecialchars($p['empresa']) ?></td>
-                            <td><?= htmlspecialchars($p['ubicacion'] ?: '-') ?></td>
-                            <td><?= htmlspecialchars($p['telefono'] ?: '-') ?></td>
-                            <td>
+                            <td class="fw-semibold" data-label="Empresa"><?= htmlspecialchars($p['empresa']) ?></td>
+                            <td data-label="Ubicación"><?= htmlspecialchars($p['ubicacion'] ?: '-') ?></td>
+                            <td data-label="Teléfono"><?= htmlspecialchars($p['telefono'] ?: '-') ?></td>
+                            <td data-label="Email">
                                 <?php if ($p['email']): ?>
                                     <a href="mailto:<?= htmlspecialchars($p['email']) ?>" class="text-info">
                                         <?= htmlspecialchars($p['email']) ?>
@@ -176,8 +204,8 @@ $totalInactivos = count($proveedores) - $totalActivos;
                                     <span class="text-secondary">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?= htmlspecialchars($p['vendedor'] ?: '-') ?></td>
-                            <td>
+                            <td data-label="Vendedor"><?= htmlspecialchars($p['vendedor'] ?: '-') ?></td>
+                            <td data-label="Tel. Vendedor">
                                 <?php if ($p['numero_vendedor']): ?>
                                     <a href="tel:<?= htmlspecialchars($p['numero_vendedor']) ?>" class="text-success">
                                         <?= htmlspecialchars($p['numero_vendedor']) ?>
@@ -186,12 +214,12 @@ $totalInactivos = count($proveedores) - $totalActivos;
                                     <span class="text-secondary">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Estado">
                                 <?= $p['activo']
                                     ? '<span class="badge bg-success">Activo</span>'
                                     : '<span class="badge bg-danger">Inactivo</span>' ?>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" data-label="Acciones">
                                 <div class="d-flex gap-1 justify-content-center">
                                     <!-- Editar -->
                                     <button class="btn btn-warning btn-accion-sm btn-editar" title="Editar"
@@ -354,7 +382,7 @@ $(document).ready(function () {
 
     // === DATATABLE ===
     const tabla = $('#tablaProveedores').DataTable({
-        responsive: true,
+        responsive: false,
         pageLength: 15,
         lengthMenu: [10, 15, 25, 50],
         columnDefs: [{ targets: [7], orderable: false }],

@@ -655,3 +655,62 @@ body {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
 }
 
+/* ==== HAMBURGER BUTTON ==== */
+.hamburger-btn {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 1100;
+  background: rgba(255,60,0,0.9);
+  border: none;
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  transition: background 0.2s;
+}
+.hamburger-btn:hover { background: #ff3c00; }
+.hamburger-btn i { color: #fff; font-size: 1.1rem; }
+
+/* ==== OVERLAY SIDEBAR MOBILE ==== */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1050;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+/* ==== RESPONSIVE MOBILE ==== */
+@media (max-width: 768px) {
+  body { height: auto; min-height: 100vh; }
+
+  .wrapper { flex-direction: column; }
+
+  .hamburger-btn { display: flex; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1060;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: 260px;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .main-content {
+    width: 100%;
+    padding: 14px 12px 14px;
+    padding-top: 68px; /* espacio para el hamburger */
+  }
+}
+
