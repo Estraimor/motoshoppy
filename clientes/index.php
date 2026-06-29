@@ -22,7 +22,7 @@ $stmt = $conexion->prepare("
     FROM clientes c
     LEFT JOIN ventas v ON v.clientes_idCliente = c.idCliente
     GROUP BY c.idCliente
-    ORDER BY c.apellido ASC
+    ORDER BY c.nombre ASC, c.apellido ASC
 ");
 $stmt->execute();
 $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -84,7 +84,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
         <div class="stat-card info">
             <h4><i class="fa-solid fa-dollar-sign me-1"></i> Facturado</h4>
-            <span>$<?= number_format($totalGastado, 0, ',', '.') ?></span>
+            <span>₲<?= number_format($totalGastado, 0, ',', '.') ?></span>
         </div>
     </div>
 
@@ -94,7 +94,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <thead>
                 <tr>
                     <th>Cliente</th>
-                    <th>DNI</th>
+                    <th>RUC</th>
                     <th>Celular</th>
                     <th>Email</th>
                     <th>Alta</th>
@@ -108,7 +108,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php foreach ($clientes as $c): ?>
                     <tr>
                         <td class="text-start fw-semibold">
-                            <?= htmlspecialchars($c['apellido'] . ', ' . $c['nombre']) ?>
+                            <?= htmlspecialchars($c['nombre'] . ' ' . $c['apellido']) ?>
                         </td>
                         <td><?= htmlspecialchars($c['dni']) ?></td>
                         <td><?= htmlspecialchars($c['celular'] ?: '-') ?></td>
@@ -125,7 +125,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge badge-compras"><?= $c['cantidad_compras'] ?></span>
                         </td>
                         <td class="text-success fw-bold">
-                            $<?= number_format($c['total_gastado'], 0, ',', '.') ?>
+                            ₲<?= number_format($c['total_gastado'], 0, ',', '.') ?>
                         </td>
                         <td>
                             <div class="d-flex gap-1 justify-content-center">
@@ -144,7 +144,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <button class="btn btn-danger btn-accion btn-eliminar"
                                     title="Eliminar"
                                     data-id="<?= $c['idCliente'] ?>"
-                                    data-nombre="<?= htmlspecialchars($c['apellido'] . ' ' . $c['nombre']) ?>"
+                                    data-nombre="<?= htmlspecialchars($c['nombre'] . ' ' . $c['apellido']) ?>"
                                     data-compras="<?= $c['cantidad_compras'] ?>">
                                     <i class="fa-solid fa-trash fa-xs"></i>
                                 </button>
@@ -152,7 +152,7 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <button class="btn btn-outline-warning btn-accion btnInsight"
                                     title="Ver qué compra"
                                     data-id="<?= $c['idCliente'] ?>"
-                                    data-nombre="<?= htmlspecialchars($c['apellido'] . ' ' . $c['nombre']) ?>">
+                                    data-nombre="<?= htmlspecialchars($c['nombre'] . ' ' . $c['apellido']) ?>">
                                     <i class="fa-solid fa-chart-bar fa-xs"></i>
                                 </button>
                             </div>
@@ -180,11 +180,11 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
               <input type="text" name="nombre" class="form-control bg-dark text-white border-secondary" required>
             </div>
             <div class="col-6">
-              <label class="form-label small text-secondary">Apellido *</label>
-              <input type="text" name="apellido" class="form-control bg-dark text-white border-secondary" required>
+              <label class="form-label small text-secondary">Apellido</label>
+              <input type="text" name="apellido" class="form-control bg-dark text-white border-secondary">
             </div>
             <div class="col-6">
-              <label class="form-label small text-secondary">DNI *</label>
+              <label class="form-label small text-secondary">RUC *</label>
               <input type="text" name="dni" class="form-control bg-dark text-white border-secondary" required maxlength="20">
             </div>
             <div class="col-6">
@@ -225,11 +225,11 @@ $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
               <input type="text" name="nombre" id="edit_nombre" class="form-control bg-dark text-white border-secondary" required>
             </div>
             <div class="col-6">
-              <label class="form-label small text-secondary">Apellido *</label>
-              <input type="text" name="apellido" id="edit_apellido" class="form-control bg-dark text-white border-secondary" required>
+              <label class="form-label small text-secondary">Apellido</label>
+              <input type="text" name="apellido" id="edit_apellido" class="form-control bg-dark text-white border-secondary">
             </div>
             <div class="col-6">
-              <label class="form-label small text-secondary">DNI *</label>
+              <label class="form-label small text-secondary">RUC *</label>
               <input type="text" name="dni" id="edit_dni" class="form-control bg-dark text-white border-secondary" required maxlength="20">
             </div>
             <div class="col-6">

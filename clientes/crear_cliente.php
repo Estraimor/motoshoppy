@@ -7,7 +7,7 @@ $dni      = trim($_POST['dni']      ?? '');
 $celular  = trim($_POST['celular']  ?? '');
 $email    = trim($_POST['email']    ?? '');
 
-if (!$nombre || !$apellido || !$dni) {
+if (!$nombre || !$dni) {
     header('Location: index.php?msg=error_datos');
     exit;
 }

@@ -131,7 +131,7 @@ $ubicacionesData = $conexion->query("
 <td><?= htmlspecialchars($p['nombre_marca'] ?? '') ?></td>
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
-                            <td>$<?= number_format((float)($p['precio_expuesto'] ?? 0), 2, ',', '.') ?></td>
+                            <td>₲<?= number_format((float)($p['precio_expuesto'] ?? 0), 2, ',', '.') ?></td>
                             <td class="text-center">
                                 <?php
                                 $img = $p['imagen'] ?? '';
@@ -248,7 +248,7 @@ $ubicacionesData = $conexion->query("
     <i class="fa-solid fa-dollar-sign"></i> Rango de precios
   </label>
   <div class="input-group">
-    <span class="input-group-text bg-dark text-light border-secondary">$</span>
+    <span class="input-group-text bg-dark text-light border-secondary">₲</span>
     <input type="number" id="precioMin" class="form-control bg-dark text-light border-secondary" placeholder="Mínimo" min="0">
     <span class="input-group-text bg-dark text-light border-secondary">–</span>
     <input type="number" id="precioMax" class="form-control bg-dark text-light border-secondary" placeholder="Máximo" min="0">
@@ -542,7 +542,7 @@ const html = `
     <p><strong>Modelo:</strong> ${data.modelo ?? '-'}</p>
     <p><strong>Marca:</strong> ${data.nombre_marca ?? 'Sin marca'}</p>
     <p><strong>Categoría:</strong> ${data.nombre_categoria ?? 'Sin categoría'}</p>
-    <p><strong>Precio Expuesto:</strong> $${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
+    <p><strong>Precio Expuesto:</strong> ₲${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
     <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
     <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
     <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>

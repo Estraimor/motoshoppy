@@ -9,7 +9,10 @@
       "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -u root --password= -e ' *)",
       "Bash(git checkout *)",
       "Bash(git add *)",
-      "Bash(grep -E '^d|php$')"
+      "Bash(grep -E '^d|php$')",
+      "Bash(grep -rn \"CREATE TABLE.*clientes\\\\|\\\\`clientes\\\\`\" --include=\"*.sql\" .)",
+      "Bash(grep -n '>\\\\$<\\\\|\">\\\\$\\\\|\\\\$<?= number_format\\\\|\\\\${parseFloat\\\\|\\\\${Number\\\\|\\\\${.*toFixed' /c/wamp64/www/motoshoppy/productos/listar_productos.php /c/wamp64/www/motoshoppy/clientes/index.php)",
+      "Bash(grep -n '\\\\$<?=\\\\|>\\\\$\\\\|\\\\${.*precio\\\\|\\\\${.*total\\\\|\\\\${.*Number' /c/wamp64/www/motoshoppy/proveedores/index.php)"
     ]
   }
 }

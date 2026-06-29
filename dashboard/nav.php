@@ -50,6 +50,14 @@ $is_clientes_active      = str_starts_with($uri, "$base/clientes");
 </head>
 <body>
 
+<!-- HAMBURGER (mobile) -->
+<button class="hamburger-btn" id="hamburgerBtn" aria-label="Menú">
+  <i class="fa-solid fa-bars"></i>
+</button>
+
+<!-- OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- PRELOADER -->
 <div id="preloader">
   <div class="loader-content">
@@ -253,6 +261,30 @@ $is_clientes_active      = str_starts_with($uri, "$base/clientes");
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <script>
+      // === HAMBURGER MENU MOBILE ===
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn     = document.getElementById('hamburgerBtn');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (!btn) return;
+
+        function openSidebar() {
+          sidebar.classList.add('open');
+          overlay.classList.add('active');
+          btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        }
+        function closeSidebar() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+          btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+        }
+
+        btn.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+        overlay.addEventListener('click', closeSidebar);
+      });
+    </script>
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
