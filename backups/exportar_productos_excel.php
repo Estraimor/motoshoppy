@@ -144,7 +144,7 @@ if (!empty($p['descripcion'])) {
 
 $sheet->getStyle("I2:I" . ($fila-1))
       ->getNumberFormat()
-      ->setFormatCode('"$"#,##0.00');
+      ->setFormatCode('"$"#,##0');
 
 // =============================
 // AUTO SIZE COLUMNAS

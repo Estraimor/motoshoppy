@@ -133,12 +133,12 @@ foreach($movimientos as $m){
     $pdf->Cell(90,7,$m['concepto'],1);
 
     if($m['debe'] > 0){
-        $pdf->Cell(35,7,'$ '.number_format($m['debe'],2,',','.'),1,0,'R');
+        $pdf->Cell(35,7,'$ '.number_format($m['debe'],0,',','.'),1,0,'R');
         $pdf->Cell(35,7,'',1);
         $totalDebe += $m['debe'];
     } else {
         $pdf->Cell(35,7,'',1);
-        $pdf->Cell(35,7,'$ '.number_format($m['haber'],2,',','.'),1,0,'R');
+        $pdf->Cell(35,7,'$ '.number_format($m['haber'],0,',','.'),1,0,'R');
         $totalHaber += $m['haber'];
     }
     $pdf->Ln();
@@ -149,7 +149,7 @@ foreach($movimientos as $m){
 ============================ */
 $pdf->SetFont('Arial','B',9);
 $pdf->Cell(120,8,txt('TOTALES'),1);
-$pdf->Cell(35,8,'$ '.number_format($totalDebe,2,',','.'),1,0,'R');
-$pdf->Cell(35,8,'$ '.number_format($totalHaber,2,',','.'),1,1,'R');
+$pdf->Cell(35,8,'$ '.number_format($totalDebe,0,',','.'),1,0,'R');
+$pdf->Cell(35,8,'$ '.number_format($totalHaber,0,',','.'),1,1,'R');
 
 $pdf->Output('I','Libro_Diario.pdf');

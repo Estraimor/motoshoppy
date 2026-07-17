@@ -86,8 +86,8 @@ cargarMetadataVentas();
    Formatear moneda
 ============================================================ */
 const money = v => Number(v || 0).toLocaleString('es-AR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
 });
 
 

@@ -169,7 +169,7 @@ const BASE = '<?= BASE_URL ?>';
 /* ==== Helpers ==== */
 const money = v => {
   const n = Number(v || 0);
-  return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 const debounce = (fn, ms = 250) => {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };

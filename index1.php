@@ -595,12 +595,12 @@ document.getElementById('modalVentasHoy').addEventListener('show.bs.modal', asyn
           <td>${v.cliente || '-'}</td>
           <td>${v.producto}</td>
           <td class="text-end">${v.cantidad}</td>
-          <td class="text-end">$${Number(v.precio_unitario).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
-          <td class="text-end">$${Number(v.subtotal).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+          <td class="text-end">$${Number(v.precio_unitario).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0})}</td>
+          <td class="text-end">$${Number(v.subtotal).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0})}</td>
         </tr>`;
     });
 
-    totalDia.textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    totalDia.textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0})}`;
 
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${err.message}</td></tr>`;
@@ -653,7 +653,7 @@ document.getElementById('modalVentasHoy')
         let total = 0;
         json.ventas.forEach(v => total += parseFloat(v.subtotal));
         document.getElementById('totalDia').textContent =
-          `$ ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+          `$ ${total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
         return json.ventas;
       }

@@ -105,7 +105,7 @@ if ($row['esta_cancelada'] > 0) {
            <td><?= ucfirst($row['metodo_pago'] ?? 'Sin método') ?></td>
 <td><?= ucfirst($row['tipo_comprobante'] ?? 'Sin comprobante') ?></td>
 
-            <td>$<?= number_format($row['total'],2,',','.') ?></td>
+            <td>$<?= number_format($row['total'],0,',','.') ?></td>
             <td>
                 <button 
                     class="btn btn-warning btn-sm ver-detalle"
@@ -115,7 +115,7 @@ if ($row['esta_cancelada'] > 0) {
                     data-metodo="<?= ucfirst($row['metodo_pago'] ?? 'Sin método') ?>"
 data-comprobante="<?= ucfirst($row['tipo_comprobante'] ?? 'Sin comprobante') ?>"
 
-                    data-total="<?= number_format($row['total'],2,',','.') ?>"
+                    data-total="<?= number_format($row['total'],0,',','.') ?>"
                 >
                     Ver Detalle
                 </button>

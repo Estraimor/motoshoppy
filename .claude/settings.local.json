@@ -12,7 +12,12 @@
       "Bash(grep -E '^d|php$')",
       "Bash(grep -rn \"CREATE TABLE.*clientes\\\\|\\\\`clientes\\\\`\" --include=\"*.sql\" .)",
       "Bash(grep -n '>\\\\$<\\\\|\">\\\\$\\\\|\\\\$<?= number_format\\\\|\\\\${parseFloat\\\\|\\\\${Number\\\\|\\\\${.*toFixed' /c/wamp64/www/motoshoppy/productos/listar_productos.php /c/wamp64/www/motoshoppy/clientes/index.php)",
-      "Bash(grep -n '\\\\$<?=\\\\|>\\\\$\\\\|\\\\${.*precio\\\\|\\\\${.*total\\\\|\\\\${.*Number' /c/wamp64/www/motoshoppy/proveedores/index.php)"
+      "Bash(grep -n '\\\\$<?=\\\\|>\\\\$\\\\|\\\\${.*precio\\\\|\\\\${.*total\\\\|\\\\${.*Number' /c/wamp64/www/motoshoppy/proveedores/index.php)",
+      "Read(//c/Users/lucia/Downloads/**)",
+      "Bash(cd \"/c/wamp64/www/motoshoppy\" && diff -rq productos \"/c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/productos\")",
+      "Read(//c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/productos/**)",
+      "Bash(cd \"/c/wamp64/www/motoshoppy\" && diff -rq . \"/c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new\" --exclude=.git 2>&1 | head -300)",
+      "Read(//c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/**)"
     ]
   }
 }

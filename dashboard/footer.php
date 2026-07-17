@@ -2,7 +2,7 @@
 </div> <!-- Cierra el wrapper -->
 
 <script>
-window.addEventListener("load", function() {
+document.addEventListener("DOMContentLoaded", function() {
     const preloader = document.getElementById("preloader");
     preloader.classList.add("hidden");
 });

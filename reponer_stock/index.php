@@ -840,12 +840,12 @@ function abrirImpacto(id) {
 
                     input.closest('.border')
                          .querySelector('.subtotalItem')
-                         .innerText = 'Subtotal: $ ' + subtotal.toFixed(2);
+                         .innerText = 'Subtotal: $ ' + Math.round(subtotal).toLocaleString('es-PY');
 
                     totalGeneral += subtotal;
                 });
 
-                totalDiv.innerText = '$ ' + totalGeneral.toFixed(2);
+                totalDiv.innerText = '$ ' + Math.round(totalGeneral).toLocaleString('es-PY');
             }
 
             inputs.forEach(input => {
@@ -1017,7 +1017,7 @@ if (numero) {
             if (r.costo_total !== null) {
                 html += `
                     <p><strong>Costo total:</strong>
-                        $${parseFloat(r.costo_total).toFixed(2)}
+                        $${Math.round(parseFloat(r.costo_total)).toLocaleString('es-PY')}
                     </p>
                 `;
             }

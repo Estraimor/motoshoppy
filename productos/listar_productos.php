@@ -94,6 +94,16 @@ $ubicacionesData = $conexion->query("
 
 /* ---- Badge imagen en tabla ---- */
 #tablaProductos .badge { font-size: 12px; padding: 5px 10px; border-radius: 6px; }
+
+/* ---- Miniatura imagen en tabla ---- */
+.thumb-producto {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #555;
+    cursor: pointer;
+}
 </style>
 
 
@@ -131,17 +141,16 @@ $ubicacionesData = $conexion->query("
 <td><?= htmlspecialchars($p['nombre_marca'] ?? '') ?></td>
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
-                            <td>₲<?= number_format((float)($p['precio_expuesto'] ?? 0), 2, ',', '.') ?></td>
+                            <td>₲<?= number_format((float)($p['precio_expuesto'] ?? 0), 0, ',', '.') ?></td>
                             <td class="text-center">
                                 <?php
                                 $img = $p['imagen'] ?? '';
                                 $imgPath = __DIR__ . '/../' . $img;
-                                if ($img && $img !== 'NULL' && file_exists($imgPath)):
+                                $imgSrc = ($img && $img !== 'NULL' && file_exists($imgPath))
+                                    ? '/motoshoppy/' . ltrim(str_replace('\\', '/', $img), '/')
+                                    : 'https://via.placeholder.com/60x60?text=Sin+Imagen';
                                 ?>
-                                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Imagen OK</span>
-                                <?php else: ?>
-                                    <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>Falta imagen</span>
-                                <?php endif; ?>
+                                <img src="<?= htmlspecialchars($imgSrc) ?>" class="thumb-producto" alt="Imagen producto">
                             </td>
                             <td class="text-center">
                                 <!-- Botón detalle de cada producto -->
@@ -303,8 +312,10 @@ $(document).ready(function () {
     $.fn.dataTable.ext.search.length = 0;
 
     let tabla = $('#tablaProductos').DataTable({
-        pageLength: 10,
-        lengthMenu: [5, 10, 25, 50, 100],
+        pageLength: 15,
+        lengthMenu: [5, 10, 15, 25, 50, 100],
+        stateSave: true,
+        stateDuration: -1,
         responsive: true,
         columnDefs: [
             { targets: 5, searchable: false }  // columna Imagen: excluir del search global
@@ -542,7 +553,7 @@ const html = `
     <p><strong>Modelo:</strong> ${data.modelo ?? '-'}</p>
     <p><strong>Marca:</strong> ${data.nombre_marca ?? 'Sin marca'}</p>
     <p><strong>Categoría:</strong> ${data.nombre_categoria ?? 'Sin categoría'}</p>
-    <p><strong>Precio Expuesto:</strong> ₲${parseFloat(data.precio_expuesto || 0).toFixed(2)}</p>
+    <p><strong>Precio Expuesto:</strong> ₲${Math.round(parseFloat(data.precio_expuesto || 0)).toLocaleString('es-PY')}</p>
     <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
     <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
     <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>
@@ -892,7 +903,7 @@ $(document).on('click', '#btnGuardar', function () {
 
 
     // === Zoom imagen ===
-    $(document).on('click', '#detalleImagen, #previewImg', function() {
+    $(document).on('click', '#detalleImagen, #previewImg, .thumb-producto', function() {
         const src = $(this).attr('src');
         $('#zoomImagen').attr('src', src);
         const zoomModal = new bootstrap.Modal('#modalZoom');

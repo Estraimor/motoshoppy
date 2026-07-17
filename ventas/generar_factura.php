@@ -314,7 +314,7 @@ class FacturaParaguayaPDF extends FPDF
             $this->Rect($xMod, $yMod, $wModelo, $hFila);
 
             // PRECIOS
-            $this->Cell($wPU, $hFila, number_format($it['pu'], 2, ',', '.'), 1, 0, 'R');
+            $this->Cell($wPU, $hFila, number_format($it['pu'], 0, ',', '.'), 1, 0, 'R');
             $this->Cell($wEx, $hFila, '0', 1, 0, 'R');
             $this->Cell($w5,  $hFila, '',  1, 0, 'C');
             $this->Cell($w10, $hFila, '',  1, 1, 'C');
@@ -327,10 +327,10 @@ class FacturaParaguayaPDF extends FPDF
 
         $valorParcial = round($total10 - ($total10 / 11));
         $this->Cell(30, 6, $this->conv('VALOR PARCIAL'), 1, 0, 'L');
-        $this->Cell(160, 6, number_format($valorParcial, 2, ',', '.'), 1, 1, 'R');
+        $this->Cell(160, 6, number_format($valorParcial, 0, ',', '.'), 1, 1, 'R');
 
         $this->Cell(40, 6, $this->conv('TOTAL A PAGAR Gs.'), 1, 0, 'L');
-        $this->Cell(150, 6, number_format($total10, 2, ',', '.'), 1, 1, 'R');
+        $this->Cell(150, 6, number_format($total10, 0, ',', '.'), 1, 1, 'R');
 
         $iva10 = $total10 / 11;
 
@@ -346,7 +346,7 @@ class FacturaParaguayaPDF extends FPDF
         $this->Cell(40, 6, "3", 1, 0, 'C');
 
         $this->SetFont('Arial', '', 8);
-        $this->Cell(60, 6, number_format($iva10, 2, ',', '.'), 1, 1, 'R');
+        $this->Cell(60, 6, number_format($iva10, 0, ',', '.'), 1, 1, 'R');
     }
 }
 

@@ -129,11 +129,11 @@ $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <td class="text-center"><?= $row['cantidad'] ?></td>
 
             <td class="text-end">
-                $<?= number_format($row['precio_unitario'], 2, ',', '.') ?>
+                $<?= number_format($row['precio_unitario'], 0, ',', '.') ?>
             </td>
 
             <td class="text-end">
-                $<?= number_format($row['subtotal'], 2, ',', '.') ?>
+                $<?= number_format($row['subtotal'], 0, ',', '.') ?>
             </td>
 
             <!-- COLUMNA ACCIONES -->

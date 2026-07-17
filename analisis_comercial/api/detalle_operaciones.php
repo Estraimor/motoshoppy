@@ -148,7 +148,7 @@ while ($d = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $pdf->Cell(30,7,date('d/m/Y H:i', strtotime($d['fecha'])),1,0,'L',$fill);
     $pdf->Cell(50,7,substr($d['producto'],0,28),1,0,'L',$fill);
     $pdf->Cell(12,7,$d['cantidad'],1,0,'C',$fill);
-    $pdf->Cell(30,7,number_format($importe,2,',','.'),1,0,'R',$fill);
+    $pdf->Cell(30,7,number_format($importe,0,',','.'),1,0,'R',$fill);
     $pdf->Cell(30,7,ucfirst($d['metodo']),1,0,'L',$fill);
     $pdf->Cell(20,7,$d['moneda'],1,1,'C',$fill);
 
@@ -164,13 +164,13 @@ $pdf->SetFont('Arial','',10);
 
 foreach($totalesMoneda as $moneda => $total){
     $pdf->Cell(120,8,"Total en $moneda",1,0,'R');
-    $pdf->Cell(40,8,number_format($total,2,',','.'),1,1,'R');
+    $pdf->Cell(40,8,number_format($total,0,',','.'),1,1,'R');
 }
 
 $pdf->Ln(4);
 $pdf->SetFont('Arial','B',11);
 $pdf->Cell(120,9,'TOTAL GENERAL',1,0,'R');
-$pdf->Cell(40,9,number_format($totalGeneral,2,',','.'),1,1,'R');
+$pdf->Cell(40,9,number_format($totalGeneral,0,',','.'),1,1,'R');
 
 $pdf->Ln(4);
 $pdf->SetFont('Arial','I',9);
@@ -243,8 +243,8 @@ $totalCompras += $total;
     $pdf->Cell(35,7,substr($r['proveedor'],0,18),1,0,'L',$fill);
     $pdf->Cell(40,7,substr($r['producto'],0,22),1,0,'L',$fill);
     $pdf->Cell(12,7,$cantidad,1,0,'C',$fill);
-    $pdf->Cell(28,7,number_format($costoUnit,2,',','.'),1,0,'R',$fill);
-    $pdf->Cell(30,7,number_format($total,2,',','.'),1,0,'R',$fill);
+    $pdf->Cell(28,7,number_format($costoUnit,0,',','.'),1,0,'R',$fill);
+    $pdf->Cell(30,7,number_format($total,0,',','.'),1,0,'R',$fill);
     $pdf->Cell(20,7,$r['numero_factura'] ?? '-',1,1,'C',$fill);
 
     $fill = !$fill;
@@ -261,14 +261,14 @@ $gananciaBruta = $totalGeneral - $totalCompras;
 $pdf->SetFont('Arial','',10);
 
 $pdf->Cell(120,8,'Total Ventas',1,0,'R');
-$pdf->Cell(40,8,number_format($totalGeneral,2,',','.'),1,1,'R');
+$pdf->Cell(40,8,number_format($totalGeneral,0,',','.'),1,1,'R');
 
 $pdf->Cell(120,8,'Total Compras Proveedores',1,0,'R');
-$pdf->Cell(40,8,number_format($totalCompras,2,',','.'),1,1,'R');
+$pdf->Cell(40,8,number_format($totalCompras,0,',','.'),1,1,'R');
 
 $pdf->SetFont('Arial','B',11);
 $pdf->Cell(120,9,'RESULTADO BRUTO',1,0,'R');
-$pdf->Cell(40,9,number_format($gananciaBruta,2,',','.'),1,1,'R');
+$pdf->Cell(40,9,number_format($gananciaBruta,0,',','.'),1,1,'R');
 
 
 
