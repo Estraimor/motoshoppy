@@ -142,14 +142,15 @@ $ubicacionesData = $conexion->query("
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
                             <td>₲<?= number_format((float)($p['precio_expuesto'] ?? 0), 0, ',', '.') ?></td>
-                            <td class="text-center">
-                                <?php
-                                $img = $p['imagen'] ?? '';
-                                $imgPath = __DIR__ . '/../' . $img;
-                                $imgSrc = ($img && $img !== 'NULL' && file_exists($imgPath))
-                                    ? '/motoshoppy/' . ltrim(str_replace('\\', '/', $img), '/')
-                                    : 'https://via.placeholder.com/60x60?text=Sin+Imagen';
-                                ?>
+                            <?php
+                            $img = $p['imagen'] ?? '';
+                            $imgPath = __DIR__ . '/../' . $img;
+                            $tieneImagen = ($img && $img !== 'NULL' && file_exists($imgPath));
+                            $imgSrc = $tieneImagen
+                                ? '../' . str_replace('\\', '/', $img)
+                                : 'https://via.placeholder.com/60x60?text=Sin+Imagen';
+                            ?>
+                            <td class="text-center" data-order="<?= $tieneImagen ? 1 : 0 ?>">
                                 <img src="<?= htmlspecialchars($imgSrc) ?>" class="thumb-producto" alt="Imagen producto">
                             </td>
                             <td class="text-center">
@@ -318,7 +319,8 @@ $(document).ready(function () {
         stateDuration: -1,
         responsive: true,
         columnDefs: [
-            { targets: 5, searchable: false }  // columna Imagen: excluir del search global
+            { targets: 5, searchable: false }, // columna Imagen: orden por "con/sin imagen" via data-order, sin búsqueda
+            { targets: 6, searchable: false, orderable: false }  // columna Acciones: sin búsqueda ni orden
         ],
         language: {
             lengthMenu:  "Mostrar _MENU_ productos",
