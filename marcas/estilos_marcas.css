@@ -1,16 +1,103 @@
-#listaCategorias {
-    z-index: 1050; /* por encima del modal */
+.content-header h2 {
+    color: #ffcc00;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
+}
+
+.marca-header { padding-top: .2rem; }
+
+/* Cards de estadísticas */
+.stat-mini {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: .8rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    color: #fff;
+    min-width: 160px;
+}
+.stat-mini .num { font-size: 1.7rem; font-weight: 700; }
+.stat-mini .lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; }
+
+/* Contenedor de tabla */
+.table-marca {
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+}
+.table-marca table.table-dark { background-color: transparent; color: #fff; margin-bottom: 0; }
+.table-marca thead th {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    background: #1e293b !important;
+    color: #94a3b8;
+    border-bottom: 1px solid #334155;
+    vertical-align: middle;
+}
+.table-marca td { font-size: .9rem; vertical-align: middle; border-color: #1e293b; }
+.table-marca tbody tr:hover { background: rgba(255,255,255,.03); transition: background .2s; }
+.table-marca .btn-sm { border-radius: 6px; }
+
+/* DataTables search, paginación oscuros */
+.dataTables_wrapper .dataTables_filter input {
+    background-color: #1e293b;
+    color: #fff;
+    border: 1px solid #475569;
+    border-radius: 7px;
+    padding: 4px 10px;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    background-color: #1e293b;
+    color: #fff;
+    border: 1px solid #475569;
+    border-radius: 7px;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate { color: #94a3b8; }
+
+.dataTables_paginate .paginate_button {
+    background: #1e293b !important;
+    color: #fff !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px !important;
+    margin: 0 2px;
+}
+
+.dataTables_paginate .paginate_button.current {
+    background: #3b82f6 !important;
+    color: #fff !important;
+    border-color: #3b82f6 !important;
+    font-weight: bold;
+}
+
+/* Buscador de categoría en los modales */
+#listaCategorias, #listaCategoriasEdit {
+    z-index: 1050;
     max-height: 200px;
     overflow-y: auto;
 }
 
-#listaCategorias .list-group-item {
+#listaCategorias .list-group-item,
+#listaCategoriasEdit .list-group-item {
     background: #212529;
     color: #fff;
     cursor: pointer;
 }
 
-#listaCategorias .list-group-item:hover {
+#listaCategorias .list-group-item:hover,
+#listaCategoriasEdit .list-group-item:hover {
     background: #ff3c00;
     color: #fff;
+}
+
+@media (max-width: 768px) {
+    .stat-mini { flex: 1 1 calc(33% - .5rem); min-width: 0; padding: .6rem .8rem; }
+    .stat-mini .num { font-size: 1.3rem; }
+    .table-marca table.table-dark { min-width: 600px; }
 }

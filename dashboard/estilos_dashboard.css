@@ -475,10 +475,15 @@ body {
 
 /* carrito */
 
-/* === CARRITO EN NAV LATERAL === */
+/* === CARRITO EN NAV LATERAL ===
+   Nota: se usa un color neutro (no naranja) para el estado normal,
+   así no se confunde con el resaltado naranja que indica "página actual".
+   El naranja queda reservado para .active (cuando SÍ estás en /ventas/carrito.php)
+   y para el badge de cantidad, que funciona como acento, no como indicador de selección. */
 .nav-cart {
-    background: rgba(255, 60, 0, 0.15);
-    color: #ff3c00;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
     text-decoration: none;
     padding: 10px 15px;
     border-radius: 8px;
@@ -505,14 +510,14 @@ body {
 }
 
 .nav-cart:hover {
-    background: rgba(255, 60, 0, 0.3);
+    background: rgba(255, 255, 255, 0.12);
     transform: translateX(3px);
-    box-shadow: 0 0 8px rgba(255, 60, 0, 0.3);
     color: #fff;
 }
 
 .nav-cart.active {
     background: rgba(255, 60, 0, 0.3);
+    border: 1px solid transparent;
     border-left: 3px solid #ff3c00;
     color: #fff;
 }

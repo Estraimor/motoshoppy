@@ -129,6 +129,9 @@ $ubicacionesData = $conexion->query("
                         <th>Marca</th>
                         <th>Categoría</th>
                         <th>Precio</th>
+                        <?php if (($_SESSION['rol'] ?? '') === 'Administrador'): ?>
+                        <th>Margen</th>
+                        <?php endif; ?>
                         <th class="text-center">Imagen</th>
                         <th class="text-center">Acciones</th>
                     </tr>
@@ -142,6 +145,13 @@ $ubicacionesData = $conexion->query("
 <td><?= htmlspecialchars($p['nombre_categoria'] ?? '') ?></td>
 
                             <td>₲<?= number_format((float)($p['precio_expuesto'] ?? 0), 0, ',', '.') ?></td>
+                            <?php if (($_SESSION['rol'] ?? '') === 'Administrador'):
+                                $pExp = (float)($p['precio_expuesto'] ?? 0);
+                                $pCosto = (float)($p['precio_costo'] ?? 0);
+                                $margen = $pExp > 0 ? (($pExp - $pCosto) / $pExp) * 100 : 0;
+                            ?>
+                            <td><?= number_format($margen, 1, ',', '.') ?>%</td>
+                            <?php endif; ?>
                             <?php
                             $img = $p['imagen'] ?? '';
                             $imgPath = __DIR__ . '/../' . $img;
@@ -303,6 +313,11 @@ $ubicacionesData = $conexion->query("
 </div>
 
 
+<?php
+$esAdminMargen = (($_SESSION['rol'] ?? '') === 'Administrador');
+$colImagen    = $esAdminMargen ? 6 : 5;
+$colAcciones  = $esAdminMargen ? 7 : 6;
+?>
 <script>
 const USER_ROLE = <?= json_encode($_SESSION['rol'] ?? '') ?>;
 </script>
@@ -319,8 +334,8 @@ $(document).ready(function () {
         stateDuration: -1,
         responsive: true,
         columnDefs: [
-            { targets: 5, searchable: false }, // columna Imagen: orden por "con/sin imagen" via data-order, sin búsqueda
-            { targets: 6, searchable: false, orderable: false }  // columna Acciones: sin búsqueda ni orden
+            { targets: <?= $colImagen ?>, searchable: false }, // columna Imagen: orden por "con/sin imagen" via data-order, sin búsqueda
+            { targets: <?= $colAcciones ?>, searchable: false, orderable: false }  // columna Acciones: sin búsqueda ni orden
         ],
         language: {
             lengthMenu:  "Mostrar _MENU_ productos",
@@ -556,6 +571,17 @@ const html = `
     <p><strong>Marca:</strong> ${data.nombre_marca ?? 'Sin marca'}</p>
     <p><strong>Categoría:</strong> ${data.nombre_categoria ?? 'Sin categoría'}</p>
     <p><strong>Precio Expuesto:</strong> ₲${Math.round(parseFloat(data.precio_expuesto || 0)).toLocaleString('es-PY')}</p>
+    ${
+        USER_ROLE === "Administrador"
+        ? (() => {
+            const pExp = parseFloat(data.precio_expuesto || 0);
+            const pCosto = parseFloat(data.precio_costo || 0);
+            const margen = pExp > 0 ? ((pExp - pCosto) / pExp) * 100 : 0;
+            return `<p><strong>Precio Costo:</strong> ₲${Math.round(pCosto).toLocaleString('es-PY')}</p>
+                    <p><strong>Margen:</strong> ${margen.toFixed(1)}%</p>`;
+          })()
+        : ""
+    }
     <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
     <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
     <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>

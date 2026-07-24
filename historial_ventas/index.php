@@ -3,6 +3,21 @@
     requerirRol('Administrador', 'Ventas');
     require_once '../conexion/conexion.php';
 
+    // Filtro de fechas (desde/hasta)
+    $desde = trim($_GET['desde'] ?? '');
+    $hasta = trim($_GET['hasta'] ?? '');
+
+    $whereFecha = '';
+    $paramsFecha = [];
+    if ($desde !== '') {
+        $whereFecha .= " AND v.fecha >= ? ";
+        $paramsFecha[] = $desde . ' 00:00:00';
+    }
+    if ($hasta !== '') {
+        $whereFecha .= " AND v.fecha <= ? ";
+        $paramsFecha[] = $hasta . ' 23:59:59';
+    }
+
     // Consulta usando PDO
     $sql = "
 SELECT 
@@ -46,6 +61,8 @@ LEFT JOIN metodo_pago mp
 LEFT JOIN tipo_comprobante tc
     ON tc.idtipo_comprobante = v.tipo_comprobante_idtipo_comprobante
 
+WHERE 1=1 $whereFecha
+
 ORDER BY v.fecha DESC;
 
 
@@ -54,14 +71,39 @@ ORDER BY v.fecha DESC;
 
 
     $stmt = $conexion->prepare($sql);
-    $stmt->execute();
+    $stmt->execute($paramsFecha);
     $ventas = $stmt->fetchAll();
     ?>
 
     <link rel="stylesheet" href="./historial_ventas.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
     <div class="container mt-4">
         <h2 class="mb-3"><i class="fa-solid fa-clock-rotate-left"></i> Historial de Ventas</h2>
+
+        <form method="GET" class="row g-2 align-items-end mb-3">
+            <div class="col-auto">
+                <label class="form-label text-light mb-1">Desde</label>
+                <input type="date" name="desde" class="form-control" value="<?= htmlspecialchars($desde) ?>">
+            </div>
+            <div class="col-auto">
+                <label class="form-label text-light mb-1">Hasta</label>
+                <input type="date" name="hasta" class="form-control" value="<?= htmlspecialchars($hasta) ?>">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-filter"></i> Filtrar
+                </button>
+                <a href="index.php" class="btn btn-secondary">Limpiar</a>
+            </div>
+        </form>
+
         <hr>
 
         <table id="tablaHistorial" class="table table-striped table-bordered table-dark align-middle w-100">
@@ -226,7 +268,57 @@ $(document).ready(() => {
 
     $('#tablaHistorial').DataTable({
         order: [[1, 'desc']],
-        pageLength: 10
+        pageLength: 10,
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fa-solid fa-file-excel me-1"></i>Excel',
+                className: 'btn btn-success btn-sm',
+                filename: 'Historial_Ventas_Motoshoppy',
+                title: 'Motoshoppy — Historial de Ventas',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fa-solid fa-file-pdf me-1"></i>PDF',
+                className: 'btn btn-danger btn-sm',
+                filename: 'Historial_Ventas_Motoshoppy',
+                title: 'Motoshoppy — Historial de Ventas',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
+                customize: function(doc) {
+                    doc.content[0].fontSize  = 16;
+                    doc.content[0].bold      = true;
+                    doc.content[0].color     = '#1e3a5f';
+                    doc.content[0].alignment = 'center';
+                    doc.content[0].margin    = [0, 0, 0, 4];
+                    doc.content.splice(1, 0, {
+                        text: 'Generado: ' + new Date().toLocaleDateString('es-AR'),
+                        alignment: 'right', fontSize: 8,
+                        color: '#666666', margin: [0, 0, 0, 10]
+                    });
+                    doc.styles.tableHeader = {
+                        bold: true, fontSize: 9,
+                        color: '#ffffff', fillColor: '#1e3a5f',
+                        alignment: 'center'
+                    };
+                    const body = doc.content[2].table.body;
+                    for (let i = 1; i < body.length; i++) {
+                        body[i].forEach(cell => {
+                            if (typeof cell === 'object') {
+                                cell.fillColor = i % 2 === 0 ? '#eef2f7' : '#ffffff';
+                                cell.fontSize  = 8;
+                                cell.color     = '#222222';
+                            }
+                        });
+                    }
+                    doc.content[2].table.widths =
+                        Array(doc.content[2].table.body[0].length).fill('*');
+                }
+            }
+        ]
     });
 
     // ===========================================

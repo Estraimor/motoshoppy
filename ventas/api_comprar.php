@@ -197,9 +197,14 @@ try {
             precio_base,
             porcentaje_descuento,
             precio_unitario,
+            precio_costo_unitario,
             devuelto
         )
-        VALUES (?, ?, ?, ?, ?, ?, 0)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    ");
+
+    $stmtCosto = $conexion->prepare("
+        SELECT precio_costo FROM producto WHERE idProducto = ?
     ");
 
     $totalVenta = 0;
@@ -272,13 +277,18 @@ try {
            INSERT DETALLE
         ========================= */
 
+        $stmtCosto->execute([$idProd]);
+        $precioCosto = $stmtCosto->fetchColumn();
+        $precioCosto = ($precioCosto !== false) ? (float)$precioCosto : null;
+
         $stmtDetalle->execute([
             $venta_id,
             $idProd,
             $cantidad,
             $precioBase,
             $descuento,
-            $precioUnit
+            $precioUnit,
+            $precioCosto
         ]);
 
         $totalVenta += $subtotal;

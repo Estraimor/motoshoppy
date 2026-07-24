@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../conexion/conexion.php';
 
 // ===============================
@@ -6,6 +7,8 @@ require_once '../conexion/conexion.php';
 // ===============================
 $idVenta = intval($_POST['idVenta'] ?? 0);
 $modo    = $_POST['modo'] ?? 'view';
+$esAdmin = (($_SESSION['rol'] ?? '') === 'Administrador');
+$mostrarMargen = $esAdmin && $modo === 'view';
 
 if ($idVenta <= 0) {
     die("<div class='alert alert-danger'>ID de venta inválido.</div>");
@@ -18,8 +21,9 @@ $sql = "
 SELECT 
     dv.idDetalle, 
     dv.producto_idProducto AS producto_id,
-    dv.cantidad, 
-    dv.precio_unitario, 
+    dv.cantidad,
+    dv.precio_unitario,
+    dv.precio_costo_unitario,
     (dv.cantidad * dv.precio_unitario) AS subtotal,
     dv.devuelto,
 
@@ -79,6 +83,9 @@ $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <th class="text-center">Cant.</th>
             <th class="text-end">Unitario</th>
             <th class="text-end">Subtotal</th>
+            <?php if ($mostrarMargen): ?>
+                <th class="text-end">Margen</th>
+            <?php endif; ?>
 
             <th class="text-center">Acciones</th>
         </tr>
@@ -86,11 +93,21 @@ $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <tbody>
 
-    <?php foreach ($detalles as $row): ?>
-        <?php 
-            $devuelto = ($row['devuelto'] == 1);
-            $idDev    = $row['idDevolucionReal'];
-        ?>
+    <?php
+    $totalVenta = 0;
+    $totalCosto = 0;
+    $totalCostoDisponible = true;
+    foreach ($detalles as $row):
+        $devuelto = ($row['devuelto'] == 1);
+        $idDev    = $row['idDevolucionReal'];
+
+        $totalVenta += (float)$row['subtotal'];
+        if ($row['precio_costo_unitario'] === null) {
+            $totalCostoDisponible = false;
+        } else {
+            $totalCosto += (float)$row['precio_costo_unitario'] * (int)$row['cantidad'];
+        }
+    ?>
 
         <tr>
 
@@ -136,6 +153,18 @@ $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $<?= number_format($row['subtotal'], 0, ',', '.') ?>
             </td>
 
+            <?php if ($mostrarMargen): ?>
+                <td class="text-end">
+                    <?php if ($row['precio_costo_unitario'] === null): ?>
+                        <span class="text-secondary">N/D</span>
+                    <?php else:
+                        $margenFila = ((float)$row['subtotal']) - ((float)$row['precio_costo_unitario'] * (int)$row['cantidad']);
+                    ?>
+                        $<?= number_format($margenFila, 0, ',', '.') ?>
+                    <?php endif; ?>
+                </td>
+            <?php endif; ?>
+
             <!-- COLUMNA ACCIONES -->
             <td class="text-center">
 
@@ -161,6 +190,19 @@ $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php endforeach; ?>
 
     </tbody>
+    <?php if ($mostrarMargen): ?>
+    <tfoot>
+        <tr class="table-secondary text-dark fw-bold">
+            <td colspan="7" class="text-end">Margen total:</td>
+            <td class="text-end">
+                <?= $totalCostoDisponible
+                    ? '$' . number_format($totalVenta - $totalCosto, 0, ',', '.')
+                    : '<span class="text-secondary">N/D (venta anterior a este cambio)</span>' ?>
+            </td>
+            <td></td>
+        </tr>
+    </tfoot>
+    <?php endif; ?>
 </table>
 
 </div>

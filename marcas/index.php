@@ -17,17 +17,53 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <link rel="stylesheet" href="estilos_marcas.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="content-header d-flex justify-content-between align-items-center">
-    <h2><i class="fa-solid fa-bookmark"></i> Marcas</h2>
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-        <i class="fa-solid fa-plus"></i> Nueva Marca
-    </button>
+<?php
+$totalMarcas = count($marcas);
+$activasMarcas = 0;
+foreach ($marcas as $m) { if ($m['estado']) $activasMarcas++; }
+$inactivasMarcas = $totalMarcas - $activasMarcas;
+?>
+
+<div class="marca-header">
+
+    <div class="content-header d-flex justify-content-between align-items-center">
+        <h2><i class="fa-solid fa-bookmark"></i> Marcas</h2>
+        <button class="btn btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+            <i class="fa-solid fa-plus"></i> Nueva Marca
+        </button>
+    </div>
+
+    <div class="d-flex gap-3 flex-wrap my-3">
+        <div class="stat-mini">
+            <i class="fa-solid fa-bookmark fa-lg text-info"></i>
+            <div>
+                <div class="num"><?= $totalMarcas ?></div>
+                <div class="lbl">Total</div>
+            </div>
+        </div>
+        <div class="stat-mini">
+            <i class="fa-solid fa-circle-check fa-lg text-success"></i>
+            <div>
+                <div class="num" style="color:#22c55e"><?= $activasMarcas ?></div>
+                <div class="lbl">Activas</div>
+            </div>
+        </div>
+        <div class="stat-mini">
+            <i class="fa-solid fa-circle-xmark fa-lg text-danger"></i>
+            <div>
+                <div class="num" style="color:#f87171"><?= $inactivasMarcas ?></div>
+                <div class="lbl">Inactivas</div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="content-body mt-4">
+<div class="content-body">
+    <div class="table-marca">
     <div class="table-responsive">
-        <table id="tablaMarcas" class="table table-dark table-striped table-hover align-middle shadow-sm rounded">
-            <thead class="table-primary">
+        <table id="tablaMarcas" class="table table-dark align-middle mb-0">
+            <thead>
                 <tr>
                     <th>ID</th>
                     <th>Categoría</th>
@@ -74,6 +110,7 @@ $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
     </div>
 </div>
 

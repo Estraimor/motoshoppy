@@ -98,44 +98,10 @@ function renderTicket(FPDF $pdf, $venta, $items, $dni_final) {
     $wCant     = 10;
     $wPrecio   = $ancho - $wProducto - $wCant; // resto
 
-    // LOGO
-    $logo = __DIR__ . '/../imagenes/logo_motosshoppy.png';
-    if (file_exists($logo)) {
-        $logoW = 30;
-        $logoX = $left + (($ancho - $logoW) / 2);
-        $pdf->Image($logo, $logoX, $pdf->GetY(), $logoW);
-        $pdf->Ln(22);
-    }
-
-    
-
-    $pdf->SetFont('Arial', '', 8);
-    $pdf->SetX($left);
-    $pdf->Cell($ancho, 4, conv('Ruta N° 1 Km 2,5 - Encarnacion - Itapua - Paraguay'), 0, 1, 'C');
-    $pdf->SetX($left);
-    // WHATSAPP
-$iconW = 4;
-$startX = $left + ($ancho / 2) - 20;
-
-$pdf->SetXY($startX, $pdf->GetY());
-$pdf->Image(__DIR__ . '/../imagenes/wasappng.png', $pdf->GetX(), $pdf->GetY(), $iconW);
-$pdf->SetX($pdf->GetX() + 5);
-$pdf->Cell(30, 4, conv('+595 975 651002'), 0, 1, 'L');
-
-// INSTAGRAM
-$pdf->SetXY($startX, $pdf->GetY());
-$pdf->Image(__DIR__ . '/../imagenes/instagrampng.png', $pdf->GetX(), $pdf->GetY(), $iconW);
-$pdf->SetX($pdf->GetX() + 5);
-$pdf->Cell(30, 4, conv('@motoshopp.py'), 0, 1, 'L');
-
-    $pdf->Ln(2);
-    $pdf->Line($left, $pdf->GetY(), $right, $pdf->GetY());
-    $pdf->Ln(2);
-
     // TITULO
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetX($left);
-    $pdf->Cell($ancho, 6, conv('TICKET N° ' . $venta['idVenta']), 0, 1, 'C');
+    $pdf->Cell($ancho, 6, conv('NOTA DE PRESUPUESTO N° ' . $venta['idVenta']), 0, 1, 'C');
         $fecha_py = date('d/m/Y H:i:s');
     // DATOS
     $pdf->SetFont('Arial', '', 8);
@@ -213,30 +179,34 @@ $pdf->Cell($ancho, 4, conv('Forma de pago: ' . $venta['metodo_pago_nombre']), 0,
 }
 
 /* ======================
-   GENERAR PDF
+   GENERAR PDF ORIGINAL (se muestra/imprime)
 ====================== */
 $pdf = new FPDF('P', 'mm', [80, 297]);
 $pdf->SetMargins(2, 5, 2);
 $pdf->SetAutoPageBreak(true, 2);
 $pdf->AddPage();
 
-// =======================
-// PRIMER TICKET (CLIENTE)
-// =======================
-
 renderTicket($pdf, $venta, $items, $dni_final);
 
-// =======================
-// SEGUNDO TICKET (EMPRESA)
-// =======================
-$pdf->AddPage();
+/* ======================
+   GENERAR PDF COPIA ARCHIVO (se guarda en el servidor, no se imprime)
+====================== */
+$pdfArchivo = new FPDF('P', 'mm', [80, 297]);
+$pdfArchivo->SetMargins(2, 5, 2);
+$pdfArchivo->SetAutoPageBreak(true, 2);
+$pdfArchivo->AddPage();
 
-// Título de copia
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(0, 5, conv('COPIA EMPRESA'), 0, 1, 'C');
-$pdf->Ln(2);
+$pdfArchivo->SetFont('Arial', 'B', 10);
+$pdfArchivo->Cell(0, 5, conv('COPIA ARCHIVO'), 0, 1, 'C');
+$pdfArchivo->Ln(2);
 
-renderTicket($pdf, $venta, $items, $dni_final);
+renderTicket($pdfArchivo, $venta, $items, $dni_final);
+
+$dirArchivo = __DIR__ . '/copias_archivo';
+if (!is_dir($dirArchivo)) {
+    mkdir($dirArchivo, 0775, true);
+}
+$pdfArchivo->Output('F', $dirArchivo . "/ticket_{$id}_archivo.pdf");
 
 $pdf->Output('I', "ticket_$id.pdf");
 exit;

@@ -10,23 +10,66 @@ $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <head>
     <link rel="stylesheet" href="estilos_categorias.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 </head>
 
-<div class="content-header d-flex justify-content-between align-items-center">
-    <h2><i class="fa-solid fa-tags"></i> Categorías</h2>
+<?php
+$totalCategorias = count($categorias);
+$activasCategorias = 0;
+foreach ($categorias as $cat) { if ($cat['estado']) $activasCategorias++; }
+$inactivasCategorias = $totalCategorias - $activasCategorias;
+?>
 
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-        <i class="fa-solid fa-plus"></i> Nueva Categoría
-    </button>
+<div class="cat-header">
+
+    <div class="content-header d-flex justify-content-between align-items-center">
+        <h2><i class="fa-solid fa-tags"></i> Categorías</h2>
+
+        <button class="btn btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+            <i class="fa-solid fa-plus"></i> Nueva Categoría
+        </button>
+    </div>
+
+    <div class="d-flex gap-3 flex-wrap my-3">
+        <div class="stat-mini">
+            <i class="fa-solid fa-tags fa-lg text-info"></i>
+            <div>
+                <div class="num"><?= $totalCategorias ?></div>
+                <div class="lbl">Total</div>
+            </div>
+        </div>
+        <div class="stat-mini">
+            <i class="fa-solid fa-circle-check fa-lg text-success"></i>
+            <div>
+                <div class="num" style="color:#22c55e"><?= $activasCategorias ?></div>
+                <div class="lbl">Activas</div>
+            </div>
+        </div>
+        <div class="stat-mini">
+            <i class="fa-solid fa-circle-xmark fa-lg text-danger"></i>
+            <div>
+                <div class="num" style="color:#f87171"><?= $inactivasCategorias ?></div>
+                <div class="lbl">Inactivas</div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="content-body mt-4">
+<div class="content-body">
+    <div class="table-cat">
     <div class="table-responsive">
 
-        <table id="tablaCategorias" class="table table-dark table-striped table-hover align-middle shadow-sm rounded">
+        <table id="tablaCategorias" class="table table-dark align-middle mb-0">
 
-            <thead class="table-primary">
+            <thead>
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
@@ -86,6 +129,7 @@ $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </tbody>
 
         </table>
+    </div>
     </div>
 </div>
 
@@ -255,6 +299,57 @@ $(document).ready(function () {
 
         columnDefs: [
             { orderable: false, targets: 4 }
+        ],
+
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fa-solid fa-file-excel me-1"></i>Excel',
+                className: 'btn btn-success btn-sm',
+                filename: 'Categorias_Motoshoppy',
+                title: 'Motoshoppy — Categorías',
+                exportOptions: { columns: [0, 1, 2, 3] }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fa-solid fa-file-pdf me-1"></i>PDF',
+                className: 'btn btn-danger btn-sm',
+                filename: 'Categorias_Motoshoppy',
+                title: 'Motoshoppy — Listado de Categorías',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: { columns: [0, 1, 2, 3] },
+                customize: function(doc) {
+                    doc.content[0].fontSize  = 16;
+                    doc.content[0].bold      = true;
+                    doc.content[0].color     = '#1e3a5f';
+                    doc.content[0].alignment = 'center';
+                    doc.content[0].margin    = [0, 0, 0, 4];
+                    doc.content.splice(1, 0, {
+                        text: 'Generado: ' + new Date().toLocaleDateString('es-AR'),
+                        alignment: 'right', fontSize: 8,
+                        color: '#666666', margin: [0, 0, 0, 10]
+                    });
+                    doc.styles.tableHeader = {
+                        bold: true, fontSize: 9,
+                        color: '#ffffff', fillColor: '#1e3a5f',
+                        alignment: 'center'
+                    };
+                    const body = doc.content[2].table.body;
+                    for (let i = 1; i < body.length; i++) {
+                        body[i].forEach(cell => {
+                            if (typeof cell === 'object') {
+                                cell.fillColor = i % 2 === 0 ? '#eef2f7' : '#ffffff';
+                                cell.fontSize  = 8;
+                                cell.color     = '#222222';
+                            }
+                        });
+                    }
+                    doc.content[2].table.widths =
+                        Array(doc.content[2].table.body[0].length).fill('*');
+                }
+            }
         ]
 
     });

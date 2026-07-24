@@ -17,7 +17,19 @@
       "Bash(cd \"/c/wamp64/www/motoshoppy\" && diff -rq productos \"/c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/productos\")",
       "Read(//c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/productos/**)",
       "Bash(cd \"/c/wamp64/www/motoshoppy\" && diff -rq . \"/c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new\" --exclude=.git 2>&1 | head -300)",
-      "Read(//c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/**)"
+      "Read(//c/Users/lucia/AppData/Local/Temp/claude/c--wamp64-www-motoshoppy/3b37d6a6-f650-447c-9294-7d2579d06b9f/scratchpad/motoshoppy_new/**)",
+      "Bash(mysql -h localhost -u root u966473590_motoshoppy -e \"SHOW COLUMNS FROM detalle_venta;\")",
+      "Read(//c/wamp64/bin/mysql/**)",
+      "Read(//c/wamp64/bin/**)",
+      "Bash(find /c/wamp64/bin/mysql -maxdepth 1)",
+      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -h 127.0.0.1 -u root u966473590_motoshoppy -e \"SHOW COLUMNS FROM detalle_venta;\")",
+      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -h 127.0.0.1 -u root u966473590_motoshoppy -e \"SHOW COLUMNS FROM proveedores;\")",
+      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -h 127.0.0.1 -u root u966473590_motoshoppy)",
+      "Bash(/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe -h 127.0.0.1 -u root u966473590_motoshoppy -e \"SHOW COLUMNS FROM factura_proveedor;\")",
+      "Bash(find /c/wamp64/bin/php -maxdepth 1 -iname \"php*\" 2>/dev/null | head -5)",
+      "Read(//c/wamp64/bin/php/**)",
+      "Bash(/c/wamp64/bin/php/php8.2.26/php.exe -l /c/wamp64/www/motoshoppy/categorias/index.php)",
+      "Bash(/c/wamp64/bin/php/php8.2.26/php.exe -l /c/wamp64/www/motoshoppy/marcas/index.php)"
     ]
   }
 }

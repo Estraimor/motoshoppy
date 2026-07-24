@@ -221,6 +221,10 @@ $totalInactivos = count($proveedores) - $totalActivos;
                             </td>
                             <td class="text-center" data-label="Acciones">
                                 <div class="d-flex gap-1 justify-content-center">
+                                    <!-- Ver cuenta -->
+                                    <a href="cuenta/index.php?proveedor=<?= $p['idproveedores'] ?>" class="btn btn-info btn-accion-sm" title="Ver cuenta">
+                                        <i class="fa-solid fa-file-invoice-dollar fa-xs"></i>
+                                    </a>
                                     <!-- Editar -->
                                     <button class="btn btn-warning btn-accion-sm btn-editar" title="Editar"
                                         data-id="<?= $p['idproveedores'] ?>"

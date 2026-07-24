@@ -335,7 +335,21 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
                 document.getElementById("otroMetodo")
                     .classList.toggle("d-none", m.nombre.toLowerCase() !== "otro");
 
-                monedaSel.classList.toggle("d-none", m.nombre.toLowerCase() !== "efectivo");
+                const esEfectivo = m.nombre.toLowerCase() === "efectivo";
+                monedaSel.classList.toggle("d-none", !esEfectivo);
+
+                if (esEfectivo) {
+                    // Default: Guaraníes preseleccionado al elegir efectivo
+                    const guarani = METADATA.monedas.find(x =>
+                        (x.codigo || '').toUpperCase() === 'PYG' ||
+                        (x.nombre || '').toLowerCase().includes('guaran')
+                    );
+                    if (guarani && !monedaSel.value) {
+                        monedaSel.value = guarani.id;
+                    }
+                } else {
+                    monedaSel.value = "";
+                }
             });
 
             /* === Autocompletar cliente para factura === */
@@ -409,7 +423,9 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
 
     if (!confirmar) return;
 
-
+    // Abrimos la pestaña ANTES del fetch (síncrono, dentro del gesto del usuario)
+    // para que el navegador no la bloquee como pop-up al abrirla después del await.
+    const ventanaComprobante = window.open('', '_blank');
 
     const productosNormalizados = carrito.map(p => {
 
@@ -474,24 +490,35 @@ document.querySelector(".btnConfirmar").addEventListener("click", async () => {
 
             const BASE = '<?= BASE_URL ?>';
 
+            let urlComprobante = null;
+
             if (parseInt(payload.tipo_comprobante) === 1) {
-                window.open(`${BASE}/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`, "_blank");
+                urlComprobante = `${BASE}/ventas/generar_ticket.php?id=${data.venta_id}&dni=${encodeURIComponent(dni)}`;
             }
 
             if (parseInt(payload.tipo_comprobante) === 2) {
                 const dir = payload.cliente?.direccion || "";
                 const cond = confirmar.condicion || '';
-                window.open(
-                    `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(dir)}&condicion=${encodeURIComponent(cond)}`,
-                    "_blank"
-                );
+                urlComprobante = `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(dir)}&condicion=${encodeURIComponent(cond)}`;
+            }
+
+            if (urlComprobante) {
+                if (ventanaComprobante) {
+                    ventanaComprobante.location.href = urlComprobante;
+                } else {
+                    window.open(urlComprobante, "_blank");
+                }
+            } else if (ventanaComprobante) {
+                ventanaComprobante.close();
             }
 
         } else {
+            if (ventanaComprobante) ventanaComprobante.close();
             Swal.fire({ icon: "error", title: "Error", text: data.msg });
         }
 
     } catch (err) {
+        if (ventanaComprobante) ventanaComprobante.close();
         console.error(err);
         Swal.fire({ icon: "error", title: "Error de conexión" });
     }

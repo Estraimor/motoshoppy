@@ -974,6 +974,15 @@ METADATA.monedas.forEach(m => {
 
     if (metodoSeleccionado && metodoSeleccionado.nombre.toLowerCase() === "efectivo") {
         selMoneda.classList.remove('d-none');
+
+        // Default: Guaraníes preseleccionado al elegir efectivo
+        const guarani = METADATA.monedas.find(m =>
+            (m.codigo || '').toUpperCase() === 'PYG' ||
+            (m.nombre || '').toLowerCase().includes('guaran')
+        );
+        if (guarani && !selMoneda.value) {
+            selMoneda.value = guarani.id;
+        }
     } else {
         selMoneda.classList.add('d-none');
         selMoneda.value = ""; // limpiar para evitar errores
@@ -1082,6 +1091,9 @@ let direccion = '';    const metodo = document.getElementById('metodoPago').valu
 
 if (!confirmar) return;
 
+    // Abrimos la pestaña ANTES del fetch (síncrono, dentro del gesto del usuario)
+    // para que el navegador no la bloquee como pop-up al abrirla después del await.
+    const ventanaComprobante = window.open('', '_blank');
 
     // ===============================
     // 6) PAYLOAD
@@ -1108,6 +1120,7 @@ if (!confirmar) return;
         const data = await res.json();
 
         if (!data.ok) {
+            if (ventanaComprobante) ventanaComprobante.close();
             return Swal.fire('Error', data.msg || 'No se pudo registrar la venta.', 'error');
         }
 
@@ -1120,19 +1133,20 @@ if (!confirmar) return;
 
         const direccion = confirmar.cliente?.direccion || '';
 
-if (comprobanteNombre === "ticket") {
-    window.open(
-        `${BASE}/ventas/generar_ticket.php?id=${data.venta_id}`,
-        '_blank'
-    );
-} else {
-    window.open(
-        `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(direccion)}&condicion=${encodeURIComponent(confirmar.condicion || '')}`,
-        '_blank'
-    );
-}
+        const urlComprobante = (comprobanteNombre === "ticket")
+            ? `${BASE}/ventas/generar_ticket.php?id=${data.venta_id}`
+            : `${BASE}/ventas/generar_factura.php?id=${data.venta_id}&dir=${encodeURIComponent(direccion)}&condicion=${encodeURIComponent(confirmar.condicion || '')}`;
+
+        if (ventanaComprobante) {
+            ventanaComprobante.location.href = urlComprobante;
+        } else {
+            // Si el navegador igual bloqueó la ventana en blanco, reintentamos
+            // (puede volver a bloquearse, pero es el mejor esfuerzo posible).
+            window.open(urlComprobante, '_blank');
+        }
 
     } catch (err) {
+        if (ventanaComprobante) ventanaComprobante.close();
         console.error(err);
         Swal.fire('Error de conexión', 'No se pudo contactar con el servidor.', 'error');
     }
