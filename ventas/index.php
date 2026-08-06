@@ -966,25 +966,38 @@ METADATA.monedas.forEach(m => {
     document.getElementById('otroMetodo')
         .classList.toggle('d-none', selMetodo.value !== 'otro');
 
-    // Mostrar moneda SOLO si método = EFECTIVO
+    // Mostrar moneda: editable si es EFECTIVO o MERCADO PAGO, fija en Guaraníes para Tarjeta/Transferencia
     const selMoneda = document.getElementById('monedaPago');
 
     // Buscamos el nombre del método seleccionado
     const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == selMetodo.value);
+    const nombreMetodo = (metodoSeleccionado?.nombre || '').toLowerCase();
+    const esEditable = nombreMetodo === "efectivo" || nombreMetodo === "mercado pago";
 
-    if (metodoSeleccionado && metodoSeleccionado.nombre.toLowerCase() === "efectivo") {
+    const guarani = METADATA.monedas.find(m =>
+        (m.codigo || '').toUpperCase() === 'PYG' ||
+        (m.nombre || '').toLowerCase().includes('guaran')
+    );
+
+    if (esEditable) {
+        // Efectivo / Mercado Pago: el usuario elige la moneda (Guaraníes preseleccionado)
         selMoneda.classList.remove('d-none');
-
-        // Default: Guaraníes preseleccionado al elegir efectivo
-        const guarani = METADATA.monedas.find(m =>
-            (m.codigo || '').toUpperCase() === 'PYG' ||
-            (m.nombre || '').toLowerCase().includes('guaran')
-        );
+        selMoneda.disabled = false;
+        selMoneda.style.backgroundColor = '';
+        selMoneda.style.color = '';
         if (guarani && !selMoneda.value) {
             selMoneda.value = guarani.id;
         }
+    } else if (metodoSeleccionado) {
+        // Tarjeta / Transferencia Bancaria: moneda fija en Guaraníes, no seleccionable
+        selMoneda.classList.remove('d-none');
+        if (guarani) selMoneda.value = guarani.id;
+        selMoneda.disabled = true;
+        selMoneda.style.backgroundColor = '#e9ecef';
+        selMoneda.style.color = '#000';
     } else {
         selMoneda.classList.add('d-none');
+        selMoneda.disabled = false;
         selMoneda.value = ""; // limpiar para evitar errores
     }
 });
@@ -1039,10 +1052,11 @@ let direccion = '';    const metodo = document.getElementById('metodoPago').valu
     // Obtener método seleccionado desde METADATA
     const metodoSeleccionado = METADATA.metodos_pago.find(m => m.id == metodo);
 
-    // 2) Si es EFECTIVO, moneda obligatoria
-    if (metodoSeleccionado && metodoSeleccionado.nombre.toLowerCase() === "efectivo") {
+    // 2) Si es EFECTIVO o MERCADO PAGO, moneda obligatoria (son editables)
+    const nombreMetodoSel = (metodoSeleccionado?.nombre || '').toLowerCase();
+    if (nombreMetodoSel === "efectivo" || nombreMetodoSel === "mercado pago") {
         if (!moneda) {
-            Swal.showValidationMessage("Debés seleccionar la moneda del pago en efectivo");
+            Swal.showValidationMessage("Debés seleccionar la moneda del pago");
             return false;
         }
     }
@@ -1131,6 +1145,9 @@ if (!confirmar) return;
             showConfirmButton: false
         });
 
+        // Actualiza la tabla de productos/stock en tiempo real, sin perder la página actual
+        tabla.ajax.reload(null, false);
+
         const direccion = confirmar.cliente?.direccion || '';
 
         const urlComprobante = (comprobanteNombre === "ticket")
@@ -1143,6 +1160,17 @@ if (!confirmar) return;
             // Si el navegador igual bloqueó la ventana en blanco, reintentamos
             // (puede volver a bloquearse, pero es el mejor esfuerzo posible).
             window.open(urlComprobante, '_blank');
+        }
+
+        // Además de la pestaña con el ticket, guardamos una copia descargada
+        if (comprobanteNombre === "ticket") {
+            const urlDescarga = `${BASE}/ventas/generar_ticket.php?id=${data.venta_id}&download=1`;
+            const aDescarga = document.createElement('a');
+            aDescarga.href = urlDescarga;
+            aDescarga.download = `ticket_${data.venta_id}.pdf`;
+            document.body.appendChild(aDescarga);
+            aDescarga.click();
+            aDescarga.remove();
         }
 
     } catch (err) {

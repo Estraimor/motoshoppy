@@ -11,8 +11,8 @@ if ($id <= 0) {
 }
 
 try {
-    $conexion->prepare("UPDATE marcas SET estado = 0 WHERE idmarcas = ?")->execute([$id]);
+    $conexion->prepare("UPDATE marcas SET estado = 1 WHERE idmarcas = ?")->execute([$id]);
     echo json_encode(['ok' => true]);
 } catch (PDOException $e) {
-    echo json_encode(['ok' => false, 'msg' => 'Error al desactivar: ' . $e->getMessage()]);
+    echo json_encode(['ok' => false, 'msg' => 'Error al activar: ' . $e->getMessage()]);
 }

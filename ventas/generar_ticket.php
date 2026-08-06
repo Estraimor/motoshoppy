@@ -8,6 +8,7 @@ require_once '../vendor/setasign/fpdf/fpdf.php';
 ====================== */
 $id  = intval($_GET['id'] ?? 0);
 $dni_get = isset($_GET['dni']) && $_GET['dni'] !== '' ? trim($_GET['dni']) : '';
+$descarga = isset($_GET['download']) && $_GET['download'] == '1';
 
 if ($id <= 0) {
     die('ID inválido.');
@@ -17,18 +18,21 @@ if ($id <= 0) {
    CONSULTA VENTA
 ====================== */
 $qVenta = $conexion->prepare("
-  SELECT 
-    v.*, 
-    u.usuario, 
-    u.nombre, 
+  SELECT
+    v.*,
+    u.usuario,
+    u.nombre,
     c.dni AS dni_cliente,
-    mp.nombre AS metodo_pago_nombre
+    mp.nombre AS metodo_pago_nombre,
+    mo.codigo AS moneda_codigo
 
   FROM ventas v
   LEFT JOIN usuario u ON u.idusuario = v.usuario_idusuario
   LEFT JOIN clientes c ON c.idCliente = v.clientes_idCliente
-  LEFT JOIN metodo_pago mp 
+  LEFT JOIN metodo_pago mp
     ON mp.idmetodo_pago = v.metodo_pago_idmetodo_pago
+  LEFT JOIN moneda mo
+    ON mo.idmoneda = v.moneda_idmoneda
 
   WHERE v.idVenta = ?
 ");
@@ -38,6 +42,12 @@ $venta = $qVenta->fetch(PDO::FETCH_ASSOC);
 if (!$venta) {
     die('Venta no encontrada.');
 }
+
+/* ======================
+   COTIZACIÓN ACTUAL (para convertir el total si se cobró en ARS/USD)
+====================== */
+$qCot = $conexion->query("SELECT usd_pyg, ars_pyg FROM cotizacion ORDER BY id DESC LIMIT 1");
+$cotizacion = $qCot->fetch(PDO::FETCH_ASSOC) ?: ['usd_pyg' => 0, 'ars_pyg' => 0];
 
 /* ======================
    DETALLE
@@ -79,7 +89,7 @@ function money($n) {
 /* ======================
    RENDER TICKET
 ====================== */
-function renderTicket(FPDF $pdf, $venta, $items, $dni_final) {
+function renderTicket(FPDF $pdf, $venta, $items, $dni_final, $cotizacion) {
 
     // Ajuste fino real hacia la izquierda
     $offsetX = -8;
@@ -166,16 +176,22 @@ $pdf->Cell($ancho, 4, conv('Forma de pago: ' . $venta['metodo_pago_nombre']), 0,
     $pdf->Cell($wProducto + $wCant, 7, '', 0, 0);
     $pdf->Cell($wPrecio, 7, conv('TOTAL: Gs. ' . money($total)), 0, 1, 'R');
 
+    // Si se pagó en ARS o USD, mostramos el equivalente según la cotización
+    $monedaCodigo = strtoupper(trim($venta['moneda_codigo'] ?? ''));
+
+    if ($monedaCodigo === 'USD' && !empty($cotizacion['usd_pyg'])) {
+        $convertido = $total / (float)$cotizacion['usd_pyg'];
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetX($left);
+        $pdf->Cell($ancho, 5, conv('Pagado en USD: US$ ' . number_format($convertido, 2, ',', '.')), 0, 1, 'R');
+    } elseif ($monedaCodigo === 'ARS' && !empty($cotizacion['ars_pyg'])) {
+        $convertido = $total / (float)$cotizacion['ars_pyg'];
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetX($left);
+        $pdf->Cell($ancho, 5, conv('Pagado en ARS: $ ' . money($convertido)), 0, 1, 'R');
+    }
+
     $pdf->Ln(2);
-
-    // FOOTER
-    $pdf->SetFont('Arial', 'I', 8);
-    $pdf->SetX($left);
-    $pdf->Cell($ancho, 4, conv('Gracias por su compra'), 0, 1, 'C');
-    $pdf->SetX($left);
-    $pdf->Cell($ancho, 4, conv('Seguinos en Instagram'), 0, 1, 'C');
-
-    $pdf->Ln(3);
 }
 
 /* ======================
@@ -186,7 +202,7 @@ $pdf->SetMargins(2, 5, 2);
 $pdf->SetAutoPageBreak(true, 2);
 $pdf->AddPage();
 
-renderTicket($pdf, $venta, $items, $dni_final);
+renderTicket($pdf, $venta, $items, $dni_final, $cotizacion);
 
 /* ======================
    GENERAR PDF COPIA ARCHIVO (se guarda en el servidor, no se imprime)
@@ -200,7 +216,7 @@ $pdfArchivo->SetFont('Arial', 'B', 10);
 $pdfArchivo->Cell(0, 5, conv('COPIA ARCHIVO'), 0, 1, 'C');
 $pdfArchivo->Ln(2);
 
-renderTicket($pdfArchivo, $venta, $items, $dni_final);
+renderTicket($pdfArchivo, $venta, $items, $dni_final, $cotizacion);
 
 $dirArchivo = __DIR__ . '/copias_archivo';
 if (!is_dir($dirArchivo)) {
@@ -208,5 +224,5 @@ if (!is_dir($dirArchivo)) {
 }
 $pdfArchivo->Output('F', $dirArchivo . "/ticket_{$id}_archivo.pdf");
 
-$pdf->Output('I', "ticket_$id.pdf");
+$pdf->Output($descarga ? 'D' : 'I', "ticket_$id.pdf");
 exit;

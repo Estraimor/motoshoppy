@@ -74,10 +74,11 @@ try {
     }
 
     /* =========================
-       SI NO ES EFECTIVO → GUARANI
+       TARJETA / TRANSFERENCIA → SIEMPRE GUARANI
+       (Efectivo y Mercado Pago permiten elegir moneda)
     ========================= */
 
-    if ($metodo_pago !== METODO_EFECTIVO) {
+    if ($metodo_pago !== METODO_EFECTIVO && $metodo_pago !== METODO_MERCADO_PAGO) {
         $moneda = MONEDA_GUARANI;
     }
 

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe\" -l \"c:\\\\wamp64\\\\www\\\\motoshoppy\\\\ventas\\\\api_comprar.php\")",
+      "Bash('c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe' -r ' *)"
+    ]
+  }
+}

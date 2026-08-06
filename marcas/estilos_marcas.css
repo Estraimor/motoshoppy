@@ -76,6 +76,8 @@
     font-weight: bold;
 }
 
+.dt-buttons .btn { border-radius: 7px; margin-right: 6px; }
+
 /* Buscador de categoría en los modales */
 #listaCategorias, #listaCategoriasEdit {
     z-index: 1050;

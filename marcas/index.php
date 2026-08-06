@@ -3,10 +3,11 @@ include '../dashboard/nav.php';
 requerirRol('Administrador', 'Reponedor');
 require_once '../conexion/conexion.php';
 
-// Traer marcas con join para mostrar el nombre de la categoría y el estado
+// Traer marcas con join para mostrar el nombre de la categoría, el estado y la cantidad de productos asociados
 $stmt = $conexion->query("
-    SELECT m.idmarcas, m.nombre_marca, m.categoria_idCategoria, m.estado, 
-           c.nombre_categoria
+    SELECT m.idmarcas, m.nombre_marca, m.categoria_idCategoria, m.estado,
+           c.nombre_categoria,
+           (SELECT COUNT(*) FROM producto p WHERE p.marcas_idmarcas = m.idmarcas) AS cant_productos
     FROM marcas m
     LEFT JOIN categoria c ON m.categoria_idCategoria = c.idCategoria
     ORDER BY m.idmarcas DESC
@@ -14,8 +15,16 @@ $stmt = $conexion->query("
 $marcas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<link rel="stylesheet" href="estilos_marcas.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<head>
+    <link rel="stylesheet" href="estilos_marcas.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+</head>
 
 <?php
 $totalMarcas = count($marcas);
@@ -44,14 +53,14 @@ $inactivasMarcas = $totalMarcas - $activasMarcas;
         <div class="stat-mini">
             <i class="fa-solid fa-circle-check fa-lg text-success"></i>
             <div>
-                <div class="num" style="color:#22c55e"><?= $activasMarcas ?></div>
+                <div class="num" id="statActivas" style="color:#22c55e"><?= $activasMarcas ?></div>
                 <div class="lbl">Activas</div>
             </div>
         </div>
         <div class="stat-mini">
             <i class="fa-solid fa-circle-xmark fa-lg text-danger"></i>
             <div>
-                <div class="num" style="color:#f87171"><?= $inactivasMarcas ?></div>
+                <div class="num" id="statInactivas" style="color:#f87171"><?= $inactivasMarcas ?></div>
                 <div class="lbl">Inactivas</div>
             </div>
         </div>
@@ -68,6 +77,7 @@ $inactivasMarcas = $totalMarcas - $activasMarcas;
                     <th>ID</th>
                     <th>Categoría</th>
                     <th>Marca</th>
+                    <th>Productos</th>
                     <th>Estado</th>
                     <th class="text-center">Acciones</th>
                 </tr>
@@ -78,13 +88,14 @@ $inactivasMarcas = $totalMarcas - $activasMarcas;
                         <td><?= $marca['idmarcas'] ?></td>
                         <td><?= htmlspecialchars($marca['nombre_categoria'] ?? 'Sin categoría') ?></td>
                         <td><?= htmlspecialchars($marca['nombre_marca']) ?></td>
-                        
+                        <td><?= (int)$marca['cant_productos'] ?></td>
+
                         <!-- Estado con badge -->
                         <td>
                             <?php if ($marca['estado'] == 1): ?>
                                 <span class="badge bg-success">Activo</span>
                             <?php else: ?>
-                                <span class="badge bg-secondary">Inactivo</span>
+                                <span class="badge bg-danger">Inactivo</span>
                             <?php endif; ?>
                         </td>
 
@@ -100,11 +111,19 @@ $inactivasMarcas = $totalMarcas - $activasMarcas;
                                     data-estado="<?= $marca['estado'] ?>">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger btn-eliminar-marca"
-                                    data-id="<?= $marca['idmarcas'] ?>"
-                                    data-nombre="<?= htmlspecialchars($marca['nombre_marca']) ?>">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                            <?php if ($marca['estado'] == 1): ?>
+                                <button class="btn btn-sm btn-danger btn-eliminar-marca"
+                                        data-id="<?= $marca['idmarcas'] ?>"
+                                        data-nombre="<?= htmlspecialchars($marca['nombre_marca']) ?>">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            <?php else: ?>
+                                <button class="btn btn-sm btn-success btn-activar-marca"
+                                        data-id="<?= $marca['idmarcas'] ?>"
+                                        data-nombre="<?= htmlspecialchars($marca['nombre_marca']) ?>">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -266,7 +285,56 @@ $(document).ready(function () {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
         columnDefs: [
-            { orderable: false, targets: [3, 4] }
+            { orderable: false, targets: [4, 5] }
+        ],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                text: '<i class="fa-solid fa-file-excel me-1"></i>Excel',
+                className: 'btn btn-success btn-sm',
+                action: function (e, dt, node, config) {
+                    window.location.href = 'exportar_excel.php';
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fa-solid fa-file-pdf me-1"></i>PDF',
+                className: 'btn btn-danger btn-sm',
+                filename: 'Marcas_Motoshoppy',
+                title: 'Motoshoppy — Listado de Marcas',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: { columns: [0, 1, 2, 3, 4] },
+                customize: function(doc) {
+                    doc.content[0].fontSize  = 16;
+                    doc.content[0].bold      = true;
+                    doc.content[0].color     = '#1e3a5f';
+                    doc.content[0].alignment = 'center';
+                    doc.content[0].margin    = [0, 0, 0, 4];
+                    doc.content.splice(1, 0, {
+                        text: 'Generado: ' + new Date().toLocaleDateString('es-AR'),
+                        alignment: 'right', fontSize: 8,
+                        color: '#666666', margin: [0, 0, 0, 10]
+                    });
+                    doc.styles.tableHeader = {
+                        bold: true, fontSize: 9,
+                        color: '#ffffff', fillColor: '#1e3a5f',
+                        alignment: 'center'
+                    };
+                    const body = doc.content[2].table.body;
+                    for (let i = 1; i < body.length; i++) {
+                        body[i].forEach(cell => {
+                            if (typeof cell === 'object') {
+                                cell.fillColor = i % 2 === 0 ? '#eef2f7' : '#ffffff';
+                                cell.fontSize  = 8;
+                                cell.color     = '#222222';
+                            }
+                        });
+                    }
+                    doc.content[2].table.widths =
+                        Array(doc.content[2].table.body[0].length).fill('*');
+                }
+            }
         ]
     });
 
@@ -275,15 +343,16 @@ $(document).ready(function () {
         const id     = $(this).data('id');
         const nombre = $(this).data('nombre');
         const fila   = $(this).closest('tr');
+        const $boton = $(this);
 
         Swal.fire({
-            title: '¿Eliminar marca?',
-            html: `¿Estás seguro de eliminar <b>${nombre}</b>?`,
+            title: '¿Desactivar marca?',
+            html: `¿Estás seguro de desactivar <b>${nombre}</b>?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, eliminar',
+            confirmButtonText: 'Sí, desactivar',
             cancelButtonText: 'Cancelar'
         }).then(result => {
             if (!result.isConfirmed) return;
@@ -296,29 +365,81 @@ $(document).ready(function () {
                     if (res.ok) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Marca eliminada',
-                            text: `"${nombre}" fue eliminada correctamente.`,
+                            title: 'Marca desactivada',
+                            text: `"${nombre}" fue desactivada correctamente.`,
                             timer: 1800,
                             showConfirmButton: false
                         });
-                        tabla.row(fila).remove().draw(false);
-                    } else if (res.productos) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'No se puede eliminar',
-                            html: `<b>${nombre}</b> tiene <strong>${res.productos}</strong> producto(s) asociado(s).<br><br>
-                                   Para eliminar esta marca primero debés reasignar o eliminar esos productos.`,
-                            confirmButtonColor: '#f59e0b',
-                            confirmButtonText: 'Entendido'
-                        });
+
+                        // Actualiza el badge de estado a "Inactivo" (rojo) sin recargar
+                        fila.find('td').eq(4).html('<span class="badge bg-danger">Inactivo</span>');
+                        fila.find('button[data-bs-target="#modalEditar"]').attr('data-estado', 0);
+                        $boton.replaceWith(
+                            `<button class="btn btn-sm btn-success btn-activar-marca" data-id="${id}" data-nombre="${nombre}">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>`
+                        );
+                        tabla.row(fila).invalidate().draw(false);
+
+                        // Actualiza los contadores del header
+                        const $activas = $('#statActivas');
+                        const $inactivas = $('#statInactivas');
+                        $activas.text(Math.max(0, parseInt($activas.text(), 10) - 1));
+                        $inactivas.text(parseInt($inactivas.text(), 10) + 1);
                     } else {
-                        Swal.fire('Error', res.msg || 'No se pudo eliminar la marca.', 'error');
+                        Swal.fire('Error', res.msg || 'No se pudo desactivar la marca.', 'error');
                     }
                 },
                 error: function () {
                     Swal.fire('Error', 'Error en la conexión con el servidor.', 'error');
                 }
             });
+        });
+    });
+
+    // === ACTIVAR MARCA (AJAX + SweetAlert) ===
+    $(document).on('click', '.btn-activar-marca', function () {
+        const id     = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const fila   = $(this).closest('tr');
+        const $boton = $(this);
+
+        $.ajax({
+            url: `activar.php?id=${id}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function (res) {
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Marca activada',
+                        text: `"${nombre}" fue activada correctamente.`,
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
+
+                    // Actualiza el badge de estado a "Activo" (verde) sin recargar
+                    fila.find('td').eq(4).html('<span class="badge bg-success">Activo</span>');
+                    fila.find('button[data-bs-target="#modalEditar"]').attr('data-estado', 1);
+                    $boton.replaceWith(
+                        `<button class="btn btn-sm btn-danger btn-eliminar-marca" data-id="${id}" data-nombre="${nombre}">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>`
+                    );
+                    tabla.row(fila).invalidate().draw(false);
+
+                    // Actualiza los contadores del header
+                    const $activas = $('#statActivas');
+                    const $inactivas = $('#statInactivas');
+                    $activas.text(parseInt($activas.text(), 10) + 1);
+                    $inactivas.text(Math.max(0, parseInt($inactivas.text(), 10) - 1));
+                } else {
+                    Swal.fire('Error', res.msg || 'No se pudo activar la marca.', 'error');
+                }
+            },
+            error: function () {
+                Swal.fire('Error', 'Error en la conexión con el servidor.', 'error');
+            }
         });
     });
 
