@@ -184,6 +184,42 @@ try {
     );
 
     /* ===============================
+       GENERAR FACTURA EN CUENTA DEL PROVEEDOR
+    =============================== */
+    $insFactura = $conexion->prepare("
+        INSERT INTO factura_proveedor (
+            proveedores_idproveedores, reposicion_idreposicion, fecha_compra,
+            descripcion, monto, numero_factura, tiene_factura, estado_pago, monto_pagado
+        ) VALUES (?, ?, CURDATE(), ?, ?, ?, 1, 'pendiente', 0)
+    ");
+    $insFactura->execute([
+        $antesRepo['proveedores_idproveedores'],
+        $id,
+        'Reposición de stock Nº' . $id,
+        $costo_total,
+        $numero_factura
+    ]);
+    $idFactura = $conexion->lastInsertId();
+
+    auditoria(
+        $conexion,
+        'INSERT',
+        'proveedores',
+        'factura_proveedor',
+        $idFactura,
+        'Generó factura de proveedor por reposición',
+        null,
+        [
+            'proveedores_idproveedores' => $antesRepo['proveedores_idproveedores'],
+            'reposicion_idreposicion'   => $id,
+            'monto'                     => $costo_total,
+            'numero_factura'            => $numero_factura
+        ],
+        $id,
+        'reposicion'
+    );
+
+    /* ===============================
        IMPACTAR STOCK
     =============================== */
     $detalles = $conexion->prepare("

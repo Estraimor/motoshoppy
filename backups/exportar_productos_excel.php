@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 // =============================
 
 $sql = "
-SELECT 
+SELECT
     p.nombre,
     p.codigo,
     c.nombre_categoria,
@@ -26,18 +26,18 @@ SELECT
     CONCAT(
         u.lugar,
         IF(
-            u.estante IS NOT NULL 
+            u.estante IS NOT NULL
             AND u.estante != '',
             CONCAT(' - Estante ', u.estante),
             ''
         )
     ) AS ubicacion
 FROM producto p
-LEFT JOIN categoria c 
+LEFT JOIN categoria c
        ON p.Categoria_idCategoria = c.idCategoria
-LEFT JOIN marcas m 
+LEFT JOIN marcas m
        ON p.marcas_idmarcas = m.idmarcas
-LEFT JOIN ubicacion_producto u 
+LEFT JOIN ubicacion_producto u
        ON p.ubicacion_producto_idubicacion_producto = u.idubicacion_producto
 ORDER BY c.nombre_categoria, p.nombre
 ";
@@ -47,125 +47,123 @@ $stmt->execute();
 $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // =============================
-// CREAR EXCEL
+// AGRUPAR POR CATEGORÍA
+// =============================
+
+$porCategoria = [];
+foreach ($productos as $p) {
+    $cat = $p['nombre_categoria'] ?: 'Sin categoría';
+    $porCategoria[$cat][] = $p;
+}
+
+// =============================
+// HELPER: nombre de hoja válido y único
+// =============================
+
+function sheetTitleSeguro(string $nombre, array &$usados): string {
+    $limpio = preg_replace('/[\\\\\/\?\*\[\]:]/', '-', $nombre);
+    $limpio = trim($limpio) !== '' ? trim($limpio) : 'Sin categoria';
+    $limpio = mb_substr($limpio, 0, 31);
+
+    $base = $limpio;
+    $i = 2;
+    while (in_array($limpio, $usados, true)) {
+        $sufijo = ' (' . $i . ')';
+        $limpio = mb_substr($base, 0, 31 - mb_strlen($sufijo)) . $sufijo;
+        $i++;
+    }
+    $usados[] = $limpio;
+    return $limpio;
+}
+
+// =============================
+// HELPER: limpiar descripción (JSON -> texto)
+// =============================
+
+function descripcionTexto($descripcionRaw): string {
+    if (empty($descripcionRaw)) {
+        return '';
+    }
+
+    $desc = json_decode($descripcionRaw, true);
+
+    if (!is_array($desc)) {
+        return $descripcionRaw;
+    }
+
+    $texto = '';
+    foreach ($desc as $k => $v) {
+        if (is_array($v)) {
+            $v = implode(', ', $v);
+        }
+        $texto .= ucfirst($k) . ": " . $v . " | ";
+    }
+    return $texto;
+}
+
+// =============================
+// CREAR EXCEL (UNA HOJA POR CATEGORÍA)
 // =============================
 
 $spreadsheet = new Spreadsheet();
-$sheet = $spreadsheet->getActiveSheet();
-$sheet->setTitle('Productos');
-
-// =============================
-// ENCABEZADOS
-// =============================
-
 $headers = [
-    'Producto',
-    'Código',
-    'Categoría',
-    'Marca',
-    'Modelo',
-    'Peso ML',
-    'Peso G',
-    'Descripción',
-    'Precio Venta',
-    'Ubicación'
+    'Producto', 'Código', 'Marca', 'Modelo',
+    'Peso ML', 'Peso G', 'Descripción', 'Precio Venta', 'Ubicación'
 ];
 
-$sheet->fromArray($headers, NULL, 'A1');
+$nombresUsados = [];
+$indiceHoja = 0;
 
-// =============================
-// ESTILO ENCABEZADO
-// =============================
+foreach ($porCategoria as $categoria => $items) {
 
-$sheet->getStyle('A1:J1')->applyFromArray([
-    'font' => [
-        'bold' => true,
-        'color' => ['rgb' => 'FFFFFF']
-    ],
-    'alignment' => [
-        'horizontal' => Alignment::HORIZONTAL_CENTER
-    ],
-    'fill' => [
-        'fillType' => Fill::FILL_SOLID,
-        'startColor' => ['rgb' => '212529']
-    ]
-]);
+    $sheet = ($indiceHoja === 0)
+        ? $spreadsheet->getActiveSheet()
+        : $spreadsheet->createSheet();
 
-// =============================
-// CARGAR DATOS
-// =============================
+    $sheet->setTitle(sheetTitleSeguro($categoria, $nombresUsados));
 
-$fila = 2;
+    // Encabezados
+    $sheet->fromArray($headers, NULL, 'A1');
+    $sheet->getStyle('A1:I1')->applyFromArray([
+        'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '212529']],
+    ]);
 
-foreach ($productos as $p) {
-
-    // limpiar json descripcion
-    $descripcion = '';
-
-if (!empty($p['descripcion'])) {
-
-    $desc = json_decode($p['descripcion'], true);
-
-    if (is_array($desc)) {
-
-        foreach ($desc as $k => $v) {
-
-            if (is_array($v)) {
-                $v = implode(', ', $v);
-            }
-
-            $descripcion .= ucfirst($k) . ": " . $v . " | ";
-        }
-
-    } else {
-
-        $descripcion = $p['descripcion'];
-
+    // Datos
+    $fila = 2;
+    foreach ($items as $p) {
+        $sheet->setCellValue("A$fila", $p['nombre']);
+        $sheet->setCellValue("B$fila", $p['codigo']);
+        $sheet->setCellValue("C$fila", $p['nombre_marca']);
+        $sheet->setCellValue("D$fila", $p['modelo']);
+        $sheet->setCellValue("E$fila", $p['peso_ml']);
+        $sheet->setCellValue("F$fila", $p['peso_g']);
+        $sheet->setCellValue("G$fila", descripcionTexto($p['descripcion']));
+        $sheet->setCellValue("H$fila", $p['precio_expuesto']);
+        $sheet->setCellValue("I$fila", $p['ubicacion']);
+        $fila++;
     }
+
+    // Formato moneda (columna H)
+    $sheet->getStyle("H2:H" . ($fila - 1))
+          ->getNumberFormat()
+          ->setFormatCode('"$"#,##0');
+
+    // Auto size columnas
+    foreach (range('A', 'I') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // Bordes
+    $sheet->getStyle("A1:I" . ($fila - 1))->applyFromArray([
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    ]);
+
+    $indiceHoja++;
 }
 
-    $sheet->setCellValue("A$fila", $p['nombre']);
-    $sheet->setCellValue("B$fila", $p['codigo']);
-    $sheet->setCellValue("C$fila", $p['nombre_categoria']);
-    $sheet->setCellValue("D$fila", $p['nombre_marca']);
-    $sheet->setCellValue("E$fila", $p['modelo']);
-    $sheet->setCellValue("F$fila", $p['peso_ml']);
-    $sheet->setCellValue("G$fila", $p['peso_g']);
-    $sheet->setCellValue("H$fila", $descripcion);
-    $sheet->setCellValue("I$fila", $p['precio_expuesto']);
-    $sheet->setCellValue("J$fila", $p['ubicacion']);
-
-    $fila++;
-}
-
-// =============================
-// FORMATO MONEDA (solo columna I)
-// =============================
-
-$sheet->getStyle("I2:I" . ($fila-1))
-      ->getNumberFormat()
-      ->setFormatCode('"$"#,##0');
-
-// =============================
-// AUTO SIZE COLUMNAS
-// =============================
-
-foreach(range('A','J') as $col){
-    $sheet->getColumnDimension($col)->setAutoSize(true);
-}
-
-// =============================
-// BORDES
-// =============================
-
-$sheet->getStyle("A1:J" . ($fila-1))
-      ->applyFromArray([
-          'borders' => [
-              'allBorders' => [
-                  'borderStyle' => Border::BORDER_THIN
-              ]
-          ]
-      ]);
+$spreadsheet->setActiveSheetIndex(0);
 
 // =============================
 // DESCARGA

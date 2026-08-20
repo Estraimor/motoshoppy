@@ -225,6 +225,46 @@ return [
     ],
 
     /* =========================
+       FACTURA DE PROVEEDOR (CUENTA CORRIENTE)
+    ========================= */
+    'factura_proveedor' => [
+        'campos' => [
+            'proveedores_idproveedores' => 'Proveedor',
+            'reposicion_idreposicion'   => 'Reposición',
+            'fecha_compra'              => 'Fecha compra',
+            'descripcion'               => 'Descripción',
+            'monto'                     => 'Monto',
+            'numero_factura'            => 'Factura',
+            'tiene_factura'             => 'Tiene factura',
+            'estado_pago'               => 'Estado de pago',
+            'monto_pagado'              => 'Monto pagado'
+        ],
+        'valores' => [
+            'estado_pago' => [
+                'pendiente' => 'Pendiente',
+                'parcial'   => 'Parcial',
+                'pagado'    => 'Pagado'
+            ],
+            'tiene_factura' => [
+                0 => 'No',
+                1 => 'Sí'
+            ]
+        ],
+        'especial' => [
+            'proveedores_idproveedores' => [
+                'tabla' => 'proveedores',
+                'pk'    => 'idproveedores',
+                'campo' => 'empresa'
+            ],
+            'reposicion_idreposicion' => [
+                'tabla' => 'reposicion',
+                'pk'    => 'idreposicion',
+                'campo' => 'idreposicion'
+            ]
+        ]
+    ],
+
+    /* =========================
        DETALLE DE REPOSICIÓN
     ========================= */
     'reposicion_detalle' => [

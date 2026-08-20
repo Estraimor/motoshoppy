@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(\"c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe\" -l \"c:\\\\wamp64\\\\www\\\\motoshoppy\\\\ventas\\\\api_comprar.php\")",
-      "Bash('c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe' -r ' *)"
+      "Bash('c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe' -r ' *)",
+      "Bash(\"c:\\\\wamp64\\\\bin\\\\php\\\\php8.3.28\\\\php.exe\" -l \"c:\\\\wamp64\\\\www\\\\motoshoppy\\\\backups\\\\exportar_productos_excel.php\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe\" -u root -h localhost u966473590_motoshoppy -e \"DESCRIBE factura_proveedor;\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe\" -u root -h localhost -e \"SHOW DATABASES;\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe\" -u root -h localhost u966473590_motoshoppy -e \"SHOW TABLES;\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe\" -u root -h localhost u966473590_motoshoppy -e \"DESCRIBE proveedores; DESCRIBE reposicion;\")",
+      "Bash(awk -F\"'\" '{print $2}')",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l reponer_stock/api_impactar_pedido.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l settings/auditoria_mapas.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/cuenta/index.php)",
+      "Bash(/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe -u root -h localhost u966473590_motoshoppy -e ' *)",
+      "Bash(echo \"cleanup exit: $?\")"
     ]
   }
 }

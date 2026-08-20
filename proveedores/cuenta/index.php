@@ -126,7 +126,14 @@ $saldo = $totalComprado - $totalPagado;
                     ?>
                         <tr>
                             <td><?= htmlspecialchars(date('d/m/Y', strtotime($c['fecha_compra']))) ?></td>
-                            <td><?= htmlspecialchars($c['descripcion'] ?: '-') ?></td>
+                            <td>
+                                <?= htmlspecialchars($c['descripcion'] ?: '-') ?>
+                                <?php if (!empty($c['reposicion_idreposicion'])): ?>
+                                    <span class="badge bg-info-subtle text-info border border-info ms-1" title="Generada automáticamente al impactar el pedido">
+                                        <i class="fa-solid fa-truck-ramp-box"></i> Pedido #<?= (int)$c['reposicion_idreposicion'] ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= htmlspecialchars($c['numero_factura'] ?: '-') ?></td>
                             <td>
                                 <?= $c['tiene_factura']
