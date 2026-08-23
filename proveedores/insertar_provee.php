@@ -9,12 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     $telefono  = trim($_POST['telefono']);
     $email     = trim($_POST['email']);
     $vendedor        = trim($_POST['vendedor']);
-    $numero_vendedor = trim($_POST['numero_vendedor']); 
+    $numero_vendedor = trim($_POST['numero_vendedor']);
+    $pais_vendedor   = in_array($_POST['pais_vendedor'] ?? '', ['PY', 'AR']) ? $_POST['pais_vendedor'] : 'PY';
 
     // Insertamos el proveedor en la base de datos
-    $sql = "INSERT INTO proveedores (empresa, ubicacion, telefono, email, vendedor, numero_vendedor, activo) 
-            VALUES (:empresa, :ubicacion, :telefono, :email, :vendedor, :numero_vendedor, 1)";
-    
+    $sql = "INSERT INTO proveedores (empresa, ubicacion, telefono, email, vendedor, numero_vendedor, pais_vendedor, activo)
+            VALUES (:empresa, :ubicacion, :telefono, :email, :vendedor, :numero_vendedor, :pais_vendedor, 1)";
+
     $stmt = $conexion->prepare($sql);
     $stmt->execute([
         ':empresa'   => $empresa,
@@ -22,7 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
         ':telefono'  => $telefono,
         ':email'     => $email,
         ':vendedor'        => $vendedor,
-        ':numero_vendedor' => $numero_vendedor
+        ':numero_vendedor' => $numero_vendedor,
+        ':pais_vendedor'   => $pais_vendedor
     ]);
 
     // Redirigimos con un mensaje de éxito

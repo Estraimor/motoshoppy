@@ -23,7 +23,8 @@ $pedido = $conexion->prepare("
     r.observacion,
     p.empresa,
     p.vendedor,
-    p.numero_vendedor
+    p.numero_vendedor,
+    p.pais_vendedor
     FROM reposicion r
     JOIN proveedores p 
         ON p.idproveedores = r.proveedores_idproveedores
@@ -70,5 +71,6 @@ echo json_encode([
     'remito'          => $p['imagen_remito'],
     'vendedor'        => $p['vendedor'],
 'numero_vendedor' => $p['numero_vendedor'],
+'pais_vendedor'   => $p['pais_vendedor'],
     'productos'       => $detalle->fetchAll(PDO::FETCH_ASSOC)
 ]);

@@ -16,15 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     $telefono  = trim($_POST['telefono']);
     $email     = trim($_POST['email']);
     $vendedor        = trim($_POST['vendedor']);
-    $numero_vendedor = trim($_POST['numero_vendedor']); 
+    $numero_vendedor = trim($_POST['numero_vendedor']);
+    $pais_vendedor   = in_array($_POST['pais_vendedor'] ?? '', ['PY', 'AR']) ? $_POST['pais_vendedor'] : 'PY';
 
-    $sql = "UPDATE proveedores 
+    $sql = "UPDATE proveedores
         SET empresa = :empresa,
             ubicacion = :ubicacion,
             telefono = :telefono,
             email = :email,
             vendedor = :vendedor,
-            numero_vendedor = :numero_vendedor
+            numero_vendedor = :numero_vendedor,
+            pais_vendedor = :pais_vendedor
         WHERE idproveedores = :id";
 
 $stmt = $conexion->prepare($sql);
@@ -35,6 +37,7 @@ $stmt->execute([
     ':email'           => $email,
     ':vendedor'        => $vendedor,
     ':numero_vendedor' => $numero_vendedor,
+    ':pais_vendedor'   => $pais_vendedor,
     ':id'              => $id
 ]);
 

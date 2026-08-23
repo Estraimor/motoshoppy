@@ -207,6 +207,10 @@ $totalInactivos = count($proveedores) - $totalActivos;
                             <td data-label="Vendedor"><?= htmlspecialchars($p['vendedor'] ?: '-') ?></td>
                             <td data-label="Tel. Vendedor">
                                 <?php if ($p['numero_vendedor']): ?>
+                                    <img src="../imagenes/banderas/<?= $p['pais_vendedor'] === 'AR' ? 'ar' : 'py' ?>.png"
+                                         alt="<?= $p['pais_vendedor'] === 'AR' ? 'Argentina' : 'Paraguay' ?>"
+                                         title="<?= $p['pais_vendedor'] === 'AR' ? 'Argentina' : 'Paraguay' ?>"
+                                         width="20" class="me-1" style="border-radius:2px;vertical-align:-3px">
                                     <a href="tel:<?= htmlspecialchars($p['numero_vendedor']) ?>" class="text-success">
                                         <?= htmlspecialchars($p['numero_vendedor']) ?>
                                     </a>
@@ -233,7 +237,8 @@ $totalInactivos = count($proveedores) - $totalActivos;
                                         data-telefono="<?= htmlspecialchars($p['telefono']) ?>"
                                         data-email="<?= htmlspecialchars($p['email']) ?>"
                                         data-vendedor="<?= htmlspecialchars($p['vendedor']) ?>"
-                                        data-numero_vendedor="<?= htmlspecialchars($p['numero_vendedor']) ?>">
+                                        data-numero_vendedor="<?= htmlspecialchars($p['numero_vendedor']) ?>"
+                                        data-pais_vendedor="<?= htmlspecialchars($p['pais_vendedor']) ?>">
                                         <i class="fa-solid fa-pen fa-xs"></i>
                                     </button>
                                     <!-- Toggle estado -->
@@ -284,9 +289,19 @@ $totalInactivos = count($proveedores) - $totalActivos;
               <label class="form-label small text-secondary">Vendedor</label>
               <input type="text" name="vendedor" class="form-control bg-dark text-white border-secondary">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label small text-secondary">Teléfono Vendedor</label>
-              <input type="text" name="numero_vendedor" class="form-control bg-dark text-white border-secondary">
+              <input type="text" name="numero_vendedor" class="form-control bg-dark text-white border-secondary" placeholder="Ej: 981123456">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-secondary">País</label>
+              <div class="d-flex align-items-center gap-2">
+                <img id="flagCrear" src="../imagenes/banderas/py.png" width="22" style="border-radius:2px">
+                <select name="pais_vendedor" id="crear_pais_vendedor" class="form-select bg-dark text-white border-secondary" onchange="document.getElementById('flagCrear').src = '../imagenes/banderas/' + (this.value === 'AR' ? 'ar' : 'py') + '.png'">
+                  <option value="PY" selected>PY (+595)</option>
+                  <option value="AR">AR (+54)</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -333,9 +348,19 @@ $totalInactivos = count($proveedores) - $totalActivos;
               <label class="form-label small text-secondary">Vendedor</label>
               <input type="text" name="vendedor" id="edit_vendedor" class="form-control bg-dark text-white border-secondary">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label small text-secondary">Teléfono Vendedor</label>
-              <input type="text" name="numero_vendedor" id="edit_numero_vendedor" class="form-control bg-dark text-white border-secondary">
+              <input type="text" name="numero_vendedor" id="edit_numero_vendedor" class="form-control bg-dark text-white border-secondary" placeholder="Ej: 981123456">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-secondary">País</label>
+              <div class="d-flex align-items-center gap-2">
+                <img id="flagEditar" src="../imagenes/banderas/py.png" width="22" style="border-radius:2px">
+                <select name="pais_vendedor" id="edit_pais_vendedor" class="form-select bg-dark text-white border-secondary" onchange="document.getElementById('flagEditar').src = '../imagenes/banderas/' + (this.value === 'AR' ? 'ar' : 'py') + '.png'">
+                  <option value="PY">PY (+595)</option>
+                  <option value="AR">AR (+54)</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -510,6 +535,9 @@ $(document).ready(function () {
         $('#edit_email').val(b.data('email'));
         $('#edit_vendedor').val(b.data('vendedor'));
         $('#edit_numero_vendedor').val(b.data('numero_vendedor'));
+        const paisEdit = b.data('pais_vendedor') || 'PY';
+        $('#edit_pais_vendedor').val(paisEdit);
+        $('#flagEditar').attr('src', '../imagenes/banderas/' + (paisEdit === 'AR' ? 'ar' : 'py') + '.png');
         new bootstrap.Modal('#modalEditar').show();
     });
 

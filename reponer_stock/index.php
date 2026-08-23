@@ -440,7 +440,7 @@ $clase = match ($estado) {
 
 <!-- Modal para Impactar pedido -->
 <div class="modal fade" id="modalImpacto" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
 
             <form id="formImpacto" enctype="multipart/form-data">
@@ -506,6 +506,9 @@ $clase = match ($estado) {
                 </div>
 
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                    </button>
                     <button class="btn btn-success" type="submit">
                         Confirmar impacto
                     </button>
@@ -722,12 +725,12 @@ document.getElementById('btnGuardar').addEventListener('click', () => {
     .then(r => r.json())
     .then(r => {
         if (r.ok) {
-            alert('Pedido guardado correctamente');
             pedidos = {};
             render();
-            location.reload();
+            Swal.fire('Listo', 'Pedido guardado correctamente', 'success')
+                .then(() => location.reload());
         } else {
-            alert('Error al guardar pedido');
+            Swal.fire('Error', 'No se pudo guardar el pedido', 'error');
         }
     });
 });
@@ -773,51 +776,50 @@ function abrirImpacto(id) {
                     </span>
                 </div>
 
-                ${r.productos.map(p => {
+                <div class="table-responsive mb-3" style="max-height: 340px; overflow-y: auto;">
+                    <table class="table table-dark table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cód. prov.</th>
+                                <th class="text-center">Cant.</th>
+                                <th style="min-width:130px">Precio unit.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${r.productos.map(p => {
 
-                    const cantidad = parseInt(p.cantidad || 0);
+                                const cantidad = parseInt(p.cantidad || 0);
 
-                    return `
-                        <div class="mb-3 p-3 border rounded bg-dark">
-
-                            <div>
-                                <strong>${p.producto}</strong>
-                                <span class="text-muted ms-1">
-                                    (${p.marca ?? 'Sin marca'})
-                                </span>
-                            </div>
-
-                            <div class="small text-muted">
-                                Código proveedor: ${p.codigo_proveedor ?? '-'}
-                            </div>
-
-                            <div class="mt-2">
-                                Cantidad:
-                                <span class="badge bg-secondary">
-                                    ${cantidad}
-                                </span>
-                            </div>
-
-                            <div class="mt-2">
-                                <label class="form-label small">
-                                    Precio unitario
-                                </label>
-                                <input type="number"
-                                       step="0.01"
-                                       min="0"
-                                       class="form-control precioUnitarioInput"
-                                       data-id="${p.idreposicion_detalle}"
-                                       data-cantidad="${cantidad}"
-                                       placeholder="Ej: 15000">
-                            </div>
-
-                            <div class="mt-2 small text-warning fw-bold subtotalItem">
-                                Subtotal: $ 0.00
-                            </div>
-
-                        </div>
-                    `;
-                }).join('')}
+                                return `
+                                    <tr>
+                                        <td>
+                                            <strong>${p.producto}</strong>
+                                            <div class="text-muted small">${p.marca ?? 'Sin marca'}</div>
+                                        </td>
+                                        <td class="small text-muted">${p.codigo_proveedor ?? '-'}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">${cantidad}</span>
+                                        </td>
+                                        <td>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   class="form-control form-control-sm precioUnitarioInput"
+                                                   data-id="${p.idreposicion_detalle}"
+                                                   data-cantidad="${cantidad}"
+                                                   placeholder="Ej: 15000">
+                                        </td>
+                                        <td class="text-end small text-warning fw-bold subtotalItem">
+                                            $ 0
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
 
             /* =========================
@@ -838,9 +840,9 @@ function abrirImpacto(id) {
 
                     const subtotal = precio * cantidad;
 
-                    input.closest('.border')
+                    input.closest('tr')
                          .querySelector('.subtotalItem')
-                         .innerText = 'Subtotal: $ ' + Math.round(subtotal).toLocaleString('es-PY');
+                         .innerText = '$ ' + Math.round(subtotal).toLocaleString('es-PY');
 
                     totalGeneral += subtotal;
                 });
@@ -916,10 +918,10 @@ document.getElementById('formImpacto').addEventListener('submit', e => {
 })
     .then(r => {
         if (r.ok) {
-            alert('Pedido impactado correctamente');
-            location.reload();
+            Swal.fire('Listo', 'Pedido impactado correctamente', 'success')
+                .then(() => location.reload());
         } else {
-            alert('Error al impactar pedido');
+            Swal.fire('Error', r.error || 'Error al impactar pedido', 'error');
         }
     });
 
@@ -970,7 +972,11 @@ function verDetalle(id) {
    WHATSAPP FORMATO EMPRESARIAL
 ========================= */
 
-const numero = r.numero_vendedor || '';
+const codigosPais = { PY: '595', AR: '54' };
+const codigoPais = codigosPais[r.pais_vendedor] || '595';
+const numeroLimpio = (r.numero_vendedor || '').toString().replace(/\D/g, '').replace(/^0+/, '');
+const numero = numeroLimpio ? codigoPais + numeroLimpio : '';
+const puedeEnviar = r.estado === 'pedido';
 
 const fecha = new Date().toLocaleDateString('es-AR');
 
@@ -995,7 +1001,7 @@ mensaje += `Luciano Barros\n`;
 mensaje += `Área de Compras\n`;
 mensaje += `MotoShoppy`;
 
-if (numero) {
+if (numero && puedeEnviar) {
     const urlWA = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 
     html += `
@@ -1004,6 +1010,13 @@ if (numero) {
            class="btn btn-success mb-3">
            Enviar orden por WhatsApp
         </a>
+    `;
+} else if (numero && !puedeEnviar) {
+    html += `
+        <p class="text-secondary mb-3">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Este pedido ya fue ${r.estado === 'impactado' ? 'impactado' : 'cancelado'}, no se puede reenviar la orden.
+        </p>
     `;
 }
 
