@@ -1,5 +1,6 @@
 <?php
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 session_start();
 
 // ============================================
@@ -47,7 +48,7 @@ foreach ($items as $it) {
     // -----------------------------------------------------
     // Registrar devolución (estructura real de tu tabla)
     // -----------------------------------------------------
-    $sql = "INSERT INTO devoluciones_venta 
+    $sql = "INSERT INTO devoluciones_venta
             (ventas_idVenta, producto_idProducto, cantidad, fecha, usuario_idusuario, motivo)
             VALUES (?,?,?,?,?,?)";
 
@@ -61,16 +62,57 @@ foreach ($items as $it) {
         $motivo
     ]);
 
+    auditoria(
+        $conexion,
+        'INSERT',
+        'ventas',
+        'devoluciones_venta',
+        $conexion->lastInsertId(),
+        "Devolución parcial: {$cantidad} unidad(es) del producto {$productoId} en la venta Nº {$idVenta}. Motivo: {$motivo}",
+        null,
+        [
+            'ventas_idVenta'      => $idVenta,
+            'producto_idProducto' => $productoId,
+            'cantidad'            => $cantidad,
+            'motivo'              => $motivo
+        ]
+    );
+
     // -----------------------------------------------------
     // B) Aumentar stock (regresa tanto exhibición como depósito)
     // -----------------------------------------------------
+    $stockAntesStmt = $conexion->prepare("
+        SELECT cantidad_actual, cantidad_exhibida FROM stock_producto WHERE producto_idProducto = ?
+    ");
+    $stockAntesStmt->execute([$productoId]);
+    $stockAntes = $stockAntesStmt->fetch(PDO::FETCH_ASSOC);
+
     $upd = $conexion->prepare("
-        UPDATE stock_producto 
-        SET cantidad_actual = cantidad_actual + ?, 
+        UPDATE stock_producto
+        SET cantidad_actual = cantidad_actual + ?,
             cantidad_exhibida = cantidad_exhibida + ?
         WHERE producto_idProducto = ?
     ");
     $upd->execute([$cantidad, $cantidad, $productoId]);
+
+    if ($stockAntes) {
+        auditoria(
+            $conexion,
+            'UPDATE',
+            'INVENTARIO',
+            'stock_producto',
+            $productoId,
+            "Devolución parcial venta Nº {$idVenta}: ingreso de {$cantidad} unidad(es)",
+            [
+                'cantidad_actual'   => (int)$stockAntes['cantidad_actual'],
+                'cantidad_exhibida' => (int)$stockAntes['cantidad_exhibida']
+            ],
+            [
+                'cantidad_actual'   => (int)$stockAntes['cantidad_actual'] + $cantidad,
+                'cantidad_exhibida' => (int)$stockAntes['cantidad_exhibida'] + $cantidad
+            ]
+        );
+    }
 
     // -----------------------------------------------------
     // C) Marcar detalle como devuelto

@@ -145,15 +145,25 @@ $saldo = $totalComprado - $totalPagado;
                             <td>₲<?= number_format($saldoFila, 0, ',', '.') ?></td>
                             <td><span class="badge <?= $badges[$c['estado_pago']] ?? 'bg-secondary' ?>"><?= ucfirst($c['estado_pago']) ?></span></td>
                             <td class="text-center">
-                                <?php if ($saldoFila > 0): ?>
-                                <button class="btn btn-primary btn-sm btn-registrar-pago"
-                                    data-id="<?= $c['idFacturaProveedor'] ?>"
-                                    data-saldo="<?= $saldoFila ?>">
-                                    <i class="fa-solid fa-money-bill"></i> Registrar pago
-                                </button>
-                                <?php else: ?>
-                                    <span class="text-secondary">-</span>
-                                <?php endif; ?>
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <?php if ($saldoFila > 0): ?>
+                                    <button class="btn btn-primary btn-sm btn-registrar-pago"
+                                        data-id="<?= $c['idFacturaProveedor'] ?>"
+                                        data-saldo="<?= $saldoFila ?>">
+                                        <i class="fa-solid fa-money-bill"></i> Registrar pago
+                                    </button>
+                                    <?php endif; ?>
+                                    <?php if ((float)$c['monto_pagado'] > 0): ?>
+                                    <button class="btn btn-outline-info btn-sm btn-ver-pagos"
+                                        data-id="<?= $c['idFacturaProveedor'] ?>"
+                                        title="Ver historial de pagos">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </button>
+                                    <?php endif; ?>
+                                    <?php if ($saldoFila <= 0 && (float)$c['monto_pagado'] <= 0): ?>
+                                        <span class="text-secondary">-</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -218,14 +228,56 @@ $saldo = $totalComprado - $totalPagado;
       <div class="modal-body">
         <input type="hidden" id="p_id">
         <p class="mb-2">Saldo pendiente: <strong id="p_saldo_texto">₲0</strong></p>
-        <label class="form-label small text-secondary">Monto a pagar *</label>
-        <input type="number" id="p_monto" min="0" step="0.01" class="form-control bg-dark text-white border-secondary" required>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Monto a pagar *</label>
+            <input type="number" id="p_monto" min="0" step="0.01" class="form-control bg-dark text-white border-secondary" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Fecha de pago *</label>
+            <input type="date" id="p_fecha" class="form-control bg-dark text-white border-secondary" value="<?= date('Y-m-d') ?>" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary">N° de comprobante / recibo</label>
+            <input type="text" id="p_comprobante" class="form-control bg-dark text-white border-secondary" placeholder="Opcional">
+          </div>
+        </div>
       </div>
       <div class="modal-footer border-secondary">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-primary fw-semibold" id="btnConfirmarPago">
           <i class="fa-solid fa-check me-1"></i> Confirmar pago
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL HISTORIAL DE PAGOS ===== -->
+<div class="modal fade" id="modalHistorialPagos" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>Historial de pagos</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-dark table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Monto</th>
+              <th>N° Comprobante</th>
+              <th>Registrado por</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyHistorialPagos">
+            <tr><td colspan="4" class="text-center text-secondary">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
@@ -297,19 +349,43 @@ $(document).ready(function () {
         const saldo = parseFloat($(this).data('saldo'));
         $('#p_id').val(id);
         $('#p_saldo_texto').text('₲' + saldo.toLocaleString('es-PY'));
-        $('#p_monto').val('').attr('max', saldo);
+        $('#p_monto').val('').attr('max', saldo).data('saldo', saldo);
+        $('#p_fecha').val(new Date().toISOString().slice(0, 10));
+        $('#p_comprobante').val('');
         new bootstrap.Modal('#modalPago').show();
+    });
+
+    // === LIMITAR MONTO EN VIVO AL SALDO PENDIENTE ===
+    $(document).on('input', '#p_monto', function () {
+        const saldoMax = parseFloat($(this).data('saldo'));
+        const valor = parseFloat($(this).val());
+        if (!isNaN(saldoMax) && !isNaN(valor) && valor > saldoMax) {
+            $(this).val(saldoMax);
+        }
     });
 
     // === CONFIRMAR PAGO ===
     $('#btnConfirmarPago').on('click', function () {
         const payload = {
             id: $('#p_id').val(),
-            monto: $('#p_monto').val()
+            monto: $('#p_monto').val(),
+            fecha_pago: $('#p_fecha').val(),
+            numero_comprobante: $('#p_comprobante').val()
         };
+        const saldoMax = parseFloat($('#p_monto').data('saldo'));
 
         if (!payload.monto || parseFloat(payload.monto) <= 0) {
             Swal.fire('Atención', 'Ingresá un monto válido.', 'warning');
+            return;
+        }
+
+        if (parseFloat(payload.monto) > saldoMax) {
+            Swal.fire('Atención', 'El monto no puede superar el saldo pendiente (₲' + saldoMax.toLocaleString('es-PY') + ').', 'warning');
+            return;
+        }
+
+        if (!payload.fecha_pago) {
+            Swal.fire('Atención', 'Ingresá la fecha del pago.', 'warning');
             return;
         }
 
@@ -328,6 +404,35 @@ $(document).ready(function () {
             }
         })
         .catch(() => Swal.fire('Error de conexión', '', 'error'));
+    });
+
+    // === VER HISTORIAL DE PAGOS ===
+    $(document).on('click', '.btn-ver-pagos', function () {
+        const id = $(this).data('id');
+        $('#tbodyHistorialPagos').html('<tr><td colspan="4" class="text-center text-secondary">Cargando...</td></tr>');
+        new bootstrap.Modal('#modalHistorialPagos').show();
+
+        fetch('api/listar_pagos.php?factura_id=' + encodeURIComponent(id))
+            .then(r => r.json())
+            .then(data => {
+                if (!data.ok || !data.pagos.length) {
+                    $('#tbodyHistorialPagos').html('<tr><td colspan="4" class="text-center text-secondary">Sin pagos registrados</td></tr>');
+                    return;
+                }
+                let html = '';
+                data.pagos.forEach(p => {
+                    html += `<tr>
+                        <td>${p.fecha_pago}</td>
+                        <td>₲${Number(p.monto).toLocaleString('es-PY')}</td>
+                        <td>${p.numero_comprobante || '-'}</td>
+                        <td>${p.usuario || '-'}</td>
+                    </tr>`;
+                });
+                $('#tbodyHistorialPagos').html(html);
+            })
+            .catch(() => {
+                $('#tbodyHistorialPagos').html('<tr><td colspan="4" class="text-center text-danger">Error al cargar el historial</td></tr>');
+            });
     });
 });
 </script>

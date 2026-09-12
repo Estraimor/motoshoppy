@@ -8,7 +8,9 @@ function auditoria(
     $registroId = null,
     string $descripcion = '',
     $antes = null,
-    $despues = null
+    $despues = null,
+    ?string $afectadoTabla = null,
+    $afectadoId = null
 ) {
     // 🔒 Seguridad básica
     if (!isset($_SESSION['idusuario'])) {
@@ -36,10 +38,12 @@ function auditoria(
             descripcion,
             datos_antes,
             datos_despues,
-            ip
+            ip,
+            afectado_tabla,
+            afectado_id
         )
         VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ";
 
     $stmt = $conexion->prepare($sql);
@@ -53,7 +57,9 @@ function auditoria(
         $descripcion ?: descripcionAutomatica($accion, $tabla, $registroId),
         $antes !== null ? json_encode($antes, JSON_UNESCAPED_UNICODE) : null,
         $despues !== null ? json_encode($despues, JSON_UNESCAPED_UNICODE) : null,
-        $_SERVER['REMOTE_ADDR'] ?? null
+        $_SERVER['REMOTE_ADDR'] ?? null,
+        $afectadoTabla,
+        $afectadoId
     ]);
 }
 

@@ -20,7 +20,6 @@ $stmt = $conexion->query("
 
     COALESCE(p.descripcion,'{}') AS descripcion,
     COALESCE(p.peso_ml,0) AS peso_ml,
-    COALESCE(p.peso_g,0) AS peso_g,
 
     COALESCE(p.imagen,'') AS imagen,
 
@@ -583,7 +582,6 @@ const html = `
         : ""
     }
     <p><strong>Peso (ml):</strong> ${data.peso_ml || 0}</p>
-    <p><strong>Peso (g):</strong> ${data.peso_g || 0}</p>
     <p><strong>Ubicación:</strong> ${ubicacionTexto}</p>
 </div>
 
@@ -662,10 +660,7 @@ $(document).on('click', '#btnEditar', function () {
             <label class="mt-2"><strong>Peso (ml):</strong></label>
             <input type="number" id="edit_pesoml" class="form-control form-control-sm" value="${data.peso_ml ?? ''}">
 
-            <label class="mt-2"><strong>Peso (g):</strong></label>
-            <input type="number" id="edit_pesog" class="form-control form-control-sm" value="${data.peso_g ?? ''}">
-            
-            
+
 <label class="mt-2"><strong>Ubicación:</strong></label>
 <select id="edit_ubicacion_select" class="form-select form-select-sm" style="width:100%">
     ${(() => {
@@ -863,7 +858,6 @@ $(document).on('click', '#btnGuardar', function () {
     formData.append('marca', $('#edit_marca').val());
     formData.append('precio', $('#edit_precio').val());
     formData.append('peso_ml', $('#edit_pesoml').val());
-    formData.append('peso_g', $('#edit_pesog').val());
     // Valor de ubicación: limpiar el prefijo "➕ Crear: " si es nueva
     let ubicacionVal = $('#edit_ubicacion_select').val() || '';
     ubicacionVal = ubicacionVal.replace(/^➕ Crear: /, '').trim();

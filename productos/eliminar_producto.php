@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 header('Content-Type: application/json');
 
@@ -26,6 +28,10 @@ if ($cantVentas > 0) {
     exit;
 }
 
+$antesStmt = $conexion->prepare("SELECT * FROM producto WHERE idproducto = ?");
+$antesStmt->execute([$id]);
+$productoAntes = $antesStmt->fetch(PDO::FETCH_ASSOC);
+
 try {
     $conexion->beginTransaction();
 
@@ -33,6 +39,17 @@ try {
     $conexion->prepare("DELETE FROM movimiento_stock WHERE producto_idProducto = ?")->execute([$id]);
     $conexion->prepare("DELETE FROM stock_producto WHERE producto_idProducto = ?")->execute([$id]);
     $conexion->prepare("DELETE FROM producto WHERE idproducto = ?")->execute([$id]);
+
+    auditoria(
+        $conexion,
+        'DELETE',
+        'productos',
+        'producto',
+        $id,
+        "Eliminó producto: " . ($productoAntes['nombre'] ?? "ID {$id}"),
+        $productoAntes,
+        null
+    );
 
     $conexion->commit();
 

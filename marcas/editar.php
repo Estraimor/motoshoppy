@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = intval($_POST['idmarcas'] ?? 0);
@@ -9,9 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($id > 0 && $nombre && $categoria > 0) {
         try {
+            $antesStmt = $conexion->prepare("SELECT nombre_marca, categoria_idCategoria, estado FROM marcas WHERE idmarcas = ?");
+            $antesStmt->execute([$id]);
+            $antes = $antesStmt->fetch(PDO::FETCH_ASSOC);
+
             $stmt = $conexion->prepare("
-                UPDATE marcas 
-                SET nombre_marca = :nombre, categoria_idCategoria = :categoria, estado = :estado 
+                UPDATE marcas
+                SET nombre_marca = :nombre, categoria_idCategoria = :categoria, estado = :estado
                 WHERE idmarcas = :id
             ");
             $stmt->execute([
@@ -20,6 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':categoria' => $categoria,
                 ':estado' => $estado
             ]);
+
+            auditoria(
+                $conexion,
+                'UPDATE',
+                'marcas',
+                'marcas',
+                $id,
+                "Editó marca: {$nombre}",
+                $antes,
+                ['nombre_marca' => $nombre, 'categoria_idCategoria' => $categoria, 'estado' => $estado]
+            );
 
             header("Location: index.php?msg=editado");
             exit;

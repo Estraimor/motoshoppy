@@ -27,7 +27,6 @@ SELECT
   p.precio_expuesto,
   p.precio_costo,
   p.peso_ml,
-  p.peso_g,
   up.lugar AS ubicacion_producto_idubicacion_producto,
   p.imagen,
   p.descripcion,

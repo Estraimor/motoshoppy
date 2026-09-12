@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once __DIR__ . '/../conexion/conexion.php';
+require_once __DIR__ . '/../settings/auditoria.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
 
@@ -26,6 +28,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
         ':numero_vendedor' => $numero_vendedor,
         ':pais_vendedor'   => $pais_vendedor
     ]);
+
+    $idNuevo = $conexion->lastInsertId();
+
+    auditoria(
+        $conexion,
+        'INSERT',
+        'proveedores',
+        'proveedores',
+        $idNuevo,
+        "Creó proveedor: {$empresa}",
+        null,
+        [
+            'empresa'   => $empresa,
+            'ubicacion' => $ubicacion,
+            'telefono'  => $telefono,
+            'email'     => $email,
+            'vendedor'  => $vendedor,
+            'numero_vendedor' => $numero_vendedor,
+            'activo'    => 1
+        ]
+    );
 
     // Redirigimos con un mensaje de éxito
     header('Location: index.php?msg=insertado');

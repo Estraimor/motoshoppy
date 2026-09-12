@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../conexion/conexion.php';
+require_once __DIR__ . '/../settings/auditoria.php';
 
 header('Content-Type: application/json');
 
@@ -44,5 +45,7 @@ if ($row['pass'] !== $actual) {
 // Guardar nueva contraseña
 $upd = $conexion->prepare("UPDATE usuario SET pass = :pass WHERE idusuario = :id");
 $upd->execute([':pass' => $nueva, ':id' => $id]);
+
+auditoria($conexion, 'UPDATE', 'perfil', 'usuario', $id, 'Cambió su contraseña');
 
 echo json_encode(['ok' => true]);

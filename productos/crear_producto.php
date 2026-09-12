@@ -1,6 +1,8 @@
 <?php
 
+session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $categoria_id     = intval($_POST['categoria_id'] ?? 0);
@@ -12,10 +14,8 @@ $marca_id = !empty($_POST['marcas_idmarcas']) ? intval($_POST['marcas_idmarcas']
     $precio_expuesto  = $_POST['precio_expuesto'] !== '' ? floatval($_POST['precio_expuesto']) : null;
 
     $peso_ml = isset($_POST['peso_ml']) && $_POST['peso_ml'] !== '' ? intval($_POST['peso_ml']) : null;
-    $peso_g  = isset($_POST['peso_g']) && $_POST['peso_g'] !== '' ? intval($_POST['peso_g']) : null;
     if (isset($_POST['sin_peso'])) {
         $peso_ml = null;
-        $peso_g  = null;
     }
 
     // Campos de stock
@@ -90,13 +90,13 @@ $marca_id = !empty($_POST['marcas_idmarcas']) ? intval($_POST['marcas_idmarcas']
 
         // === Insertar producto ===
         $stmt = $conexion->prepare("
-            INSERT INTO producto 
-                (Categoria_idCategoria, marcas_idmarcas, codigo, nombre, modelo, 
-                 precio_costo, precio_expuesto, peso_ml, peso_g, 
-                 descripcion, ubicacion_producto_idubicacion_producto, imagen) 
-            VALUES 
-                (:categoria, :marca, :codigo, :nombre, :modelo, 
-                 :precio_costo, :precio_expuesto, :peso_ml, :peso_g, 
+            INSERT INTO producto
+                (Categoria_idCategoria, marcas_idmarcas, codigo, nombre, modelo,
+                 precio_costo, precio_expuesto, peso_ml,
+                 descripcion, ubicacion_producto_idubicacion_producto, imagen)
+            VALUES
+                (:categoria, :marca, :codigo, :nombre, :modelo,
+                 :precio_costo, :precio_expuesto, :peso_ml,
                  :descripcion, :ubicacion, :imagen)
         ");
         $stmt->execute([
@@ -108,13 +108,31 @@ $marca_id = !empty($_POST['marcas_idmarcas']) ? intval($_POST['marcas_idmarcas']
             ':precio_costo'    => $precio_costo,
             ':precio_expuesto' => $precio_expuesto,
             ':peso_ml'         => $peso_ml,
-            ':peso_g'          => $peso_g,
             ':descripcion'     => $descripcion_json,
             ':ubicacion'       => $ubicacion_id,
             ':imagen'          => $ruta_imagen
         ]);
 
         $idProducto = $conexion->lastInsertId();
+
+        auditoria(
+            $conexion,
+            'INSERT',
+            'productos',
+            'producto',
+            $idProducto,
+            "Creó producto: {$nombre} (código {$codigo})",
+            null,
+            [
+                'Categoria_idCategoria' => $categoria_id,
+                'marcas_idmarcas'       => $marca_id,
+                'codigo'                => $codigo,
+                'nombre'                => $nombre,
+                'modelo'                => $modelo,
+                'precio_costo'          => $precio_costo,
+                'precio_expuesto'       => $precio_expuesto
+            ]
+        );
 
         // === Insertar stock ===
         $stmtStock = $conexion->prepare("
@@ -127,6 +145,21 @@ $marca_id = !empty($_POST['marcas_idmarcas']) ? intval($_POST['marcas_idmarcas']
             ':cantidad_actual' => $cantidad_actual,
             ':cantidad_exhibida' => $cantidad_exhibida
         ]);
+
+        auditoria(
+            $conexion,
+            'INSERT',
+            'productos',
+            'stock_producto',
+            $idProducto,
+            "Cargó stock inicial del producto: {$nombre}",
+            null,
+            [
+                'stock_minimo'      => $stock_minimo,
+                'cantidad_actual'   => $cantidad_actual,
+                'cantidad_exhibida' => $cantidad_exhibida
+            ]
+        );
 
         $conexion->commit();
 

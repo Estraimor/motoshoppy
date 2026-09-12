@@ -1,5 +1,6 @@
 <?php
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 session_start();
 
 $idVenta = intval($_POST['idVenta']);
@@ -33,10 +34,19 @@ foreach ($items as $item) {
     $cant = intval($item['cantidad']);
 
     // ----------------------------------------------------------
+    // STOCK ANTES (para auditoría)
+    // ----------------------------------------------------------
+    $stockAntesStmt = $conexion->prepare("
+        SELECT cantidad_actual FROM stock_producto WHERE producto_idProducto = ?
+    ");
+    $stockAntesStmt->execute([$prod]);
+    $cantidadActualAntes = (int)$stockAntesStmt->fetchColumn();
+
+    // ----------------------------------------------------------
     // A) DEVOLVER STOCK AL DEPÓSITO (NO A EXHIBICIÓN)
     // ----------------------------------------------------------
     $sql = "
-        UPDATE stock_producto 
+        UPDATE stock_producto
         SET cantidad_actual = cantidad_actual + :cant
         WHERE producto_idProducto = :prod
     ";
@@ -44,6 +54,17 @@ foreach ($items as $item) {
     $up->bindParam(':cant', $cant);
     $up->bindParam(':prod', $prod);
     $up->execute();
+
+    auditoria(
+        $conexion,
+        'UPDATE',
+        'INVENTARIO',
+        'stock_producto',
+        $prod,
+        "Anulación venta Nº {$idVenta}: ingreso de {$cant} unidad(es) a depósito",
+        ['cantidad_actual' => $cantidadActualAntes],
+        ['cantidad_actual' => $cantidadActualAntes + $cant]
+    );
 
     // ----------------------------------------------------------
     // B) REGISTRAR ANULACIÓN
@@ -60,6 +81,22 @@ foreach ($items as $item) {
     $ins->bindParam(':motivo', $motivo);
     $ins->bindParam(':user', $usuario);
     $ins->execute();
+
+    auditoria(
+        $conexion,
+        'INSERT',
+        'ventas',
+        'ventas_anuladas',
+        $conexion->lastInsertId(),
+        "Anuló {$cant} unidad(es) del producto {$prod} de la venta Nº {$idVenta}. Motivo: {$motivo}",
+        null,
+        [
+            'ventas_idVenta'      => $idVenta,
+            'producto_idProducto' => $prod,
+            'cantidad_devuelta'   => $cant,
+            'motivo'              => $motivo
+        ]
+    );
 }
 
 echo "ok";

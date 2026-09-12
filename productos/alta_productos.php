@@ -68,15 +68,11 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
             <!-- Peso -->
             <h6><i class="fa-solid fa-weight-scale"></i> Peso</h6>
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-6 mb-3">
                     <label class="form-label">Peso (ml)</label>
                     <input type="number" class="form-control" name="peso_ml" id="peso_ml">
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Peso (g)</label>
-                    <input type="number" class="form-control" name="peso_g" id="peso_g">
-                </div>
-                <div class="col-md-4 d-flex align-items-center">
+                <div class="col-md-6 d-flex align-items-center">
                     <div class="form-check mt-4">
                         <input class="form-check-input" type="checkbox" id="sinPeso">
                         <label class="form-check-label" for="sinPeso">Sin peso ni ML</label>
@@ -215,6 +211,28 @@ $ubicaciones = $stmtUb->fetchAll(PDO::FETCH_ASSOC);
             </button>
         </form>
     </div>
+
+    <!-- Importar desde Excel -->
+    <div class="card shadow-sm p-3 mb-3">
+        <h5><i class="fa-solid fa-file-excel"></i> Importar productos desde Excel</h5>
+        <p class="text-muted small mb-2">
+            Cargá varios productos a la vez subiendo un archivo Excel. Si la categoría o la marca
+            no existen todavía, se crean automáticamente.
+        </p>
+        <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
+            <a href="plantilla_excel.php" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-download"></i> Descargar plantilla
+            </a>
+            <div>
+                <label class="form-label small mb-1">Archivo Excel (.xlsx)</label>
+                <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control form-control-sm">
+            </div>
+            <button type="button" id="btnImportarExcel" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-upload"></i> Importar
+            </button>
+        </div>
+        <div id="resultadoImportacion" class="mt-2"></div>
+    </div>
 </div>
 
 <script>
@@ -336,14 +354,11 @@ document.getElementById('addJsonCampo').addEventListener('click', function () {
 // =====================================================
 document.getElementById('sinPeso').addEventListener('change', function() {
     const pesoML = document.getElementById('peso_ml');
-    const pesoG = document.getElementById('peso_g');
 
     pesoML.disabled = this.checked;
-    pesoG.disabled = this.checked;
 
     if (this.checked) {
         pesoML.value = '';
-        pesoG.value = '';
     }
 });
 
@@ -396,6 +411,65 @@ if (btnAddAplicacion) {
 });
 </script>
 
+<script>
+// === IMPORTAR PRODUCTOS DESDE EXCEL ===
+document.getElementById('btnImportarExcel').addEventListener('click', function () {
+
+    const input = document.getElementById('excelFile');
+    const resultadoDiv = document.getElementById('resultadoImportacion');
+
+    if (!input.files.length) {
+        Swal.fire('Atención', 'Seleccioná un archivo Excel primero.', 'warning');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('excel', input.files[0]);
+
+    this.disabled = true;
+    resultadoDiv.innerHTML = '<div class="text-muted small">Importando, por favor esperá...</div>';
+
+    fetch('importar_excel.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        this.disabled = false;
+
+        if (!data.ok) {
+            resultadoDiv.innerHTML = '';
+            Swal.fire('Error', data.msg || 'No se pudo importar el archivo.', 'error');
+            return;
+        }
+
+        let html = `<div class="alert alert-${data.creados > 0 ? 'success' : 'warning'} py-2 mb-2">
+            Se crearon <strong>${data.creados}</strong> de ${data.total} producto(s) procesados.
+        </div>`;
+
+        const errores = data.detalle.filter(d => !d.ok);
+        if (errores.length) {
+            html += '<div class="small"><strong>Filas con error:</strong><ul class="mb-0">';
+            errores.forEach(e => {
+                html += `<li>Fila ${e.fila}: ${e.msg}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        resultadoDiv.innerHTML = html;
+
+        if (data.creados > 0) {
+            Swal.fire('Listo', `Se importaron ${data.creados} producto(s).`, 'success')
+                .then(() => location.reload());
+        }
+    })
+    .catch(() => {
+        this.disabled = false;
+        resultadoDiv.innerHTML = '';
+        Swal.fire('Error de conexión', 'No se pudo conectar con el servidor.', 'error');
+    });
+});
+</script>
 
 
 

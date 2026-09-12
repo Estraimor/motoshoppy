@@ -158,8 +158,7 @@ return [
             'nombre'               => 'Nombre',
             'marcas_idmarcas'       => 'Marca',
             'modelo'               => 'Modelo',
-            'peso_m'               => 'Peso (m)',
-            'peso_g'               => 'Peso (g)',
+            'peso_ml'              => 'Peso (ml)',
             'descripcion'          => 'Descripción',
             'precio_costo'         => 'Precio costo',
             'precio_expuesto'      => 'Precio venta',
@@ -202,17 +201,23 @@ return [
         'campos' => [
             'proveedores_idproveedores' => 'Proveedor',
             'estado'                    => 'Estado',
+            'forma_pago'                => 'Forma de pago',
             'observacion'               => 'Observación',
             'fecha_pedido'              => 'Fecha pedido',
             'fecha_llegada'             => 'Fecha llegada',
             'costo_total'               => 'Costo total',
-            'numero_factura'            => 'Factura'
+            'numero_factura'            => 'Factura',
+            'numero_recibo'             => 'Recibo'
         ],
         'valores' => [
             'estado' => [
                 'pedido'    => 'Pedido',
                 'impactado' => 'Impactado',
                 'cancelado' => 'Cancelado'
+            ],
+            'forma_pago' => [
+                'contado'  => 'Contado',
+                'credito'  => 'Crédito'
             ]
         ],
         'especial' => [
@@ -265,6 +270,18 @@ return [
     ],
 
     /* =========================
+       PAGOS A PROVEEDOR (CUENTA CORRIENTE)
+    ========================= */
+    'pagos_factura_proveedor' => [
+        'campos' => [
+            'factura_proveedor_idFacturaProveedor' => 'Factura',
+            'fecha_pago'                           => 'Fecha de pago',
+            'monto'                                => 'Monto',
+            'numero_comprobante'                   => 'N° Comprobante'
+        ]
+    ],
+
+    /* =========================
        DETALLE DE REPOSICIÓN
     ========================= */
     'reposicion_detalle' => [
@@ -305,78 +322,6 @@ return [
         ],
     ],
 ],
-
-    /* =========================
-       MOVIMIENTO DE STOCK
-    ========================= */
-    'movimiento_stock' => [
-        'campos' => [
-            'producto_idProducto' => 'Producto',
-            'cantidad'            => 'Cantidad',
-            'tipo'                => 'Tipo de movimiento'
-        ],
-        'valores' => [
-            'tipo' => [
-                'ingreso' => 'Ingreso',
-                'egreso'  => 'Egreso'
-            ]
-        ]
-    ],
-
-    /* =========================
-       ATRIBUTOS CUBIERTAS
-    ========================= */
-    'atributos_cubiertas' => [
-        'campos' => [
-            'aro'                  => 'Aro',
-            'ancho'                => 'Ancho',
-            'perfil_cubierta'      => 'Perfil',
-            'tipo'                 => 'Tipo',
-            'varias_aplicaciones'  => 'Varias aplicaciones'
-        ],
-        'valores' => [
-            'varias_aplicaciones' => [
-                0 => 'No',
-                1 => 'Sí'
-            ]
-        ]
-    ],
-
-    /* =========================
-       MOVIMIENTO DE STOCK
-    ========================= */
-    'movimiento_stock' => [
-        'campos' => [
-            'producto_idProducto' => 'Producto',
-            'cantidad'            => 'Cantidad',
-            'tipo'                => 'Tipo de movimiento'
-        ],
-        'valores' => [
-            'tipo' => [
-                'ingreso' => 'Ingreso',
-                'egreso'  => 'Egreso'
-            ]
-        ]
-    ],
-
-    /* =========================
-       ATRIBUTOS CUBIERTAS
-    ========================= */
-    'atributos_cubiertas' => [
-        'campos' => [
-            'aro'                  => 'Aro',
-            'ancho'                => 'Ancho',
-            'perfil_cubierta'      => 'Perfil',
-            'tipo'                 => 'Tipo',
-            'varias_aplicaciones'  => 'Varias aplicaciones'
-        ],
-        'valores' => [
-            'varias_aplicaciones' => [
-                0 => 'No',
-                1 => 'Sí'
-            ]
-        ]
-    ],
 
     /* =========================
        STOCK PRODUCTO
@@ -422,22 +367,6 @@ return [
             'avatar'   => 'Avatar'
         ]
     ],
-
-/* =========================
-   USUARIO ROLES (TABLA PIVOTE)
-========================= */
-'usuario_roles' => [
-    'campos' => [
-        'rol_id' => 'Rol'
-    ],
-    'especial' => [
-        'rol_id' => [
-            'tabla' => 'roles',
-            'pk'    => 'idroles',
-            'campo' => 'nombre_rol'
-        ]
-    ]
-],
 
 
     /* =========================

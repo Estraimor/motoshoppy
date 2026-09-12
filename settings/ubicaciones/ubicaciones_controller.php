@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../conexion/conexion.php';
+require_once __DIR__ . '/../../settings/auditoria.php';
 
 $accion = $_POST['accion'] ?? '';
 
@@ -17,8 +18,14 @@ if ($accion === 'crear') {
     $stmt = $conexion->prepare("INSERT INTO ubicacion_producto (lugar, estante) VALUES (?, ?)");
     $stmt->execute([$lugar, $estante]);
 
+    $idNuevo = $conexion->lastInsertId();
+
+    auditoria($conexion, 'INSERT', 'productos', 'ubicacion_producto', $idNuevo,
+        "Creó ubicación: {$lugar}" . ($estante ? " - Estante {$estante}" : ''),
+        null, ['lugar' => $lugar, 'estante' => $estante]);
+
     header('Content-Type: application/json');
-    echo json_encode(['ok' => true, 'id' => $conexion->lastInsertId()]);
+    echo json_encode(['ok' => true, 'id' => $idNuevo]);
     exit;
 }
 
@@ -34,8 +41,15 @@ if ($accion === 'editar') {
         exit;
     }
 
+    $antesStmt = $conexion->prepare("SELECT lugar, estante FROM ubicacion_producto WHERE idubicacion_producto = ?");
+    $antesStmt->execute([$id]);
+    $antes = $antesStmt->fetch(PDO::FETCH_ASSOC);
+
     $stmt = $conexion->prepare("UPDATE ubicacion_producto SET lugar = ?, estante = ? WHERE idubicacion_producto = ?");
     $stmt->execute([$lugar, $estante, $id]);
+
+    auditoria($conexion, 'UPDATE', 'productos', 'ubicacion_producto', $id,
+        "Editó ubicación: {$lugar}", $antes, ['lugar' => $lugar, 'estante' => $estante]);
 
     header('Content-Type: application/json');
     echo json_encode(['ok' => true]);
@@ -51,6 +65,10 @@ if ($accion === 'eliminar') {
         exit;
     }
 
+    $antesStmt = $conexion->prepare("SELECT lugar, estante FROM ubicacion_producto WHERE idubicacion_producto = ?");
+    $antesStmt->execute([$id]);
+    $antes = $antesStmt->fetch(PDO::FETCH_ASSOC);
+
     // Desvincular productos que usen esta ubicación
     $conexion->prepare("
         UPDATE producto SET ubicacion_producto_idubicacion_producto = NULL
@@ -58,6 +76,9 @@ if ($accion === 'eliminar') {
     ")->execute([$id]);
 
     $conexion->prepare("DELETE FROM ubicacion_producto WHERE idubicacion_producto = ?")->execute([$id]);
+
+    auditoria($conexion, 'DELETE', 'productos', 'ubicacion_producto', $id,
+        "Eliminó ubicación: " . ($antes['lugar'] ?? "ID {$id}"), $antes, null);
 
     header("Location: index.php?msg=eliminada");
     exit;

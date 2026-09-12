@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 if (!isset($_SESSION['idusuario']) || empty($_FILES['avatar'])) {
   echo json_encode(['ok' => false]);
@@ -51,6 +52,8 @@ $stmt->execute([
   ':avatar' => $rutaBD,
   ':id' => $id
 ]);
+
+auditoria($conexion, 'UPDATE', 'perfil', 'usuario', $id, 'Actualizó su foto de perfil');
 
 $_SESSION['avatar'] = $rutaBD;
 

@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 $nombre   = trim($_POST['nombre']   ?? '');
 $apellido = trim($_POST['apellido'] ?? '');
@@ -23,6 +25,17 @@ $stmt->execute([
     ':celular'  => $celular ?: null,
     ':email'    => $email   ?: null,
 ]);
+
+auditoria(
+    $conexion,
+    'INSERT',
+    'clientes',
+    'clientes',
+    $conexion->lastInsertId(),
+    "Creó cliente: {$nombre} {$apellido}",
+    null,
+    ['nombre' => $nombre, 'apellido' => $apellido, 'dni' => $dni, 'celular' => $celular, 'email' => $email]
+);
 
 header('Location: index.php?msg=creado');
 exit;

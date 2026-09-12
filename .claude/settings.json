@@ -13,7 +13,38 @@
       "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l settings/auditoria_mapas.php)",
       "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/cuenta/index.php)",
       "Bash(/c/wamp64/bin/mysql/mysql8.4.7/bin/mysql.exe -u root -h localhost u966473590_motoshoppy -e ' *)",
-      "Bash(echo \"cleanup exit: $?\")"
+      "Bash(echo \"cleanup exit: $?\")",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l settings/auditoria.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l reponer_stock/api_cancelar_pedido.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l ventas/api_comprar.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l historial_ventas/cancelar_venta.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l historial_ventas/devolucion_parcial.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l historial_ventas/activar_venta.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l historial_ventas/cancelar_devolucion.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/insertar_provee.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/actualizar_provee.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/baja_provee.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/cuenta/api/guardar_compra.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/cuenta/api/registrar_pago.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l clientes/crear_cliente.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l clientes/actualizar_cliente.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l clientes/eliminar_cliente.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l marcas/crear.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l marcas/editar.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l marcas/activar.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l marcas/eliminar.php)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost/motoshoppy/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost/)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l proveedores/index.php)",
+      "Bash(/c/wamp64/bin/php/php8.3.28/php.exe -r ' *)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l reponer_stock/api_ver_detalle_pedido.php)",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l reponer_stock/index.php)",
+      "Bash(rm -f \"/c/Users/lucia/AppData/Local/Temp/test_import.xlsx\")",
+      "Bash(\"/c/wamp64/bin/php/php8.3.28/php.exe\" -l productos/plantilla_excel.php)",
+      "Bash(rm -f \"/c/Users/lucia/AppData/Local/Temp/plantilla_test.xlsx\" \"/c/Users/lucia/AppData/Local/Temp/plantilla_test.err\" *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\lucia\\AppData\\Local\\Temp"
     ]
   }
 }

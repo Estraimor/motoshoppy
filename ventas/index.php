@@ -654,7 +654,6 @@ function mostrarDetalle(p) {
   if (p.modelo)           fichaItems.push(['Modelo',    p.modelo]);
   if (p.nombre_categoria) fichaItems.push(['Categoría', p.nombre_categoria]);
   if (p.peso_ml)          fichaItems.push(['Vol. (ml)', p.peso_ml]);
-  if (p.peso_g)           fichaItems.push(['Peso (g)',  p.peso_g]);
   if (p.aro)              fichaItems.push(['Aro',       p.aro]);
   if (p.ancho)            fichaItems.push(['Ancho',     p.ancho]);
   if (p.perfil_cubierta)  fichaItems.push(['Perfil',    p.perfil_cubierta]);

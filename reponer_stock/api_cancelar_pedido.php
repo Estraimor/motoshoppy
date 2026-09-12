@@ -62,8 +62,8 @@ auditoria(
     'Canceló la reposición',
     $antes,
     $despues,
-    $id,              // 👈 afectado_id
-    'reposicion'      // 👈 afectado_tabla
+    'reposicion',     // 👈 afectado_tabla
+    $id               // 👈 afectado_id
 );
 
 /* =========================

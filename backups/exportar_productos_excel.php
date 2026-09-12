@@ -20,7 +20,6 @@ SELECT
     m.nombre_marca,
     p.modelo,
     p.peso_ml,
-    p.peso_g,
     p.descripcion,
     p.precio_expuesto,
     CONCAT(
@@ -108,7 +107,7 @@ function descripcionTexto($descripcionRaw): string {
 $spreadsheet = new Spreadsheet();
 $headers = [
     'Producto', 'Código', 'Marca', 'Modelo',
-    'Peso ML', 'Peso G', 'Descripción', 'Precio Venta', 'Ubicación'
+    'Peso ML', 'Descripción', 'Precio Venta', 'Ubicación'
 ];
 
 $nombresUsados = [];
@@ -124,7 +123,7 @@ foreach ($porCategoria as $categoria => $items) {
 
     // Encabezados
     $sheet->fromArray($headers, NULL, 'A1');
-    $sheet->getStyle('A1:I1')->applyFromArray([
+    $sheet->getStyle('A1:H1')->applyFromArray([
         'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '212529']],
@@ -138,25 +137,24 @@ foreach ($porCategoria as $categoria => $items) {
         $sheet->setCellValue("C$fila", $p['nombre_marca']);
         $sheet->setCellValue("D$fila", $p['modelo']);
         $sheet->setCellValue("E$fila", $p['peso_ml']);
-        $sheet->setCellValue("F$fila", $p['peso_g']);
-        $sheet->setCellValue("G$fila", descripcionTexto($p['descripcion']));
-        $sheet->setCellValue("H$fila", $p['precio_expuesto']);
-        $sheet->setCellValue("I$fila", $p['ubicacion']);
+        $sheet->setCellValue("F$fila", descripcionTexto($p['descripcion']));
+        $sheet->setCellValue("G$fila", $p['precio_expuesto']);
+        $sheet->setCellValue("H$fila", $p['ubicacion']);
         $fila++;
     }
 
-    // Formato moneda (columna H)
-    $sheet->getStyle("H2:H" . ($fila - 1))
+    // Formato moneda (columna G)
+    $sheet->getStyle("G2:G" . ($fila - 1))
           ->getNumberFormat()
           ->setFormatCode('"$"#,##0');
 
     // Auto size columnas
-    foreach (range('A', 'I') as $col) {
+    foreach (range('A', 'H') as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
     }
 
     // Bordes
-    $sheet->getStyle("A1:I" . ($fila - 1))->applyFromArray([
+    $sheet->getStyle("A1:H" . ($fila - 1))->applyFromArray([
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
 

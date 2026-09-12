@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 session_start();
 
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 /* =========================
@@ -130,6 +131,25 @@ try {
                     $celularFinal,
                     $cliente_id
                 ]);
+
+                auditoria(
+                    $conexion,
+                    'UPDATE',
+                    'ventas',
+                    'clientes',
+                    $cliente_id,
+                    "Actualizó datos del cliente al registrar una venta",
+                    [
+                        'nombre'   => $cli['nombre'],
+                        'apellido' => $cli['apellido'],
+                        'celular'  => $cli['celular']
+                    ],
+                    [
+                        'nombre'   => $nombreFinal,
+                        'apellido' => $apellidoFinal,
+                        'celular'  => $celularFinal
+                    ]
+                );
             }
 
         } else {
@@ -155,6 +175,22 @@ try {
             ]);
 
             $cliente_id = $conexion->lastInsertId();
+
+            auditoria(
+                $conexion,
+                'INSERT',
+                'ventas',
+                'clientes',
+                $cliente_id,
+                "Creó cliente al registrar una venta",
+                null,
+                [
+                    'nombre'   => $clienteData['nombre'] ?? '',
+                    'apellido' => $clienteData['apellido'] ?? '',
+                    'dni'      => $dni,
+                    'celular'  => $clienteData['celular'] ?? ''
+                ]
+            );
         }
     }
 
@@ -274,6 +310,23 @@ try {
 
         $upd->execute([$nuevoEx, $nuevoGr, $idProd]);
 
+        auditoria(
+            $conexion,
+            'UPDATE',
+            'INVENTARIO',
+            'stock_producto',
+            $idProd,
+            "Venta Nº {$venta_id}: egreso de {$cantidad} unidad(es)",
+            [
+                'cantidad_actual'   => $gr,
+                'cantidad_exhibida' => $ex
+            ],
+            [
+                'cantidad_actual'   => $nuevoGr,
+                'cantidad_exhibida' => $nuevoEx
+            ]
+        );
+
         /* =========================
            INSERT DETALLE
         ========================= */
@@ -306,6 +359,24 @@ try {
     ");
 
     $updTotal->execute([$totalVenta, $venta_id]);
+
+    auditoria(
+        $conexion,
+        'INSERT',
+        'ventas',
+        'ventas',
+        $venta_id,
+        "Registró venta Nº {$venta_id} por total " . number_format($totalVenta, 2, ',', '.'),
+        null,
+        [
+            'total'                => $totalVenta,
+            'metodo_pago'          => $metodo_pago,
+            'tipo_comprobante'     => $tipo_comprobante,
+            'clientes_idCliente'   => $cliente_id,
+            'moneda'               => $moneda,
+            'cantidad_productos'   => count($productos)
+        ]
+    );
 
     $conexion->commit();
 

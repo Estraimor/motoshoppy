@@ -10,14 +10,26 @@ header('Content-Type: application/json');
 $id             = $_POST['idreposicion'] ?? null;
 $observacion    = $_POST['observacion'] ?? null;
 $numero_factura = $_POST['numero_factura'] ?? null;
+$numero_recibo  = $_POST['numero_recibo'] ?? null;
+$forma_pago     = $_POST['forma_pago'] ?? null;
 
 if (!$id) {
     echo json_encode(['ok' => false, 'error' => 'ID inválido']);
     exit;
 }
 
-if (!$numero_factura) {
+if (!in_array($forma_pago, ['contado', 'credito'], true)) {
+    echo json_encode(['ok' => false, 'error' => 'Debe indicar la forma de pago (contado o crédito)']);
+    exit;
+}
+
+if ($forma_pago === 'credito' && !$numero_factura) {
     echo json_encode(['ok' => false, 'error' => 'Falta número de factura']);
+    exit;
+}
+
+if ($forma_pago === 'contado' && !$numero_recibo) {
+    echo json_encode(['ok' => false, 'error' => 'Falta número de recibo']);
     exit;
 }
 
@@ -147,7 +159,9 @@ try {
             imagen_remito = ?,
             observacion = ?,
             costo_total = ?,
-            numero_factura = ?
+            forma_pago = ?,
+            numero_factura = ?,
+            numero_recibo = ?
         WHERE idreposicion = ?
     ");
 
@@ -155,7 +169,9 @@ try {
         $archivoNombre,
         $observacion,
         $costo_total,
+        $forma_pago,
         $numero_factura,
+        $numero_recibo,
         $id
     ]);
 
@@ -166,7 +182,9 @@ try {
         'estado'          => 'impactado',
         'observacion'     => $observacion,
         'costo_total'     => $costo_total,
+        'forma_pago'      => $forma_pago,
         'numero_factura'  => $numero_factura,
+        'numero_recibo'   => $numero_recibo,
         'imagen_remito'   => $archivoNombre
     ];
 
@@ -185,39 +203,44 @@ try {
 
     /* ===============================
        GENERAR FACTURA EN CUENTA DEL PROVEEDOR
+       (solo si el pedido se impacta A CRÉDITO;
+        al contado ya queda saldado y no genera deuda)
     =============================== */
-    $insFactura = $conexion->prepare("
-        INSERT INTO factura_proveedor (
-            proveedores_idproveedores, reposicion_idreposicion, fecha_compra,
-            descripcion, monto, numero_factura, tiene_factura, estado_pago, monto_pagado
-        ) VALUES (?, ?, CURDATE(), ?, ?, ?, 1, 'pendiente', 0)
-    ");
-    $insFactura->execute([
-        $antesRepo['proveedores_idproveedores'],
-        $id,
-        'Reposición de stock Nº' . $id,
-        $costo_total,
-        $numero_factura
-    ]);
-    $idFactura = $conexion->lastInsertId();
+    if ($forma_pago === 'credito') {
 
-    auditoria(
-        $conexion,
-        'INSERT',
-        'proveedores',
-        'factura_proveedor',
-        $idFactura,
-        'Generó factura de proveedor por reposición',
-        null,
-        [
-            'proveedores_idproveedores' => $antesRepo['proveedores_idproveedores'],
-            'reposicion_idreposicion'   => $id,
-            'monto'                     => $costo_total,
-            'numero_factura'            => $numero_factura
-        ],
-        $id,
-        'reposicion'
-    );
+        $insFactura = $conexion->prepare("
+            INSERT INTO factura_proveedor (
+                proveedores_idproveedores, reposicion_idreposicion, fecha_compra,
+                descripcion, monto, numero_factura, tiene_factura, estado_pago, monto_pagado
+            ) VALUES (?, ?, CURDATE(), ?, ?, ?, 1, 'pendiente', 0)
+        ");
+        $insFactura->execute([
+            $antesRepo['proveedores_idproveedores'],
+            $id,
+            'Reposición de stock Nº' . $id,
+            $costo_total,
+            $numero_factura
+        ]);
+        $idFactura = $conexion->lastInsertId();
+
+        auditoria(
+            $conexion,
+            'INSERT',
+            'proveedores',
+            'factura_proveedor',
+            $idFactura,
+            'Generó factura de proveedor por reposición',
+            null,
+            [
+                'proveedores_idproveedores' => $antesRepo['proveedores_idproveedores'],
+                'reposicion_idreposicion'   => $id,
+                'monto'                     => $costo_total,
+                'numero_factura'            => $numero_factura
+            ],
+            $id,
+            'reposicion'
+        );
+    }
 
     /* ===============================
        IMPACTAR STOCK

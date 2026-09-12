@@ -9,6 +9,12 @@ $proveedores = $conexion
 
 $totalActivos   = array_sum(array_column($proveedores, 'activo'));
 $totalInactivos = count($proveedores) - $totalActivos;
+
+function waLink($numero, $pais) {
+    $digits = ltrim(preg_replace('/\D+/', '', (string)$numero), '0');
+    $prefijo = $pais === 'AR' ? '549' : '595';
+    return 'https://wa.me/' . $prefijo . $digits;
+}
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -211,8 +217,8 @@ $totalInactivos = count($proveedores) - $totalActivos;
                                          alt="<?= $p['pais_vendedor'] === 'AR' ? 'Argentina' : 'Paraguay' ?>"
                                          title="<?= $p['pais_vendedor'] === 'AR' ? 'Argentina' : 'Paraguay' ?>"
                                          width="20" class="me-1" style="border-radius:2px;vertical-align:-3px">
-                                    <a href="tel:<?= htmlspecialchars($p['numero_vendedor']) ?>" class="text-success">
-                                        <?= htmlspecialchars($p['numero_vendedor']) ?>
+                                    <a href="<?= htmlspecialchars(waLink($p['numero_vendedor'], $p['pais_vendedor'])) ?>" target="_blank" rel="noopener" class="text-success" title="Abrir chat de WhatsApp">
+                                        <i class="fa-brands fa-whatsapp me-1"></i><?= htmlspecialchars($p['numero_vendedor']) ?>
                                     </a>
                                 <?php else: ?>
                                     <span class="text-secondary">-</span>

@@ -472,16 +472,39 @@ $clase = match ($estado) {
                         </small>
                     </div>
 
-                    <!-- NÚMERO DE FACTURA -->
+                    <!-- FORMA DE PAGO -->
                     <div class="mb-3">
+                        <label class="form-label">Forma de pago</label>
+                        <select name="forma_pago" id="forma_pago" class="form-select" required>
+                            <option value="" selected disabled>-- Seleccionar --</option>
+                            <option value="credito">Crédito (queda en cuenta corriente del proveedor)</option>
+                            <option value="contado">Contado (se paga en el momento)</option>
+                        </select>
+                    </div>
+
+                    <!-- NÚMERO DE FACTURA (CRÉDITO) -->
+                    <div class="mb-3" id="grupoFactura" style="display:none;">
                         <label class="form-label">Número de factura</label>
                         <input type="text"
                                name="numero_factura"
+                               id="numero_factura"
                                class="form-control"
-                               placeholder="Ej: A-0001-00001234"
-                               required>
+                               placeholder="Ej: A-0001-00001234">
                         <small class="text-muted">
                             Número que figura en la factura del proveedor.
+                        </small>
+                    </div>
+
+                    <!-- NÚMERO DE RECIBO (CONTADO) -->
+                    <div class="mb-3" id="grupoRecibo" style="display:none;">
+                        <label class="form-label">Número de recibo</label>
+                        <input type="text"
+                               name="numero_recibo"
+                               id="numero_recibo"
+                               class="form-control"
+                               placeholder="Ej: 0001-00001234">
+                        <small class="text-muted">
+                            Comprobante del pago al contado.
                         </small>
                     </div>
 
@@ -743,6 +766,16 @@ function abrirImpacto(id) {
     document.getElementById('idreposicion').value = id;
     document.getElementById('productosPedido').innerHTML = 'Cargando...';
 
+    // Reset forma de pago
+    const formaPagoSel = document.getElementById('forma_pago');
+    formaPagoSel.value = '';
+    document.getElementById('grupoFactura').style.display = 'none';
+    document.getElementById('grupoRecibo').style.display = 'none';
+    document.getElementById('numero_factura').required = false;
+    document.getElementById('numero_recibo').required = false;
+    document.getElementById('numero_factura').value = '';
+    document.getElementById('numero_recibo').value = '';
+
     const modal = new bootstrap.Modal(
         document.getElementById('modalImpacto')
     );
@@ -864,11 +897,41 @@ function abrirImpacto(id) {
 }
 
 /* =========================
+   TOGGLE FORMA DE PAGO
+========================= */
+document.getElementById('forma_pago').addEventListener('change', function () {
+
+    const grupoFactura   = document.getElementById('grupoFactura');
+    const grupoRecibo    = document.getElementById('grupoRecibo');
+    const inputFactura   = document.getElementById('numero_factura');
+    const inputRecibo    = document.getElementById('numero_recibo');
+
+    if (this.value === 'credito') {
+        grupoFactura.style.display = '';
+        grupoRecibo.style.display  = 'none';
+        inputFactura.required = true;
+        inputRecibo.required  = false;
+        inputRecibo.value     = '';
+    } else if (this.value === 'contado') {
+        grupoFactura.style.display = 'none';
+        grupoRecibo.style.display  = '';
+        inputFactura.required = false;
+        inputRecibo.required  = true;
+        inputFactura.value    = '';
+    }
+});
+
+/* =========================
    CONFIRMAR IMPACTO (SUBMIT)
 ========================= */
 document.getElementById('formImpacto').addEventListener('submit', e => {
 
     e.preventDefault();
+
+    if (!document.getElementById('forma_pago').value) {
+        Swal.fire('Atención', 'Seleccioná la forma de pago.', 'warning');
+        return;
+    }
 
     const formData = new FormData(e.target);
 
@@ -1035,10 +1098,28 @@ if (numero && puedeEnviar) {
                 `;
             }
 
+            if (r.forma_pago) {
+                html += `
+                    <p><strong>Forma de pago:</strong>
+                        <span class="badge ${r.forma_pago === 'contado' ? 'bg-success' : 'bg-warning text-dark'}">
+                            ${r.forma_pago === 'contado' ? 'Contado' : 'Crédito'}
+                        </span>
+                    </p>
+                `;
+            }
+
             if (r.numero_factura) {
                 html += `
                     <p><strong>Número de factura:</strong>
                         ${r.numero_factura}
+                    </p>
+                `;
+            }
+
+            if (r.numero_recibo) {
+                html += `
+                    <p><strong>Número de recibo:</strong>
+                        ${r.numero_recibo}
                     </p>
                 `;
             }

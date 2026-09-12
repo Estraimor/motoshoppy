@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once __DIR__ . '/../conexion/conexion.php';
+require_once __DIR__ . '/../settings/auditoria.php';
 
 // Cargamos los datos del proveedor si existe un ID
 if (isset($_GET['edit'])) {
@@ -18,6 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     $vendedor        = trim($_POST['vendedor']);
     $numero_vendedor = trim($_POST['numero_vendedor']);
     $pais_vendedor   = in_array($_POST['pais_vendedor'] ?? '', ['PY', 'AR']) ? $_POST['pais_vendedor'] : 'PY';
+
+    $antesStmt = $conexion->prepare("SELECT * FROM proveedores WHERE idproveedores = ?");
+    $antesStmt->execute([$id]);
+    $antes = $antesStmt->fetch(PDO::FETCH_ASSOC);
 
     $sql = "UPDATE proveedores
         SET empresa = :empresa,
@@ -40,6 +46,24 @@ $stmt->execute([
     ':pais_vendedor'   => $pais_vendedor,
     ':id'              => $id
 ]);
+
+    auditoria(
+        $conexion,
+        'UPDATE',
+        'proveedores',
+        'proveedores',
+        $id,
+        "Actualizó proveedor: {$empresa}",
+        $antes,
+        [
+            'empresa'   => $empresa,
+            'ubicacion' => $ubicacion,
+            'telefono'  => $telefono,
+            'email'     => $email,
+            'vendedor'  => $vendedor,
+            'numero_vendedor' => $numero_vendedor
+        ]
+    );
 
     // Redirigimos con un mensaje de éxito
     header('Location: index.php?msg=actualizado');

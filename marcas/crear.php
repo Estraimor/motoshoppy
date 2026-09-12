@@ -1,5 +1,7 @@
 <?php
+session_start();
 require_once '../conexion/conexion.php';
+require_once '../settings/auditoria.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre_marca'] ?? '');
@@ -17,6 +19,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':categoria' => $categoria,
                 ':estado' => $estado
             ]);
+
+            auditoria(
+                $conexion,
+                'INSERT',
+                'marcas',
+                'marcas',
+                $conexion->lastInsertId(),
+                "Creó marca: {$nombre}",
+                null,
+                ['nombre_marca' => $nombre, 'categoria_idCategoria' => $categoria, 'estado' => $estado]
+            );
 
             header("Location: index.php?msg=creado");
             exit;

@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../../conexion/conexion.php';
+require_once '../../../settings/auditoria.php';
 
 if (empty($_SESSION['idusuario'])) {
     echo json_encode(['ok' => false, 'msg' => 'Sesión expirada.']);
@@ -37,6 +38,24 @@ try {
         $numeroFactura !== '' ? $numeroFactura : null,
         $tieneFactura
     ]);
+
+    auditoria(
+        $conexion,
+        'INSERT',
+        'proveedores',
+        'factura_proveedor',
+        $conexion->lastInsertId(),
+        "Cargó compra de proveedor por " . number_format($monto, 2, ',', '.'),
+        null,
+        [
+            'proveedores_idproveedores' => $proveedorId,
+            'fecha_compra'              => $fechaCompra,
+            'descripcion'               => $descripcion,
+            'monto'                     => $monto,
+            'numero_factura'            => $numeroFactura,
+            'tiene_factura'             => $tieneFactura
+        ]
+    );
 
     echo json_encode(['ok' => true]);
 } catch (Exception $e) {

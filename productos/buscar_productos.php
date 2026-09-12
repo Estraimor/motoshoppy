@@ -124,7 +124,6 @@ SELECT
     p.precio_costo,
     p.descripcion,
     p.peso_ml,
-    p.peso_g,
     p.imagen,
     m.idmarcas AS idmarca,
     m.nombre_marca,

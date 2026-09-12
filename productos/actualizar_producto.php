@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../conexion/conexion.php';
+require '../settings/auditoria.php';
 
 if (!isset($_POST['id'])) {
     echo "ID inválido";
@@ -8,6 +9,13 @@ if (!isset($_POST['id'])) {
 }
 
 $id = intval($_POST['id']);
+
+/* ==============================
+   SNAPSHOT "ANTES" (para auditoría)
+============================== */
+$antesStmt = $conexion->prepare("SELECT * FROM producto WHERE idproducto = ?");
+$antesStmt->execute([$id]);
+$productoAntes = $antesStmt->fetch(PDO::FETCH_ASSOC);
 
 /* ==============================
    DATOS PRINCIPALES
@@ -19,7 +27,6 @@ $modelo  = $_POST['modelo'] ?? '';
 $marca   = $_POST['marca'] !== '' ? $_POST['marca'] : null;
 $precio_expuesto = floatval($_POST['precio'] ?? 0);
 $peso_ml = $_POST['peso_ml'] !== '' ? $_POST['peso_ml'] : null;
-$peso_g  = $_POST['peso_g'] !== '' ? $_POST['peso_g'] : null;
 
 /* ==============================
    🔥 UBICACIÓN INTELIGENTE
@@ -97,7 +104,6 @@ $sql = $conexion->prepare("
         precio_expuesto = :precio_expuesto
         $extraCostoSQL,
         peso_ml = :peso_ml,
-        peso_g = :peso_g,
         descripcion = COALESCE(:descripcion, descripcion),
         ubicacion_producto_idubicacion_producto = :ubicacion
     WHERE idproducto = :id
@@ -109,7 +115,6 @@ $sql->bindValue(':modelo', $modelo);
 $sql->bindValue(':marca', $marca);
 $sql->bindValue(':precio_expuesto', $precio_expuesto);
 $sql->bindValue(':peso_ml', $peso_ml);
-$sql->bindValue(':peso_g', $peso_g);
 $sql->bindValue(':descripcion', $descripcion);
 $sql->bindValue(':ubicacion', $ubicacion_id);
 
@@ -132,10 +137,16 @@ if (isset($_POST['aro'])) {
     $tipo   = $_POST['tipo'] ?? null;
     $aplic  = $_POST['varias'] ?? null;
 
-    $check = $conexion->prepare("SELECT idatributos_cubiertas FROM atributos_cubiertas WHERE producto_idProducto = ?");
+    $check = $conexion->prepare("SELECT * FROM atributos_cubiertas WHERE producto_idProducto = ?");
     $check->execute([$id]);
+    $cubiertaAntes = $check->fetch(PDO::FETCH_ASSOC);
 
-    if ($check->fetch()) {
+    $despuesCubierta = [
+        'aro' => $aro, 'ancho' => $ancho, 'perfil_cubierta' => $perfil,
+        'tipo' => $tipo, 'varias_aplicaciones' => $aplic
+    ];
+
+    if ($cubiertaAntes) {
 
         $upd = $conexion->prepare("
             UPDATE atributos_cubiertas
@@ -144,14 +155,20 @@ if (isset($_POST['aro'])) {
         ");
         $upd->execute([$aro, $ancho, $perfil, $tipo, $aplic, $id]);
 
+        auditoria($conexion, 'UPDATE', 'productos', 'atributos_cubiertas', $id,
+            "Actualizó atributos de cubierta del producto ID {$id}", $cubiertaAntes, $despuesCubierta);
+
     } else {
 
         $ins = $conexion->prepare("
-            INSERT INTO atributos_cubiertas 
+            INSERT INTO atributos_cubiertas
             (producto_idProducto, aro, ancho, perfil_cubierta, tipo, varias_aplicaciones)
             VALUES (?,?,?,?,?,?)
         ");
         $ins->execute([$id, $aro, $ancho, $perfil, $tipo, $aplic]);
+
+        auditoria($conexion, 'INSERT', 'productos', 'atributos_cubiertas', $id,
+            "Cargó atributos de cubierta del producto ID {$id}", null, $despuesCubierta);
     }
 }
 
@@ -165,10 +182,16 @@ if (isset($_POST['stock_minimo'])) {
     $cantidad_actual   = intval($_POST['cantidad_actual']);
     $cantidad_exhibida = intval($_POST['cantidad_exhibida']);
 
-    $check = $conexion->prepare("SELECT idstock_producto FROM stock_producto WHERE producto_idProducto = ?");
+    $check = $conexion->prepare("SELECT * FROM stock_producto WHERE producto_idProducto = ?");
     $check->execute([$id]);
+    $stockAntes = $check->fetch(PDO::FETCH_ASSOC);
 
-    if ($check->fetch()) {
+    $despuesStock = [
+        'stock_minimo' => $stock_minimo, 'cantidad_actual' => $cantidad_actual,
+        'cantidad_exhibida' => $cantidad_exhibida
+    ];
+
+    if ($stockAntes) {
 
         $upd = $conexion->prepare("
             UPDATE stock_producto
@@ -177,14 +200,20 @@ if (isset($_POST['stock_minimo'])) {
         ");
         $upd->execute([$stock_minimo, $cantidad_actual, $cantidad_exhibida, $id]);
 
+        auditoria($conexion, 'UPDATE', 'productos', 'stock_producto', $id,
+            "Actualizó stock del producto ID {$id} desde la ficha de producto", $stockAntes, $despuesStock);
+
     } else {
 
         $ins = $conexion->prepare("
-            INSERT INTO stock_producto 
+            INSERT INTO stock_producto
             (producto_idProducto, stock_minimo, cantidad_actual, cantidad_exhibida)
             VALUES (?,?,?,?)
         ");
         $ins->execute([$id, $stock_minimo, $cantidad_actual, $cantidad_exhibida]);
+
+        auditoria($conexion, 'INSERT', 'productos', 'stock_producto', $id,
+            "Cargó stock del producto ID {$id} desde la ficha de producto", null, $despuesStock);
     }
 }
 
@@ -211,6 +240,18 @@ if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
         $upd = $conexion->prepare("UPDATE producto SET imagen=? WHERE idproducto=?");
         $upd->execute([$rutaBD, $id]);
     }
+}
+
+/* ==============================
+   AUDITORÍA DEL PRODUCTO (diff completo)
+============================== */
+if ($productoAntes) {
+    $despuesStmt = $conexion->prepare("SELECT * FROM producto WHERE idproducto = ?");
+    $despuesStmt->execute([$id]);
+    $productoDespues = $despuesStmt->fetch(PDO::FETCH_ASSOC);
+
+    auditoria($conexion, 'UPDATE', 'productos', 'producto', $id,
+        "Actualizó producto: {$nombre}", $productoAntes, $productoDespues);
 }
 
 echo "OK";
